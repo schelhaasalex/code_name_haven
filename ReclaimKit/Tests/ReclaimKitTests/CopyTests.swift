@@ -13,8 +13,8 @@ final class CopyTests: XCTestCase {
     /// verbatim — the failure is silent in production, where a missing key
     /// renders as an empty string.
     private let knownTokens: Set<String> = [
-        "count", "day", "duration", "from", "handle", "month", "name", "names",
-        "place", "stage", "time", "to"
+        "count", "day", "duration", "first", "from", "h", "handle", "last", "list", "m", "month", "name", "names",
+        "place", "second", "stage", "time", "to"
     ]
 
     private var repoRoot: URL {
@@ -93,10 +93,12 @@ final class CopyTests: XCTestCase {
     // MARK: - Substitution
 
     func testSubstitutionReplacesEveryOccurrence() {
-        // rhythmended.body names {count} twice.
+        // rhythmended.body names {count} twice — once opening the sentence,
+        // where it's capitalised, and once in the middle, where it isn't.
         let out = t("rhythmended.body", "count", "eleven")
         XCTAssertFalse(out.contains("{count}"))
-        XCTAssertEqual(out.components(separatedBy: "eleven").count - 1, 2)
+        XCTAssertTrue(out.hasPrefix("Eleven days"))
+        XCTAssertEqual(out.components(separatedBy: "eleven").count - 1, 1)
     }
 
     func testSubstitutionTakesPairsAndIgnoresAStray() {

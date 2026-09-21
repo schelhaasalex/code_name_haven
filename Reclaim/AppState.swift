@@ -84,8 +84,11 @@ public final class AppState {
     }
 
     /// The suggestion on Home. A guess from history, NOT from location —
-    /// nothing in this app reads where you are.
-    public var usualPlace: Place? { places.first }
+    /// nothing in this app reads where you are. Nil when your recent evenings
+    /// weren't at any place, and then Home suggests nothing.
+    public var usualPlace: Place? {
+        UsualPlace.among(recent, gatherings: gatherings, places: places)
+    }
 
     // MARK: - Lifecycle
 

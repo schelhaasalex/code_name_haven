@@ -101,4 +101,16 @@ final class FormattingTests: XCTestCase {
         XCTAssertEqual(PlainDate.string(from: date!), "2026-09-21")
         XCTAssertNil(PlainDate.date(from: "21/09/2026"))
     }
+
+    /// Six screens opened a sentence with "three evenings…" in lowercase.
+    func testASentenceOpeningWithACountStartsWithACapital() {
+        XCTAssertEqual(t("home.footer", "count", Say.number(3)), "Three evenings this week.")
+        XCTAssertEqual(t("rhythm.subhead", "count", Say.number(9)), "Nine days of it so far.")
+    }
+
+    /// Mid-sentence it stays lowercase, and a name stays how its owner wrote it.
+    func testOnlyAnOpeningCountIsCapitalised() {
+        XCTAssertTrue(t("end.rhythm", "count", Say.number(3)).contains("three evenings"))
+        XCTAssertTrue(t("join.headline", "name", "maya", "place", "the porch").hasPrefix("maya"))
+    }
 }
