@@ -113,6 +113,16 @@ entity, no D-U-N-S.
 false there, so `TagSession` returns a failure immediately and the card screen
 says the tag didn't take. That is correct behaviour, not a bug to chase.
 
+## Seeing it before sign-in works
+
+Sign in with Apple needs a paid developer team, so until then the real app
+stops at Welcome. Pick the **Reclaim (Sample data)** scheme instead: it launches
+with `-sample-data`, and `ReclaimApp` swaps in `PreviewRepository.sampleHousehold()`
+— Alex, Maya and Dad, three places, a few weeks of evenings. Starting and ending
+an evening work, in memory, following the database's rules (one live evening,
+three-hour cap, fifteen minutes to count). Nobody else's phone is there, so
+every evening started in it is just you. Every launch starts fresh.
+
 ## Fonts
 
 Fraunces and Work Sans are both OFL. Until the `.ttf` files land in

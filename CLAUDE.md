@@ -130,6 +130,11 @@ open Reclaim.xcodeproj
 ```
 
 Adding a Swift file needs no project edit — XcodeGen globs the directories.
+
+Two schemes: **Reclaim** is the real app against Supabase. **Reclaim (Sample
+data)** runs the whole app against the canvas household (`PreviewRepository`),
+in memory, already signed in, no network — debug builds only. It's how to see
+the app before Sign in with Apple can work.
 Adding a target, capability or dependency means editing `project.yml` and
 regenerating.
 

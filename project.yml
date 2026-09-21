@@ -87,3 +87,26 @@ targets:
         CFBundleDisplayName: Reclaim
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+# Two ways to press Run. Both are written out, because once any scheme is
+# declared Xcode stops making the default one on its own.
+schemes:
+  Reclaim:
+    build:
+      targets:
+        Reclaim: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+
+  # The whole app against the sample household (PreviewRepository), in memory,
+  # already signed in, no network. Debug builds only — see ReclaimApp.init.
+  Reclaim (Sample data):
+    build:
+      targets:
+        Reclaim: all
+    run:
+      config: Debug
+      commandLineArguments:
+        "-sample-data": true
