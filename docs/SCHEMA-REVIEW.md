@@ -142,6 +142,59 @@ per person per year, so there is no performance argument for caching it.
 
 ---
 
+## Two more, found only on a hosted project
+
+The local scratch Postgres proved the logic. It could not prove the platform.
+Both of these appeared the moment the migrations ran against real Supabase.
+
+### 12. `anon` had `GRANT ALL` on every table
+
+A hosted project ships with
+
+```sql
+alter default privileges in schema public
+  grant all on tables to postgres, anon, authenticated, service_role;
+```
+
+so every table created by `0001` arrived carrying a table-level `GRANT ALL` to
+both `anon` and `authenticated` — which silently undid the column-scoped grant
+that keeps `join_secret_hash` unreadable, and handed the unauthenticated role
+blanket privileges on all five tables.
+
+RLS would still have denied `anon` every row, since it has no `auth.uid()`. But
+column privileges are not row privileges, and a single policy mistake would
+then have been the only thing between a scraper and the join secrets.
+
+**Fix.** `0002` now revokes the defaults from `anon` and `authenticated` before
+granting anything, and uses `alter default privileges` so tables added by
+future migrations don't quietly re-acquire them. Verified on the live project:
+`anon` holds **zero** privileges in `public`, and `authenticated` holds exactly
+`gatherings: SELECT`, `place_people: INSERT,SELECT`, `profiles:
+INSERT,SELECT,UPDATE`, `sessions: DELETE,SELECT`, plus column-scoped SELECT on
+`places` with `join_secret_hash` absent and `name` the only updatable column.
+
+### 13. Three functions had a mutable `search_path`
+
+Supabase's own database linter flagged `app.qualifying_minutes`,
+`app.auto_close_minutes` and `app.place_stage`
+([0011_function_search_path_mutable](https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable)).
+They take no tables and reference nothing schema-qualified, so the practical
+risk is small — but every other function here pins it, and consistency is
+cheaper than a judgement call each time someone adds one. Fixed in `0004`.
+
+The linter now reports **no findings**.
+
+---
+
+## Verified against the live project
+
+Beyond the 16 offline assertions, the full flow was run once on the hosted
+database through the real `auth.uid()` path, with a throwaway user deleted
+afterwards: create a place, start a session by tag, end it, and read back
+`place_summary` (1 evening, 120 wall-clock minutes, stage "new here", no longer
+live), `my_rhythm` (in_rhythm, run of 1), and `resolve_place` — which found the
+place by its secret and returned null for a wrong one.
+
 ## Deliberately not built
 
 **Depth-one hierarchy.** No `site_id`. Sessions always happen at a leaf, so a

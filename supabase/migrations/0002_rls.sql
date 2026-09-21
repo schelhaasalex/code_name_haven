@@ -128,6 +128,28 @@ create policy sessions_delete_own on sessions
 
 -- --------------------------------------------------------------- privileges
 
+-- FIRST, strip Supabase's defaults. A hosted project ships with
+--   alter default privileges in schema public
+--     grant all on tables to postgres, anon, authenticated, service_role;
+-- so every table created above already carries a table-level GRANT ALL to both
+-- anon and authenticated. That hands anon a SELECT on places — join_secret_hash
+-- included — and makes every narrow grant below decorative. RLS would still
+-- deny anon's rows (it has no auth.uid()), but column privileges are not row
+-- privileges, and defence in depth is the whole point of the next 30 lines.
+--
+-- Any future migration that adds a table to public must do this too.
+revoke all on all tables    in schema public from anon, authenticated;
+revoke all on all functions in schema public from anon, authenticated;
+revoke all on all sequences in schema public from anon, authenticated;
+
+-- And stop the defaults re-applying to tables added later.
+alter default privileges in schema public revoke all on tables    from anon, authenticated;
+alter default privileges in schema public revoke all on functions from anon, authenticated;
+alter default privileges in schema public revoke all on sequences from anon, authenticated;
+
+-- anon gets nothing anywhere: there is no unauthenticated surface in this app.
+-- Every entry point requires a signed-in user, including resolving a card.
+
 grant usage on schema app to authenticated;
 
 -- Grants are deliberately narrow. Anything that creates or mutates shared state
