@@ -1,0 +1,49 @@
+#!/usr/bin/env sh
+# Refuses a direct push to main.
+#
+# Branch protection does this properly, but it needs GitHub Pro on a private
+# repository. This is the poor relation: it lives in the repo, it runs on the
+# machine where the mistake would be made, and it costs nothing.
+#
+# It is NOT security. Anyone can pass --no-verify, and a push from the GitHub
+# UI never sees it. It is there to catch the three-in-the-morning
+# `git push origin main` that nobody meant.
+#
+# Turn it on once per clone:
+#
+#     git config core.hooksPath .githooks
+#
+# And if you genuinely mean it:
+#
+#     RECLAIM_PUSH_TO_MAIN=yes git push origin main
+
+set -u
+protected="refs/heads/main"
+
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  [ "$remote_ref" = "$protected" ] || continue
+
+  if [ "${RECLAIM_PUSH_TO_MAIN:-}" = "yes" ]; then
+    echo "pre-push: pushing straight to main, because you said so." >&2
+    continue
+  fi
+
+  cat >&2 <<'MSG'
+
+  Nothing reaches main except a merge from staging.
+
+  Push this to staging instead, then open the pull request from staging to
+  main — that is where the release note gets written, and where the
+  "Only staging reaches main" check runs.
+
+      git push origin HEAD:staging
+
+  CLAUDE.md has the why. If you really mean to push to main:
+
+      RECLAIM_PUSH_TO_MAIN=yes git push origin main
+
+MSG
+  exit 1
+done
+
+exit 0

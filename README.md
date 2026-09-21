@@ -41,12 +41,18 @@ request against it; promoting to `main` is a second pull request from `staging`
 and nothing else. `.github/workflows/branch-flow.yml` fails anything else that
 asks.
 
-**Two settings make this real**, and they are clicks rather than code — in
-**Settings → Branches**, protect `main`: require a pull request, require the
-`Shape`, `Schema` and `Only staging reaches main` checks, and disallow direct
-pushes. Do the same for `staging` without the last one. Set the default branch
-to `staging` in **Settings → General** so a new pull request lands there
-without anyone having to remember.
+Turn on the hook that refuses a direct push to `main`, once per clone:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+That plus the workflow catches the accident. Neither is a lock — a hook takes
+`--no-verify` and never runs in the browser, and a workflow can only fail a
+pull request. The real thing is branch protection under **Settings → Branches**
+(require a pull request, require the `Shape`, `Schema` and `Only staging
+reaches main` checks, disallow direct pushes), which needs GitHub Pro on a
+private repository.
 
 ## Running it
 
