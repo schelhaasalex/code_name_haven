@@ -27,7 +27,7 @@ week ago: 4 (someone started), 9 (a place and its arc), 15 (the card), 21
 iOS 18 Control Centre control.
 
 What stands between this and a working evening is a real Supabase key, a
-signed device build, and the four quiet bugs in the build notes.
+signed device build, and the three quiet bugs left in the build notes.
 
 ## Branches
 

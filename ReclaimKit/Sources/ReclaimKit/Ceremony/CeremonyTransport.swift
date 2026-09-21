@@ -57,11 +57,9 @@ public protocol CeremonyTransport: Sendable {
 
 /// Supabase Realtime broadcast.
 ///
-/// ⚠️ THIS FILE AND SupabaseRepository ARE THE TWO MOST LIKELY TO NEED SMALL
-/// ADJUSTMENTS on the first build — they're the only places that touch
-/// supabase-swift's API surface. Everything else is Foundation and SwiftUI.
-/// The shapes to check are `client.channel(_:)`, `channel.broadcastStream(event:)`
-/// and `channel.broadcast(event:message:)`.
+/// The wire format, and the two ways it was silently wrong, are in
+/// `CeremonyWire`. What's left here is channels: joining, leaving, and making
+/// sure a failed subscribe is known about rather than swallowed.
 public actor SupabaseCeremonyTransport: CeremonyTransport {
 
     private let client: SupabaseClient
@@ -76,81 +74,63 @@ public actor SupabaseCeremonyTransport: CeremonyTransport {
 
     public init(client: SupabaseClient) { self.client = client }
 
-    private struct Payload: Codable {
-        var kind: String          // "docked" | "facedown" | "released"
-        var sender: String
-        var at: Double?
-        var down: Bool?
-    }
-
     public func join(gathering: UUID) async throws {
         await leave()
         let ch = client.channel("gathering:\(gathering.uuidString)")
         let stream = ch.broadcastStream(event: "ceremony")
-        await ch.subscribe()
+        do {
+            try await ch.subscribeWithError()
+        } catch {
+            await client.removeChannel(ch)
+            throw error
+        }
         channel = ch
 
         pump = Task { [weak self] in
-            for await raw in stream {
+            for await envelope in stream {
                 guard let self else { return }
-                guard let data = try? JSONEncoder().encode(raw),
-                      let p = try? JSONDecoder().decode(Payload.self, from: data)
+                guard let p = CeremonyWire.unwrap(envelope, as: CeremonyWire.Payload.self)
                 else { continue }
                 await self.deliver(p)
             }
         }
     }
 
-    private func deliver(_ p: Payload) {
-        guard let sender = UUID(uuidString: p.sender), sender != me else { return }
-        switch p.kind {
-        case "docked":
-            continuation?.yield(.docked(at: p.at.map { Date(timeIntervalSince1970: $0) } ?? .now))
-        case "facedown":
-            continuation?.yield(.faceDown(profile: sender, down: p.down ?? false))
-        case "released":
-            continuation?.yield(.released(profile: sender))
-        default:
-            break
-        }
+    private func deliver(_ p: CeremonyWire.Payload) {
+        guard let event = CeremonyWire.event(from: p, me: me) else { return }
+        continuation?.yield(event)
     }
 
+    /// Removed rather than unsubscribed: the client caches channels by topic,
+    /// so an unsubscribed one would be handed back on the next join.
     public func leave() async {
         pump?.cancel(); pump = nil
-        if let channel { await channel.unsubscribe() }
+        if let channel { await client.removeChannel(channel) }
         channel = nil
     }
 
     public func send(_ event: CeremonyEvent, from me: UUID) async {
         self.me = me
         guard let channel else { return }
-        let p: Payload
-        switch event {
-        case .docked(let at):
-            p = Payload(kind: "docked", sender: me.uuidString,
-                        at: at.timeIntervalSince1970, down: nil)
-        case .faceDown(_, let down):
-            p = Payload(kind: "facedown", sender: me.uuidString, at: nil, down: down)
-        case .released:
-            p = Payload(kind: "released", sender: me.uuidString, at: nil, down: nil)
-        }
-        try? await channel.broadcast(event: "ceremony", message: p)
+        try? await channel.broadcast(event: "ceremony",
+                                     message: CeremonyWire.payload(for: event, from: me))
     }
 
     // MARK: - Invitations
 
+    /// A place whose channel won't subscribe is skipped, not retried: screen 4
+    /// is an offer, and nothing is gated on it arriving.
     public func watch(places: [UUID]) async {
         await stopWatching()
         for place in places {
-            let ch = client.channel("place:\(place.uuidString)")
-            let stream = ch.broadcastStream(event: "invitation")
-            await ch.subscribe()
-            placeChannels[place] = ch
+            guard let ch = await subscribed("place:\(place.uuidString)", listening: true)
+            else { continue }
+            let stream = ch.stream
+            placeChannels[place] = ch.channel
             placePumps[place] = Task { [weak self] in
-                for await raw in stream {
+                for await envelope in stream {
                     guard let self else { return }
-                    guard let data = try? JSONEncoder().encode(raw),
-                          let invitation = try? JSONDecoder().decode(Invitation.self, from: data)
+                    guard let invitation = CeremonyWire.unwrap(envelope, as: Invitation.self)
                     else { continue }
                     await self.deliver(invitation)
                 }
@@ -161,7 +141,7 @@ public actor SupabaseCeremonyTransport: CeremonyTransport {
     public func stopWatching() async {
         for pump in placePumps.values { pump.cancel() }
         placePumps.removeAll()
-        for channel in placeChannels.values { await channel.unsubscribe() }
+        for channel in placeChannels.values { await client.removeChannel(channel) }
         placeChannels.removeAll()
     }
 
@@ -169,12 +149,27 @@ public actor SupabaseCeremonyTransport: CeremonyTransport {
     /// moment their own session starts, and the announcement comes after.
     public func announce(_ invitation: Invitation) async {
         if placeChannels[invitation.place] == nil {
-            let ch = client.channel("place:\(invitation.place.uuidString)")
-            await ch.subscribe()
-            placeChannels[invitation.place] = ch
+            guard let ch = await subscribed("place:\(invitation.place.uuidString)", listening: false)
+            else { return }
+            placeChannels[invitation.place] = ch.channel
         }
         try? await placeChannels[invitation.place]?.broadcast(event: "invitation",
                                                               message: invitation)
+    }
+
+    /// A subscribed channel, or nil. Listening means registering the stream
+    /// first — callbacks added after subscribing are not guaranteed to fire.
+    private func subscribed(_ topic: String, listening: Bool)
+        async -> (channel: RealtimeChannelV2, stream: AsyncStream<JSONObject>)? {
+        let ch = client.channel(topic)
+        let stream = listening ? ch.broadcastStream(event: "invitation") : AsyncStream { $0.finish() }
+        do {
+            try await ch.subscribeWithError()
+            return (ch, stream)
+        } catch {
+            await client.removeChannel(ch)
+            return nil
+        }
     }
 
     private func deliver(_ invitation: Invitation) {

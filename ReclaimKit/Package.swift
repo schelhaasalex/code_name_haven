@@ -16,6 +16,11 @@ let package = Package(
             dependencies: [.product(name: "Supabase", package: "supabase-swift")],
             resources: [.process("Resources")]
         ),
-        .testTarget(name: "ReclaimKitTests", dependencies: ["ReclaimKit"])
+        .testTarget(
+            name: "ReclaimKitTests",
+            // Supabase for `JSONObject`, so the wire tests use the SDK's own
+            // encoder rather than a guess at it.
+            dependencies: ["ReclaimKit", .product(name: "Supabase", package: "supabase-swift")]
+        )
     ]
 )
