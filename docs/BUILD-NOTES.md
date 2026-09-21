@@ -28,6 +28,20 @@ writes it, so they were silently dropped — no launch screen (the app ran
 letterboxed), no motion or NFC usage strings (iOS terminates an app that reads
 motion history without one), and Live Activities switched off.
 
+## Realtime, fixed and checked live
+
+Both halves of the round trip were wrong and neither threw, so every ceremony
+event and every invitation was dropped at a `continue`. `broadcastStream(event:)`
+yields the whole envelope (`event`/`payload`/`type`), not what was sent, and
+`broadcast(event:message:)` writes dates as ISO-8601 strings that a plain
+`JSONDecoder` can't read. The wire format now lives in `CeremonyWire`, where
+`CeremonyWireTests` runs it through the SDK's own encoder.
+
+Checked against the hosted project with two clients: the old transport
+received nothing, the new one delivers both. Subscribing now uses
+`subscribeWithError()`, and leaving removes the channel, because the client
+caches channels by topic and would hand a dead one back on the next join.
+
 ## Compiles, but known to be wrong
 
 Found by reading, not yet fixed. None of these shows up as an error — each
@@ -40,12 +54,6 @@ fails silently:
 - **`IntentEnvironment.onSessionChanged` is never assigned**, so a session
   started from Siri doesn't reach `AppState`, the Live Activity or
   `SessionFlag`.
-- **Realtime decoding.** `broadcastStream(event:)` likely yields the whole
-  broadcast envelope (`type`/`event`/`payload`), and the transport decodes
-  `Payload` from the envelope — every ceremony event would be dropped at the
-  `continue`. `Invitation.at` is probably encoded and decoded as different
-  `Date` formats. `subscribe()` is deprecated for `subscribeWithError()`, which
-  stops failures being swallowed.
 - **Siri phrases.** `ReclaimShortcuts` lives in the package; App Intents
   metadata is extracted per target, so it may need to move into the app.
 
