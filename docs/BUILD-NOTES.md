@@ -10,47 +10,55 @@ open Reclaim.xcodeproj
 The Supabase URL is already correct in the example file. Get the publishable
 key from the dashboard under **Settings → API**.
 
-## Expect compile errors on the first pass
+## Where the first compile landed
 
-This was written without a Swift toolchain — the container it was authored in
-is Linux, with no Xcode and no iOS SDK. Every line is unverified by a compiler.
-That's a real difference from the SQL, where five bugs were found by actually
-running it.
+This was written without a Swift toolchain, on Linux, and first went through a
+compiler on Xcode 26 / the iOS 26 SDK. It needed four fixes, none in the two
+supabase-swift files everyone expected to break:
 
-Two files touch supabase-swift's API and are where problems will concentrate:
+- a rename that hadn't reached `CardView` (`TagWriter` → `TagSession`)
+- a doubled optional binding in `AppState.load()`
+- `adopt(session:)` was `private` in one file and called from another
+- `CopyTests`' list of known `{tokens}` was missing `from` and `to`
 
-- `ReclaimKit/Sources/ReclaimKit/Data/SupabaseRepository.swift`
-- `ReclaimKit/Sources/ReclaimKit/Ceremony/CeremonyTransport.swift`
+The one that mattered was not a compile error. **Every Info.plist key lives in
+`info.properties` in `project.yml`, never as an `INFOPLIST_KEY_*` build
+setting.** Those settings only apply when Xcode generates the plist; XcodeGen
+writes it, so they were silently dropped — no launch screen (the app ran
+letterboxed), no motion or NFC usage strings (iOS terminates an app that reads
+motion history without one), and Live Activities switched off.
 
-Four newer spots touch framework API shapes worth checking early:
+## Compiles, but known to be wrong
 
-- **`SetItDownControl`** — `ControlWidgetToggle`'s title. If it won't take a
-  `String`, wrap it: `LocalizedStringKey(t("control.title"))`. Controls are
-  iOS 18, so this needs the Xcode 16 SDK to compile at all; the `if #available`
-  in the widget bundle relies on `WidgetBundleBuilder.buildLimitedAvailability`.
-- **`TagSession`** — `NFCNDEFPayload.wellKnownTypeURIPayload()` is a method on
-  read and a static initialiser on write. Easy to get backwards.
-- **`CardView`** — `ImageRenderer` + `ShareLink(item:preview:)` with an
-  `Image`. If `SharePreview(_:image:)` rejects a `String` title, pass `Text`.
-- **`PlaceSecrets`** — Keychain access needs the app's entitlements in place;
-  on the simulator it works unsigned, on device it needs the profile.
+Found by reading, not yet fixed. None of these shows up as an error — each
+fails silently:
 
-The shapes to check first: `client.channel(_:)`, `channel.broadcastStream(event:)`,
-`channel.broadcast(event:message:)`, and whether `.execute().value` infers the
-decode target in each RPC. Realtime is deliberately behind the
-`CeremonyTransport` protocol, so if the API differs it's ~40 lines to fix and
-`AppState` doesn't change.
+- **The Live Activity's End button and the Control Centre toggle.** A plain
+  `AppIntent` run from a widget executes in the extension's process, where
+  `IntentEnvironment.repository` is nil and the Supabase session (in the app's
+  Keychain) isn't visible. `LiveActivityIntent` runs in the app's process.
+- **`IntentEnvironment.onSessionChanged` is never assigned**, so a session
+  started from Siri doesn't reach `AppState`, the Live Activity or
+  `SessionFlag`.
+- **Realtime decoding.** `broadcastStream(event:)` likely yields the whole
+  broadcast envelope (`type`/`event`/`payload`), and the transport decodes
+  `Payload` from the envelope — every ceremony event would be dropped at the
+  `continue`. `Invitation.at` is probably encoded and decoded as different
+  `Date` formats. `subscribe()` is deprecated for `subscribeWithError()`, which
+  stops failures being swallowed.
+- **Siri phrases.** `ReclaimShortcuts` lives in the package; App Intents
+  metadata is extracted per target, so it may need to move into the app.
 
-Everything else is Foundation, SwiftUI, CoreMotion, ActivityKit and AppIntents.
+Still unexercised: anything behind sign-in (needs the real publishable key),
+NFC (the simulator has none) and anything needing a signed device build.
 
-The same caveat covers `ReclaimKit/Tests/` — the assertions were reasoned
-about, not executed. Run them first:
+Run the Swift tests with:
 
 ```sh
-xcodebuild test -scheme ReclaimKit -destination 'platform=iOS Simulator,name=iPhone 16'
+xcodebuild test -scheme ReclaimKit -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 
-They need no key and no network, so they are the cheapest thing to get green.
+They need no key and no network, so they are the cheapest thing to keep green.
 They do need a simulator: `swift test` can't build ReclaimKit for macOS,
 because `Sensation` imports UIKit and the Live Activity imports ActivityKit.
 

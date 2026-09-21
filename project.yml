@@ -46,21 +46,24 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.reclaim.app
-        INFOPLIST_KEY_CFBundleDisplayName: Reclaim
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
-        INFOPLIST_KEY_NSMotionUsageDescription: >-
-          Reclaim notices when your phone has been sitting still, so it can
-          offer to count time you already spent away from it.
-        INFOPLIST_KEY_NFCReaderUsageDescription: >-
-          Reclaim writes the card for a place onto a tag, and reads one when
-          you'd rather scan than type.
-        INFOPLIST_KEY_NSFaceIDUsageDescription: ""
-        INFOPLIST_KEY_NSSupportsLiveActivities: YES
         CODE_SIGN_ENTITLEMENTS: Reclaim/Reclaim.entitlements
+    # Every Info.plist key lives here. INFOPLIST_KEY_* build settings only
+    # apply when Xcode generates the plist, and XcodeGen writes this one — so
+    # they were silently dropped, and the app ran letterboxed with no motion
+    # or NFC usage strings and Live Activities switched off.
     info:
       path: Reclaim/Info.plist
       properties:
+        CFBundleDisplayName: Reclaim
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSMotionUsageDescription: >-
+          Reclaim notices when your phone has been sitting still, so it can
+          offer to count time you already spent away from it.
+        NFCReaderUsageDescription: >-
+          Reclaim writes the card for a place onto a tag, and reads one when
+          you'd rather scan than type.
+        NSSupportsLiveActivities: true
         SUPABASE_URL: $(SUPABASE_URL)
         SUPABASE_PUBLISHABLE_KEY: $(SUPABASE_PUBLISHABLE_KEY)
         UIBackgroundModes: []

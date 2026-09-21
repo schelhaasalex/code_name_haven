@@ -125,7 +125,7 @@ switching to once Xcode 16 is the floor.
 # ReclaimKit imports UIKit and ActivityKit, so the tests need a simulator —
 # `swift test` cannot build the package for macOS.
 xcodebuild test -scheme ReclaimKit \
-  -destination 'platform=iOS Simulator,name=iPhone 16'
+  -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 
 Or open `ReclaimKit/Package.swift` in Xcode and press ⌘U.
