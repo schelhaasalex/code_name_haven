@@ -56,6 +56,9 @@ public final class AppState {
     let faceDown = FaceDownSensor()
     var pump: Task<Void, Never>?
     var invitePump: Task<Void, Never>?
+    /// The places being listened at, so a return to the foreground doesn't
+    /// resubscribe every one of them.
+    var watching: [UUID] = []
 
     public init(repo: any Repository, transport: any CeremonyTransport = LocalCeremonyTransport()) {
         self.repo = repo
@@ -76,22 +79,31 @@ public final class AppState {
 
     // MARK: - Lifecycle
 
+    /// Runs at launch and on every return to the foreground. A failed read
+    /// keeps what was already known — offline is not signed out, and not
+    /// "nothing is running".
     public func load() async {
+        let p: Profile?
         do {
-            guard let p = try await repo.myProfile() else { phase = .signedOut; return }
-            profile = p
-            phase = .ready
-            async let places = repo.myPlaces()
-            async let rhythm = repo.myRhythm()
-            async let live = repo.liveSession()
-            self.places = (try? await places) ?? []
-            self.rhythm = (try? await rhythm) ?? .empty
-            await loadEvenings()
-            if let s = try? await live { await adopt(session: s) }
-            else { watchPlaces() }
+            p = try await repo.myProfile()
+        } catch ReclaimError.notAuthenticated {
+            phase = .signedOut; return
         } catch {
-            phase = .signedOut
+            if phase == .loading { phase = .signedOut }
+            return
         }
+        guard let p else { phase = .signedOut; return }
+        profile = p
+        phase = .ready
+        async let places = repo.myPlaces()
+        async let rhythm = repo.myRhythm()
+        async let live = repo.liveSession()
+        self.places = (try? await places) ?? self.places
+        self.rhythm = (try? await rhythm) ?? self.rhythm
+        await loadEvenings()
+        let found: Result<Session?, any Error>
+        do { found = .success(try await live) } catch { found = .failure(error) }
+        await reconcile(Reconciliation.between(running: session, database: found))
     }
 
     /// The qualifying days behind the dot week on Home and the grid on screen 10.
@@ -103,11 +115,11 @@ public final class AppState {
     /// over everyone, because the client may not read another person's rows.
     func loadEvenings() async {
         let since = Calendar.current.date(byAdding: .day, value: -35, to: .now) ?? .now
-        recent = (try? await repo.mySessions(since: since)) ?? []
+        recent = (try? await repo.mySessions(since: since)) ?? recent
         evenings = Set(recent.filter(\.qualifying).map(\.localDate))
 
         let ids = Array(Set(recent.map(\.gatheringId)))
-        let found = (try? await repo.gatherings(ids: ids)) ?? []
+        guard let found = try? await repo.gatherings(ids: ids) else { return }
         gatherings = Dictionary(found.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
     }
 
