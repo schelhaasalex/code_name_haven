@@ -76,6 +76,11 @@ exception worth removing when those grow.
 ## Naming
 
 - Screens: `ThingView`, matching the canvas. `HomeView` is screen 2.
+  `SplashView` is screen 0 and is the one screen with no canvas — it is an
+  overlay on `RootView`, not a case of `AppState.Phase`, because it must not be
+  something the app can be stuck in. Two other splashes were built beside it and
+  cut; `prototype/splash.html` still runs all three, which is where comparing
+  them belongs.
 - Components: the noun. `PhoneSlab`, not `PhoneSlabView`.
 - Copy keys: `screen.element`, lowercase, dot-separated.
 - Booleans read as assertions: `isLive`, `hasBeenOffered`, `restDayAvailable`.

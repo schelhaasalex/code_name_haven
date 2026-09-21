@@ -55,7 +55,16 @@ targets:
       path: Reclaim/Info.plist
       properties:
         CFBundleDisplayName: Reclaim
-        UILaunchScreen: {}
+        # The static launch screen is the same flat paper as `Palette.bone`, so
+        # there is no flash between it and SplashView's first frame. It was an
+        # empty dictionary, which means the system background — white in light
+        # mode, BLACK in dark — and the app then cut to bone. LaunchBone has a
+        # single universal colour on purpose: the launch screen is paper in both
+        # appearances, because the app is. `scripts/shape.sh` keeps the hex here
+        # equal to the one on the Palette; UIKit reads this plist before any
+        # Swift runs, so the value genuinely has to live in two places.
+        UILaunchScreen:
+          UIColorName: LaunchBone
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSMotionUsageDescription: >-
           Reclaim notices when your phone has been sitting still, so it can

@@ -7,6 +7,7 @@ import ReclaimKit
 struct RootView: View {
     @Environment(AppState.self) private var state
     @Environment(\.scenePhase) private var scenePhase
+    @State private var splashDone = false
 
     var body: some View {
         Group {
@@ -28,6 +29,21 @@ struct RootView: View {
         }
         .animation(.easeInOut(duration: 0.45), value: state.isLive)
         .animation(.easeInOut(duration: 0.45), value: state.justEnded)
+        // Screen 0, over the top rather than in the switch: the splash is on a
+        // clock of its own and holds nothing up. Everything below it is already
+        // loading, already live, already reachable.
+        .overlay {
+            if !splashDone {
+                SplashView { splashDone = true }
+            }
+        }
+        // An invitation cuts the splash short rather than waiting it out. It is
+        // the one thing in the product that interrupts, it is worth interrupting
+        // for, and two seconds of branding is two seconds of someone across the
+        // table having already put theirs down.
+        .onChange(of: state.invitation != nil) { _, arrived in
+            if arrived { splashDone = true }
+        }
         // Screen 4 covers whatever you were looking at, because the whole
         // point is that it reaches you across the room.
         .fullScreenCover(item: Binding(get: { state.invitation },
