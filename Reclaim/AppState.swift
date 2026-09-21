@@ -23,6 +23,9 @@ public final class AppState {
 
     let repo: any Repository
     let transport: any CeremonyTransport
+    /// Joining, announcing and watching, queued off to the side so none of it
+    /// holds up the evening (rule 7). Sends mid-evening go to `transport`.
+    let link: CeremonyLink
 
     public var phase: Phase = .loading
     public var profile: Profile?
@@ -57,6 +60,7 @@ public final class AppState {
     public init(repo: any Repository, transport: any CeremonyTransport = LocalCeremonyTransport()) {
         self.repo = repo
         self.transport = transport
+        self.link = CeremonyLink(transport: transport)
     }
 
     public var isLive: Bool { session?.isLive == true }
@@ -84,7 +88,7 @@ public final class AppState {
             self.rhythm = (try? await rhythm) ?? .empty
             await loadEvenings()
             if let s = try? await live { await adopt(session: s) }
-            else { await watchPlaces() }
+            else { watchPlaces() }
         } catch {
             phase = .signedOut
         }
