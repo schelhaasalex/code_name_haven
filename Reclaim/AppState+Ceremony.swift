@@ -57,6 +57,7 @@ extension AppState {
         SessionFlag.isLive = true
         // Nothing invites you to a table you are already sitting at.
         invitePump?.cancel(); invitePump = nil
+        watching = []
         listen()
 
         gathering = try? await repo.gathering(s.gatheringId)
@@ -78,6 +79,19 @@ extension AppState {
                      invitation: announcing ? invitation : nil)
     }
 
+    /// What `load()` does once it knows what the database thinks is running.
+    func reconcile(_ r: Reconciliation) async {
+        switch r {
+        case .keep:          break
+        case .refresh:       await refreshMembers()
+        case .adopt(let s):  await adopt(session: s)
+        case .end:
+            await teardown()
+            await Notifications.reschedule(for: profile)
+        case .idle:          watchPlaces()
+        }
+    }
+
     private func teardown() async {
         pump?.cancel(); pump = nil
         faceDown.stop()
@@ -97,7 +111,8 @@ extension AppState {
     /// link is still doing, so a slow subscribe holds up nothing else.
     func watchPlaces() {
         let ids = places.map(\.id)
-        guard !ids.isEmpty else { return }
+        guard !ids.isEmpty, ids != watching else { return }
+        watching = ids
         link.watch(places: ids)
         invitePump?.cancel()
         let stream = transport.invitations()

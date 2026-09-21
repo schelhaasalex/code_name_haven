@@ -53,6 +53,11 @@ chime, the face-down sensor, `SessionFlag` and the Live Activity no longer wait
 a minute behind a channel (rule 7). `CeremonyLinkTests` holds joins open to
 check the races: ending mid-join, and starting again before the first lands.
 
+`load()` runs on every return to the foreground, so it reconciles rather than
+reloads (`Reconciliation`): the same evening is refreshed, not restarted; one
+ended elsewhere ends here; and a failed read changes nothing. Offline is not
+signed out, and not "nothing is running".
+
 ## Compiles, but known to be wrong
 
 Found by reading, not yet fixed. None of these shows up as an error — each
