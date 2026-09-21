@@ -4,9 +4,22 @@ A phone-free ritual app. You set your phone down, the people around you do
 the same, and the place you did it in slowly becomes something. **V1 has no
 hardware.** The BLE/NFC puck is v2 and out of scope until asked for.
 
-Screens: see the canvas at `https://claude.ai/artifact/RuTNpxy63bmnsAGC6cXLjL`
-(21 screens plus an IA map). Where this document and the screens disagree,
-the screens are newer.
+## Where everything lives
+
+| | |
+|---|---|
+| This file | What it is, why, and the decisions already made |
+| `docs/APP-SPEC.md` | How the iOS app is built — targets, data layer, screens, ceremony, entry points |
+| `docs/SCHEMA-REVIEW.md` | The adversarial pass over the data model, and what it found |
+| `supabase/migrations/` | The schema, RLS and RPCs. Written, executed, tested |
+| `supabase/tests/run.sh` | 16 assertions against a scratch Postgres |
+| `copy/strings.json` | Every user-facing string. The voice is the primary asset |
+| `prototype/ceremony.html` | A working rehearsal of the five-phone moment |
+| [The canvas](https://claude.ai/artifact/RuTNpxy63bmnsAGC6cXLjL) | 21 screens plus an IA map |
+
+Where this document and the screens disagree, the screens are newer. Where the
+screens and `copy/strings.json` disagree, the strings file wins — it is what
+ships.
 
 ---
 
