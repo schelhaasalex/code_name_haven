@@ -11,6 +11,7 @@ struct SessionView: View {
     let onEnd: () -> Void
 
     @State private var elapsed: TimeInterval = 0
+    @State private var choosing = false
     private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private var solo: Bool { state.members.count <= 1 }
@@ -38,11 +39,18 @@ struct SessionView: View {
             VStack(alignment: .leading, spacing: 22) {
                 Text(solo ? t("session.line.solo") : t("session.line"))
                     .font(Type.display(20)).foregroundStyle(Palette.dust)
+                // For as long as it's Somewhere, saying where stays one tap
+                // away — the friend who arrives at nine can still find you.
+                if state.placeName == nil {
+                    TextAction(title: t("session.where"), tint: Palette.dust,
+                               icon: "wave.3.right") { choosing = true }
+                }
                 QuietButton(title: t("session.end"), night: true, action: onEnd)
             }
         }
         .ground(night: true)
         .background(alignment: .leading) { rings }
+        .sheet(isPresented: $choosing) { WhereSheet().environment(state) }
         .onReceive(tick) { _ in
             elapsed = Date().timeIntervalSince(state.startedAt ?? .now)
         }

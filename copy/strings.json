@@ -37,6 +37,12 @@
   "docked.scan": "Scan the card",
   "docked.footer": "Or name it later, when the evening's over.",
 
+  "where.title": "Where is this?",
+  "where.body": "Scan the card on the table, or pick somewhere you've been. If someone here has already started, you'll be in it together.",
+  "where.scan.unavailable": "This phone can't read cards. Pick a place instead.",
+  "where.places": "Somewhere you've been",
+  "where.stay": "Leave it as Somewhere",
+
   "join.eyebrow": "A moment ago",
   "join.someone": "Someone",
   "join.headline": "{name} set theirs down at {place}.",
@@ -45,18 +51,19 @@
   "join.secondary": "Not right now",
 
   "countup.headline": "Turn your phone over.",
-  "countup.count": "{count} of you so far.",
+  "countup.count": "{count} so far.",
   "countup.body": "The count only goes up. Anyone can join whenever they get here.",
   "countup.footer": "Nobody gets named for holding onto theirs.",
   "countup.leave": "Leave",
 
-  "session.count": "{count} of you.",
+  "session.count": "{count}.",
   "session.count.solo": "Just you.",
   "session.line": "Docked. See you in a bit.",
   "session.line.solo": "Back when you're back.",
+  "session.where": "Scan the card, or pick a place",
   "session.end": "End",
 
-  "lockscreen.members": "{count} of you",
+  "lockscreen.members": "{count}",
   "lockscreen.members.solo": "Just you, so far",
   "lockscreen.end": "End",
   "lockscreen.note": "Ending the session never asks you to unlock.",
@@ -66,7 +73,7 @@
   "starttap.note": "Tapped the card on the way in. The screen never unlocked, and the app never opened.",
 
   "end.headline": "{duration} reclaimed.",
-  "end.who": "{count} of you, at {place}.",
+  "end.who": "{count}, at {place}.",
   "end.rhythm": "That's {count} evenings this week. A rhythm, more or less.",
   "end.rhythm.first": "The first evening this week.",
   "end.done": "Done",

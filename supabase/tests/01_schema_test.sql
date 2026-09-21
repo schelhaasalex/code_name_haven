@@ -416,7 +416,7 @@ begin
     select name from unnest(array[
       'resolve_place', 'create_place', 'start_or_join', 'end_session',
       'record_retroactive', 'gathering_members', 'place_summary', 'my_rhythm',
-      'name_somewhere', 'merge_places']) as name
+      'name_somewhere', 'merge_places', 'move_evening']) as name
     where not exists (
       select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'public' and p.proname = name)
@@ -428,7 +428,7 @@ begin
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public'
      and has_function_privilege('authenticated', p.oid, 'execute');
-  assert v_wrapped = 10, format('expected 10 callable wrappers, found %s', v_wrapped);
+  assert v_wrapped = 11, format('expected 11 callable wrappers, found %s', v_wrapped);
 
   -- The scheduler's job is not a client's to call: nine hours of
   -- phone-on-the-side becoming 180 minutes has to happen TO you, not by you.
@@ -441,7 +441,7 @@ begin
    where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute');
   assert v_anon = 0, format('anon can execute %s functions in public', v_anon);
 
-  raise notice 'PASS 12  ten wrappers callable by authenticated, none by anon';
+  raise notice 'PASS 12  eleven wrappers callable by authenticated, none by anon';
 end $$;
 
 -- ============================================================ FINDING 15
@@ -537,6 +537,79 @@ begin
   assert not reclaim_test.can_listen('authenticated', v_host, p), 'someone who left must not hear the place';
 
   raise notice 'PASS 15  channels open to members only, uppercase topics match, anon and presence refused';
+end $$;
+
+-- ============================================================ 16
+-- Scanning in after setting your phone down. The host started as Somewhere;
+-- a friend arrives and taps the card, opening an evening at the place. The
+-- host scans too, and must end up in the SAME evening as the friend — with
+-- their own start time, so no credit changes.
+
+do $$
+declare
+  v_host   uuid := '77777777-7777-7777-7777-777777777777';
+  v_friend uuid := '88888888-8888-8888-8888-888888888888';
+  v_place uuid; v_solo_place uuid;
+  v_host_gathering uuid; v_friend_gathering uuid; v_moved uuid;
+  v_started timestamptz; v_members int; v_failed boolean;
+begin
+  insert into auth.users (id, email) values (v_host, 'mover@example.test'),
+                                            (v_friend, 'guest@example.test');
+  insert into profiles (id, display_name) values (v_host, 'Mover'), (v_friend, 'Guest');
+
+  perform auth.login(v_friend);
+  v_place := app.create_place('open-hearth', 'a-card-on-the-hearth-secret', 'The Hearth');
+  perform app.start_or_join(v_place, 'tag', 'UTC');
+  select gathering_id into v_friend_gathering from sessions where profile_id = v_friend and ended_at is null;
+
+  perform auth.login(v_host);
+  perform app.start_or_join(null, 'app', 'UTC');
+  select gathering_id, started_at into v_host_gathering, v_started
+    from sessions where profile_id = v_host and ended_at is null;
+
+  v_moved := app.move_evening(v_place);
+  assert v_moved = v_friend_gathering, 'the host must land in the evening already open there';
+  assert (select gathering_id from sessions where profile_id = v_host and ended_at is null) = v_friend_gathering,
+    'the host''s session must have moved';
+  assert (select started_at from sessions where profile_id = v_host and ended_at is null) = v_started,
+    'moving must not change when the host started';
+  assert not exists (select 1 from gatherings where id = v_host_gathering),
+    'the empty placeless evening left behind must be gone';
+  select count(*) into v_members from app.gathering_members(v_friend_gathering);
+  assert v_members = 2, format('host and friend should share one evening, saw %s', v_members);
+  assert exists (select 1 from place_people where place_id = v_place and profile_id = v_host and left_at is null),
+    'the host must now belong to the place';
+
+  -- Already here: nothing moves.
+  assert app.move_evening(v_place) = v_friend_gathering, 'moving to where you are changes nothing';
+
+  -- Alone, with nothing open at the place: the evening itself becomes the place's.
+  perform app.end_session(null);
+  v_solo_place := app.create_place('quiet-landing', 'a-card-on-the-landing-secret', 'The Landing');
+  perform app.start_or_join(null, 'app', 'UTC');
+  select gathering_id into v_host_gathering from sessions where profile_id = v_host and ended_at is null;
+  assert app.move_evening(v_solo_place) = v_host_gathering, 'a solo evening should become the place''s, not be replaced';
+  assert (select place_id from gatherings where id = v_host_gathering) = v_solo_place, 'the evening now has the place';
+
+  -- Back into an evening you already left tonight: refused, not stitched.
+  v_failed := false;
+  begin
+    perform app.move_evening(v_place);
+  exception when others then v_failed := true;
+  end;
+  assert v_failed, 'rejoining an evening you ended tonight must be refused, not merged';
+
+  -- No live evening: nothing to move.
+  perform app.end_session(null);
+  v_failed := false;
+  begin
+    perform app.move_evening(v_place);
+  exception when others then v_failed := true;
+  end;
+  assert v_failed, 'with nothing running there is nothing to move';
+
+  perform auth.logout();
+  raise notice 'PASS 16  scanning in mid-evening joins the evening already there, start time kept';
 end $$;
 
 do $$ begin raise notice '--- all assertions held ---'; end $$;

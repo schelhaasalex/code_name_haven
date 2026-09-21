@@ -14,6 +14,11 @@ enum URLRouter {
             state.banner = t("error.card")
             return
         }
-        await state.setItDown(place: place, source: .tag)
+        // Already down: the card says where, it doesn't start a second evening.
+        if state.isLive {
+            await state.moveHere(place)
+        } else {
+            await state.setItDown(place: place, source: .tag)
+        }
     }
 }

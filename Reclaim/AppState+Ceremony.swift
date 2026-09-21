@@ -69,6 +69,7 @@ extension AppState {
         listen()
 
         gathering = try? await repo.gathering(s.gatheringId)
+        await learnPlace(of: gathering)
         members = (try? await repo.members(of: s.gatheringId)) ?? []
         await LiveActivityController.start(
             gatheringId: s.gatheringId,
