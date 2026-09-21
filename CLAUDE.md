@@ -177,7 +177,7 @@ against hosted Supabase.
   `docs/STYLE.md` is the long version.
 
 ```sh
-xcodebuild test -scheme ReclaimKit -destination 'platform=iOS Simulator,name=iPhone 16'
+xcodebuild test -scheme ReclaimKit -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 
 ## Shape
