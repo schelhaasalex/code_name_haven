@@ -1,21 +1,21 @@
 import Foundation
 
+/// How the app says numbers, people and time. The words themselves live in
+/// `copy/strings.json` under `say.*`, like every other string (rule 2) — this
+/// only decides which one to use.
 public enum Say {
-    private static let words = ["Nobody", "Just you", "Two of you", "Three of you",
-                               "Four of you", "Five of you", "Six of you",
-                               "Seven of you", "Eight of you", "Nine of you"]
 
     /// "Three of you" — spelled out to nine, then numeric. Warmth over precision.
     public static func count(_ n: Int) -> String {
-        n >= 0 && n < words.count ? words[n] : "\(n) of you"
+        let words = Copy.list("say.count")
+        return n >= 0 && n < words.count ? words[n] : t("say.count.more", "count", "\(n)")
     }
 
-    private static let smallNumbers = ["no", "one", "two", "three", "four", "five",
-                                       "six", "seven", "eight", "nine", "ten",
-                                       "eleven", "twelve"]
-
+    /// "three" — lowercase, for the middle of a sentence. A template that
+    /// opens with `{count}` is capitalised by `t()`.
     public static func number(_ n: Int) -> String {
-        n >= 0 && n < smallNumbers.count ? smallNumbers[n] : "\(n)"
+        let words = Copy.list("say.number")
+        return n >= 0 && n < words.count ? words[n] : "\(n)"
     }
 
     /// "Maya", "Maya and Dad", "Maya, Dad and Sam".
@@ -27,17 +27,19 @@ public enum Say {
         switch people.count {
         case 0:  ""
         case 1:  people[0]
-        case 2:  "\(people[0]) and \(people[1])"
-        default: people.dropLast().joined(separator: ", ") + " and " + people[people.count - 1]
+        case 2:  t("say.names.two", "first", people[0], "second", people[1])
+        default: t("say.names.many",
+                   "list", people.dropLast().joined(separator: t("say.names.separator")),
+                   "last", people[people.count - 1])
         }
     }
 
     /// "2h 14m", "48m". Never "0h 48m".
     public static func duration(minutes: Int) -> String {
         let h = minutes / 60, m = minutes % 60
-        if h == 0 { return "\(m)m" }
-        if m == 0 { return "\(h)h" }
-        return "\(h)h \(m)m"
+        if h == 0 { return t("say.duration.minutes", "m", "\(m)") }
+        if m == 0 { return t("say.duration.hours", "h", "\(h)") }
+        return t("say.duration.both", "h", "\(h)", "m", "\(m)")
     }
 
     /// "an hour and 40" — for prose, where a bare "100m" reads as a readout.
@@ -46,12 +48,12 @@ public enum Say {
     public static func spokenDuration(minutes: Int) -> String {
         let h = minutes / 60, m = minutes % 60
         switch (h, m) {
-        case (0, 1): return "a minute"
-        case (0, let m): return "\(number(m)) minutes"
-        case (1, 0): return "an hour"
-        case (1, let m): return "an hour and \(number(m))"
-        case (let h, 0): return "\(number(h)) hours"
-        case (let h, let m): return "\(number(h)) hours and \(number(m))"
+        case (0, 1):         return t("say.spoken.minute")
+        case (0, let m):     return t("say.spoken.minutes", "m", number(m))
+        case (1, 0):         return t("say.spoken.hour")
+        case (1, let m):     return t("say.spoken.hour.minutes", "m", number(m))
+        case (let h, 0):     return t("say.spoken.hours", "h", number(h))
+        case (let h, let m): return t("say.spoken.hours.minutes", "h", number(h), "m", number(m))
         }
     }
 

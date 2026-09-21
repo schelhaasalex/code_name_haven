@@ -40,12 +40,21 @@ public enum Copy {
 /// `t("home.headline")`, or `t("place.stage.since", "month", "March")` →
 /// "Since March." Short enough to use everywhere without friction, and the one
 /// substitution path — a token nothing replaces reaches a person verbatim.
+///
+/// A template that OPENS with `{count}` starts a sentence with the app's own
+/// lowercase word — "three evenings this week" — so its first letter is
+/// capitalised. Only `{count}`: a name or a place is what a person typed, and
+/// the app doesn't correct how someone writes their own kitchen.
 public func t(_ key: String, _ substitutions: String...) -> String {
-    var out = Copy[key]
+    let template = Copy[key]
+    var out = template
     var i = 0
     while i + 1 < substitutions.count {
         out = out.replacingOccurrences(of: "{\(substitutions[i])}", with: substitutions[i + 1])
         i += 2
+    }
+    if template.hasPrefix("{count}"), let first = out.first {
+        out = first.uppercased() + out.dropFirst()
     }
     return out
 }

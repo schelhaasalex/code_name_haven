@@ -143,7 +143,7 @@ struct HomeView: View {
     private var footer: some View {
         NavigationLink(value: Route.rhythm) {
             HStack {
-                Text(t("home.footer", "count", Say.number(eveningsThisWeek)))
+                Text(footerLine)
                     .font(Type.body(15)).foregroundStyle(Palette.ink2)
                 Spacer()
                 DotWeek(days: weekDots)
@@ -164,6 +164,16 @@ struct HomeView: View {
     }
 
     private var eveningsThisWeek: Int { EveningCalendar.count(weekDots) }
+
+    /// Never "no evenings this week": a week that hasn't had one yet is ahead
+    /// of you, not behind.
+    private var footerLine: String {
+        switch eveningsThisWeek {
+        case 0:     t("home.footer.none")
+        case 1:     t("home.footer.one")
+        case let n: t("home.footer", "count", Say.number(n))
+        }
+    }
 }
 
 #Preview("Home") {
