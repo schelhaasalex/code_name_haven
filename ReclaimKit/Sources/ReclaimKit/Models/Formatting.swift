@@ -55,6 +55,30 @@ public enum Say {
         }
     }
 
+    /// "Monday evening". Replaces an eyebrow that said "Tuesday evening" every
+    /// day, because the mockup did. Before five in the morning it is still the
+    /// night before — an evening that ends at one belongs to the day it
+    /// started, the same way `local_date` credits it.
+    public static func partOfDay(_ date: Date, calendar: Calendar = .current) -> String {
+        let hour = calendar.component(.hour, from: date)
+        let part: String
+        var day = date
+        switch hour {
+        case 5..<12:  part = "time.morning"
+        case 12..<17: part = "time.afternoon"
+        case 17..<22: part = "time.evening"
+        default:
+            part = "time.night"
+            if hour < 5 { day = calendar.date(byAdding: .day, value: -1, to: date) ?? date }
+        }
+        let weekday = DateFormatter()
+        weekday.calendar = calendar
+        weekday.timeZone = calendar.timeZone
+        weekday.locale = calendar.locale ?? .current
+        weekday.setLocalizedDateFormatFromTemplate("EEEE")
+        return t(part, "day", weekday.string(from: day))
+    }
+
     public static func clock(_ elapsed: TimeInterval) -> String {
         let s = max(0, Int(elapsed))
         return "\(s / 60):" + String(format: "%02d", s % 60)

@@ -16,7 +16,10 @@ struct RootView: View {
             case .signedOut:
                 WelcomeView()
             case .ready:
-                if state.isLive {
+                if let ended = state.justEnded {
+                    SessionEndView(startedAt: ended.startedAt, minutes: ended.minutes,
+                                   people: ended.people, place: ended.place)
+                } else if state.isLive {
                     SessionFlowView()
                 } else {
                     HomeView()
@@ -24,6 +27,7 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.45), value: state.isLive)
+        .animation(.easeInOut(duration: 0.45), value: state.justEnded)
         // Screen 4 covers whatever you were looking at, because the whole
         // point is that it reaches you across the room.
         .fullScreenCover(item: Binding(get: { state.invitation },

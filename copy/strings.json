@@ -5,10 +5,14 @@
 
   "welcome.headline": "Set your phone down. We'll take it from here.",
   "welcome.body": "No blocking, no lectures. Just a quiet count of the hours you spend away from it, and who you spent them with.",
+  "time.morning": "{day} morning",
+  "time.afternoon": "{day} afternoon",
+  "time.evening": "{day} evening",
+  "time.night": "{day} night",
+
   "welcome.signin": "Continue with Apple",
   "welcome.footer": "For the people in the room, not the ones in your pocket.",
 
-  "home.eyebrow": "Tuesday evening",
   "home.headline": "Ready when you are.",
   "home.body": "Set your phone down and we'll start counting. Where you are is optional.",
   "home.primary": "Set it down",
@@ -61,10 +65,10 @@
   "starttap.banner.body": "See you in a bit.",
   "starttap.note": "Tapped the card on the way in. The screen never unlocked, and the app never opened.",
 
-  "end.eyebrow": "Tuesday evening",
   "end.headline": "{duration} reclaimed.",
   "end.who": "{count} of you, at {place}.",
   "end.rhythm": "That's {count} evenings this week. A rhythm, more or less.",
+  "end.rhythm.first": "The first evening this week.",
   "end.done": "Done",
 
   "place.live": "{names} are here right now.",
