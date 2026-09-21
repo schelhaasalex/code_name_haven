@@ -5,10 +5,6 @@ import ReclaimKit
 /// nobody is signed in. There is no tab bar and no back button out of a
 /// session — the shape of the app is this switch.
 struct RootView: View {
-    /// The splash option that ships. Three are built — `prototype/splash.html`
-    /// is where they get compared — and choosing between them is this line.
-    private static let splash = SplashVariant.settle
-
     @Environment(AppState.self) private var state
     @Environment(\.scenePhase) private var scenePhase
     @State private var splashDone = false
@@ -38,7 +34,7 @@ struct RootView: View {
         // loading, already live, already reachable.
         .overlay {
             if !splashDone {
-                SplashView(variant: Self.splash) { splashDone = true }
+                SplashView { splashDone = true }
             }
         }
         // An invitation cuts the splash short rather than waiting it out. It is

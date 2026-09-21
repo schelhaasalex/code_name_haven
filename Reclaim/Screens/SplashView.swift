@@ -3,7 +3,14 @@ import ReclaimKit
 
 /// Screen 0. The first two seconds.
 ///
-/// Three things make this one polished rather than merely present:
+/// The ring draws itself from the top and the dot settles into the middle of
+/// it — the mark is a table seen from above, so this is a table being laid.
+/// It does not reuse `Brand`, deliberately: drawing-on needs `trim`, and a
+/// `trim` parameter on the mark every other screen draws would put splash
+/// timing into a component that has no business knowing about it. At rest the
+/// two are the same shape, and that is the part worth keeping identical.
+///
+/// Three things make this polished rather than merely present:
 ///
 /// 1. **It never waits.** The splash runs on its own clock and leaves on it.
 ///    It is an overlay, not a phase — nothing underneath is gated on it and it
@@ -17,19 +24,19 @@ import ReclaimKit
 /// 3. **Reduce Motion is a different splash, not a faster one.** Rule 4's
 ///    courtesy, applied to a preference someone has already stated.
 struct SplashView: View {
-    let variant: SplashVariant
     let onFinished: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Flipped once, on appear. Every beat below keys off it at its own delay.
     @State private var run = false
-    @State private var handOff = false
     @State private var gone = false
 
-    private var beats: SplashChoreography { variant.choreography(reduceMotion: reduceMotion) }
+    private var beats: SplashChoreography { .launch(reduceMotion: reduceMotion) }
+    private let size: CGFloat = 96
 
     var body: some View {
         VStack(spacing: 26) {
-            figure
+            mark
             Text(t("app.name"))
                 .eyebrow(Palette.muted)
                 .opacity(run ? 1 : 0)
@@ -46,18 +53,32 @@ struct SplashView: View {
         .task { await play() }
     }
 
-    @ViewBuilder private var figure: some View {
-        if reduceMotion {
-            // Every option collapses to the same still frame: the composed
-            // mark, faded up. With a 10ms figure beat, `SplashSettle` is it.
-            SplashSettle(beats: beats, run: run)
-        } else {
-            switch variant {
-            case .settle:   SplashSettle(beats: beats, run: run)
-            case .faceDown: SplashFaceDown(beats: beats, run: run, handOff: handOff)
-            case .lamp:     SplashLamp(beats: beats, run: run)
-            }
+    /// Under Reduce Motion the beats are 10ms, so the same two shapes compose
+    /// instead of drawing — a still frame rather than a fast one.
+    private var mark: some View {
+        ZStack {
+            Circle()
+                .trim(from: 0, to: run ? 1 : 0)
+                .stroke(Palette.clay,
+                        style: StrokeStyle(lineWidth: size * 0.068, lineCap: .round))
+                .frame(width: size * 0.84)
+                // Trim starts at 3 o'clock; a table is laid from the top.
+                .rotationEffect(.degrees(-90))
+                .animation(.timingCurve(0.22, 0.61, 0.36, 1, duration: beats.figure.duration)
+                    .delay(beats.figure.delay), value: run)
+
+            Circle()
+                .fill(Palette.clay)
+                .frame(width: size * 0.3)
+                .scaleEffect(run ? 1 : 0.2)
+                .opacity(run ? 1 : 0)
+                // High damping on purpose. A dot that bounces is a different
+                // brand — this one arrives and stays put.
+                .animation(.spring(response: beats.core.duration, dampingFraction: 0.86)
+                    .delay(beats.core.delay), value: run)
         }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
     }
 
     private func play() async {
@@ -67,10 +88,7 @@ struct SplashView: View {
         try? await Task.sleep(for: .milliseconds(16))
         run = true
 
-        try? await Task.sleep(for: .seconds(beats.core.delay))
-        handOff = true
-
-        try? await Task.sleep(for: .seconds(beats.exit.delay - beats.core.delay))
+        try? await Task.sleep(for: .seconds(beats.exit.delay))
         gone = true
 
         try? await Task.sleep(for: .seconds(beats.exit.duration))
@@ -79,5 +97,5 @@ struct SplashView: View {
 }
 
 #Preview {
-    SplashView(variant: .settle) {}
+    SplashView {}
 }

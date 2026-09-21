@@ -4,25 +4,18 @@ import XCTest
 /// A splash is the one screen nobody asked for, so the things worth asserting
 /// about it are all about restraint: it ends, it ends soon, nothing is still
 /// arriving while it leaves, and there is a still moment in the middle.
-///
-/// These run over `SplashVariant.allCases`, which is the point — a fourth
-/// option added without timing fails here rather than on a phone.
 final class SplashChoreographyTests: XCTestCase {
 
-    private var every: [SplashChoreography] {
-        SplashVariant.allCases.map { $0.choreography() } + [.still]
-    }
+    /// Both of the things screen 0 can be: moving, and not.
+    private let every: [SplashChoreography] = [.settle, .still]
 
     // MARK: - It ends, and soon
 
-    func testNoOptionOutstaysTheCeiling() {
-        for variant in SplashVariant.allCases {
-            let total = variant.choreography().total
-            XCTAssertLessThanOrEqual(
-                total, SplashChoreography.ceiling,
-                "\(variant.rawValue) runs \(total)s — past the ceiling a brand moment is a wait"
-            )
-        }
+    func testTheSplashDoesNotOutstayTheCeiling() {
+        XCTAssertLessThanOrEqual(
+            SplashChoreography.settle.total, SplashChoreography.ceiling,
+            "past the ceiling a brand moment is a wait"
+        )
     }
 
     func testEveryBeatIsRealAndForwards() {
@@ -53,16 +46,11 @@ final class SplashChoreographyTests: XCTestCase {
         }
     }
 
-    func testTheCoreOverlapsTheFigureRatherThanQueueingAfterIt() {
-        // Each of the three is one gesture, not a sequence of three. If the dot
-        // waits politely for the ring to finish, it reads as a checklist.
-        for variant in SplashVariant.allCases {
-            let c = variant.choreography()
-            XCTAssertLessThan(
-                c.core.delay, c.figure.end,
-                "\(variant.rawValue) queues its beats — they should overlap"
-            )
-        }
+    func testTheDotOverlapsTheRingRatherThanQueueingAfterIt() {
+        // It is one gesture, not two. If the dot waits politely for the ring to
+        // finish drawing, it reads as a checklist.
+        let c = SplashChoreography.settle
+        XCTAssertLessThan(c.core.delay, c.figure.end, "the beats queue — they should overlap")
     }
 
     /// The hold is what separates the last thing arriving from the dissolve.
@@ -75,10 +63,9 @@ final class SplashChoreographyTests: XCTestCase {
 
     // MARK: - Reduce Motion
 
-    func testReduceMotionCollapsesEveryOptionToTheSameStillFrame() {
-        for variant in SplashVariant.allCases {
-            XCTAssertEqual(variant.choreography(reduceMotion: true), .still)
-        }
+    func testReduceMotionGetsTheStillFrameAndNotAFasterOne() {
+        XCTAssertEqual(SplashChoreography.launch(reduceMotion: true), .still)
+        XCTAssertEqual(SplashChoreography.launch(reduceMotion: false), .settle)
     }
 
     func testTheStillVersionIsShortAndStillHolds() {
@@ -100,11 +87,5 @@ final class SplashChoreographyTests: XCTestCase {
         XCTAssertEqual(half.delay, 1.0, accuracy: 0.0001)
         XCTAssertEqual(half.duration, 0.5, accuracy: 0.0001)
         XCTAssertEqual(half.end, 1.5, accuracy: 0.0001)
-    }
-
-    func testEveryVariantIsNamedForItsRawValue() {
-        // The raw value is what `prototype/splash.html` keys its columns on.
-        XCTAssertEqual(SplashVariant.allCases.map(\.rawValue),
-                       ["settle", "faceDown", "lamp"])
     }
 }

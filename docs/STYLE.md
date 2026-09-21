@@ -49,7 +49,6 @@ The current set:
 | `StatRow` | Label on the left, a display-face number on the right |
 | `DotWeek` | The week of dots on Home's footer |
 | `Ground` | The paper or night ground, gutters, safe area |
-| `SplashSettle` / `SplashFaceDown` / `SplashLamp` | The three splash figures. One ships; the other two are there to be compared against it |
 
 **A component takes data, not `AppState`.** `PhoneSlab(name:isMe:isDown:)`, not
 `PhoneSlab(member:state:)`. Screens read state; components render what they're
@@ -79,7 +78,9 @@ exception worth removing when those grow.
 - Screens: `ThingView`, matching the canvas. `HomeView` is screen 2.
   `SplashView` is screen 0 and is the one screen with no canvas — it is an
   overlay on `RootView`, not a case of `AppState.Phase`, because it must not be
-  something the app can be stuck in.
+  something the app can be stuck in. Two other splashes were built beside it and
+  cut; `prototype/splash.html` still runs all three, which is where comparing
+  them belongs.
 - Components: the noun. `PhoneSlab`, not `PhoneSlabView`.
 - Copy keys: `screen.element`, lowercase, dot-separated.
 - Booleans read as assertions: `isLive`, `hasBeenOffered`, `restDayAvailable`.
