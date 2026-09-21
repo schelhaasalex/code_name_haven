@@ -7,6 +7,15 @@ import Foundation
 ///
 /// The product's claim is that a session starts and ends without opening the
 /// app. These are how.
+///
+/// All three are `LiveActivityIntent`s, and that is load-bearing rather than
+/// descriptive. A widget or control runs a plain intent in its own extension,
+/// where there is no repository and no signed-in session — so the End button
+/// and the Control Centre toggle did nothing. A `LiveActivityIntent` runs in
+/// the app's process, launched in the background if it has to be, and is also
+/// what lets an evening started from Siri or a control start its Live
+/// Activity at all. The Siri phrases live in the app target
+/// (`ReclaimShortcuts`): App Shortcuts are only read from there.
 
 /// Set by the app at launch so intents can reach the database without booting
 /// the whole SwiftUI stack.
@@ -15,7 +24,7 @@ public enum IntentEnvironment {
     nonisolated(unsafe) public static var onSessionChanged: (@Sendable () async -> Void)?
 }
 
-public struct StartSessionIntent: AppIntent {
+public struct StartSessionIntent: AppIntent, LiveActivityIntent {
     public static var title: LocalizedStringResource = "Set my phone down"
     public static var description = IntentDescription("Starts an evening.")
     public static var openAppWhenRun: Bool = false
@@ -38,7 +47,7 @@ public struct StartSessionIntent: AppIntent {
 /// What the Control Centre toggle runs. iOS 18 only — the app's own floor is
 /// 17, and a control is not worth raising it for.
 @available(iOS 18.0, *)
-public struct ToggleSessionIntent: SetValueIntent {
+public struct ToggleSessionIntent: SetValueIntent, LiveActivityIntent {
     public static var title: LocalizedStringResource = "Set it down"
 
     @Parameter(title: "Running")
@@ -59,7 +68,7 @@ public struct ToggleSessionIntent: SetValueIntent {
     }
 }
 
-public struct EndSessionIntent: AppIntent {
+public struct EndSessionIntent: AppIntent, LiveActivityIntent {
     public static var title: LocalizedStringResource = "End the evening"
     public static var description = IntentDescription("Ends the session that's running.")
     public static var openAppWhenRun: Bool = false
@@ -71,29 +80,5 @@ public struct EndSessionIntent: AppIntent {
         try await repo.endSession(nil)
         await IntentEnvironment.onSessionChanged?()
         return .result()
-    }
-}
-
-/// Free Siri, with no setup: these appear in the Shortcuts app by themselves.
-/// Chaining to "Set Focus" still needs a user-built shortcut — App Shortcuts
-/// can only contain our own actions.
-public struct ReclaimShortcuts: AppShortcutsProvider {
-    public static var appShortcuts: [AppShortcut] {
-        AppShortcut(
-            intent: StartSessionIntent(),
-            phrases: [
-                "Start a \(.applicationName) session",
-                "Set my phone down with \(.applicationName)",
-                "\(.applicationName) this evening"
-            ],
-            shortTitle: "Set it down",
-            systemImageName: "moon.stars"
-        )
-        AppShortcut(
-            intent: EndSessionIntent(),
-            phrases: ["End my \(.applicationName) session"],
-            shortTitle: "End",
-            systemImageName: "checkmark.circle"
-        )
     }
 }

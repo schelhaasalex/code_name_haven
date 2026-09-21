@@ -136,6 +136,17 @@ else
   fi
 fi
 
+# 10. App Shortcuts are only read from the app target. Declared in ReclaimKit,
+#     the intents were registered but the Siri phrases never were — the build
+#     succeeded and `autoShortcuts` in the app's metadata came out empty.
+note "Siri phrases live in the app target"
+elsewhere=$(grep -l 'AppShortcutsProvider' $(find ReclaimKit/Sources ReclaimWidgets -name '*.swift') 2>/dev/null)
+for f in $elsewhere; do
+  bad "$f declares an AppShortcutsProvider — only one in Reclaim/ is ever read"
+done
+[ "$(grep -l ': AppShortcutsProvider' $(find Reclaim -name '*.swift') 2>/dev/null | wc -l | tr -d ' ')" = "1" ] \
+  || bad "Reclaim/ should declare exactly one AppShortcutsProvider"
+
 echo
 if [ "$FAIL" -eq 0 ]; then
   echo "Shape is fine."

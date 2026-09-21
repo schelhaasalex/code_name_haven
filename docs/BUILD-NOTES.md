@@ -58,20 +58,25 @@ reloads (`Reconciliation`): the same evening is refreshed, not restarted; one
 ended elsewhere ends here; and a failed read changes nothing. Offline is not
 signed out, and not "nothing is running".
 
-## Compiles, but known to be wrong
+## Starting and ending without opening the app
 
-Found by reading, not yet fixed. None of these shows up as an error — each
-fails silently:
+Three things were wrong here and none of them showed up as an error:
 
-- **The Live Activity's End button and the Control Centre toggle.** A plain
-  `AppIntent` run from a widget executes in the extension's process, where
-  `IntentEnvironment.repository` is nil and the Supabase session (in the app's
-  Keychain) isn't visible. `LiveActivityIntent` runs in the app's process.
-- **`IntentEnvironment.onSessionChanged` is never assigned**, so a session
-  started from Siri doesn't reach `AppState`, the Live Activity or
-  `SessionFlag`.
-- **Siri phrases.** `ReclaimShortcuts` lives in the package; App Intents
-  metadata is extracted per target, so it may need to move into the app.
+- **The End button and the Control Centre toggle did nothing.** A plain
+  `AppIntent` run from a widget or control executes in the extension's
+  process, where `IntentEnvironment.repository` is nil and the Supabase session
+  isn't visible. All three intents are now `LiveActivityIntent`s, which run in
+  the app's process — Apple's own control example is `SetValueIntent,
+  LiveActivityIntent` for the same reason.
+- **`IntentEnvironment.onSessionChanged` was never assigned.** It now calls
+  `load()`, which reconciles: an evening started by Siri is adopted, one ended
+  by the Live Activity is ended here. `LiveActivityController.end()` ends every
+  activity, because a background relaunch doesn't remember the one it's ending.
+- **The Siri phrases were never registered.** Declared in ReclaimKit, the
+  intents were extracted but `autoShortcuts` in the app's
+  `Metadata.appintents/extract.actionsdata` was empty. `ReclaimShortcuts` now
+  lives in the app target, and `scripts/shape.sh` keeps it there. That file is
+  the thing to read if the phrases ever go missing again.
 
 Still unexercised: anything behind sign-in (needs the real publishable key),
 NFC (the simulator has none) and anything needing a signed device build.
