@@ -1,0 +1,186 @@
+import SwiftUI
+import ReclaimKit
+
+/// Screens 2 and 11 — Home, and Home when there's nothing in it yet.
+///
+/// The root of the app. NO TAB BAR: a tab bar advertises that there's something
+/// to browse, which is the one thing this app shouldn't say. Places and settings
+/// sit in the header; your rhythm is the footer.
+struct HomeView: View {
+    @Environment(AppState.self) private var state
+    @State private var route: Route?
+
+    enum Route: Hashable { case places, rhythm, settings }
+
+    private var isDayOne: Bool { state.places.isEmpty && state.rhythm.longestRunDays == 0 }
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 0) {
+                header
+                Spacer(minLength: 20)
+                if isDayOne { dayOne } else { usual }
+                Spacer(minLength: 20)
+                actions
+                if !isDayOne { footer }
+            }
+            .ground()
+            .navigationDestination(for: Route.self) { route in
+                switch route {
+                case .places:   PlacesView()
+                case .rhythm:   RhythmView()
+                case .settings: SettingsView()
+                }
+            }
+            .sheet(item: Binding(get: { state.pending }, set: { _ in state.dismissInterruption() })) {
+                InterruptionSheet(interruption: $0)
+            }
+        }
+    }
+
+    private var header: some View {
+        HStack {
+            Eyebrow(text: "Reclaim")
+            Spacer()
+            HStack(spacing: 4) {
+                NavigationLink(value: Route.places) {
+                    Image(systemName: "square.on.square.dashed")
+                        .font(.system(size: 19)).foregroundStyle(Palette.ink2)
+                        .frame(width: 44, height: 44)
+                }
+                .accessibilityLabel("Your places")
+
+                NavigationLink(value: Route.settings) {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 19)).foregroundStyle(Palette.ink2)
+                        .frame(width: 44, height: 44)
+                }
+                .accessibilityLabel("Settings")
+            }
+        }
+    }
+
+    private var usual: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(t("home.eyebrow")).eyebrow(Palette.clay)
+            Text(t("home.headline")).font(Type.hero).foregroundStyle(Palette.ink)
+            Text(t("home.body")).font(Type.lede).foregroundStyle(Palette.ink2).lineSpacing(4)
+        }
+    }
+
+    private var dayOne: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(t("dayone.headline")).font(Type.hero).foregroundStyle(Palette.ink)
+            Text(t("dayone.body")).font(Type.lede).foregroundStyle(Palette.ink2).lineSpacing(4)
+        }
+    }
+
+    private var actions: some View {
+        VStack(spacing: 20) {
+            PrimaryButton(title: t("home.primary")) {
+                Task { await state.setItDown() }
+            }
+
+            if isDayOne {
+                inviteCard
+            } else if let place = state.usualPlace, let name = place.name {
+                suggestion(place: place, name: name)
+            }
+        }
+    }
+
+    private func suggestion(place: Place, name: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button {
+                Task { await state.setItDown(place: place.id) }
+            } label: {
+                HStack(spacing: 14) {
+                    Image(systemName: "rectangle.on.rectangle.angled")
+                        .foregroundStyle(Palette.clay)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(t("home.suggestion.title", "place", name))
+                            .font(Type.body(16, weight: .medium))
+                            .foregroundStyle(Palette.ink)
+                        Text(t("home.suggestion.body"))
+                            .font(Type.note).foregroundStyle(Palette.muted)
+                            .multilineTextAlignment(.leading)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Palette.hairline)
+                }
+                .padding(16)
+                .background(Palette.paper, in: RoundedRectangle(cornerRadius: 16))
+                .overlay { RoundedRectangle(cornerRadius: 16).stroke(Palette.line, lineWidth: 1) }
+            }
+            .buttonStyle(.plain)
+
+            // Said plainly rather than implied: this is history, not location.
+            Text(t("home.suggestion.note"))
+                .font(Type.note).foregroundStyle(Palette.muted).lineSpacing(2)
+                .padding(.horizontal, 4)
+        }
+    }
+
+    private var inviteCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(t("dayone.invite.title")).font(Type.body(21)).foregroundStyle(Palette.ink)
+            Text(t("dayone.invite.body")).font(Type.body(14))
+                .foregroundStyle(Palette.ink2).lineSpacing(3)
+            ShareLink(item: URL(string: "https://reclaim.app")!) {
+                Text(t("dayone.invite.action"))
+                    .font(Type.body(15, weight: .medium))
+                    .frame(maxWidth: .infinity, minHeight: 46)
+                    .foregroundStyle(Palette.ink2)
+                    .overlay { Capsule().stroke(Palette.hairline, lineWidth: 1) }
+            }
+        }
+        .padding(20)
+        .background(Palette.linen, in: RoundedRectangle(cornerRadius: 18))
+    }
+
+    private var footer: some View {
+        NavigationLink(value: Route.rhythm) {
+            HStack {
+                Text(t("home.footer", "count", Say.number(eveningsThisWeek)))
+                    .font(Type.body(15)).foregroundStyle(Palette.ink2)
+                Spacer()
+                DotWeek(days: weekDots)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Palette.hairline)
+            }
+            .frame(minHeight: 44)
+            .padding(.top, 20)
+            .overlay(alignment: .top) { Rectangle().fill(Palette.line).frame(height: 1) }
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 26)
+    }
+
+    /// Monday-first week. true = docked, false = missed, nil = still to come.
+    private var weekDots: [Bool?] {
+        var cal = Calendar.current
+        cal.firstWeekday = 2
+        guard let week = cal.dateInterval(of: .weekOfYear, for: .now) else { return [] }
+        return (0..<7).compactMap { offset -> Bool?? in
+            guard let day = cal.date(byAdding: .day, value: offset, to: week.start)
+            else { return nil }
+            if cal.startOfDay(for: day) > cal.startOfDay(for: .now) { return .some(nil) }
+            return .some(state.evenings.contains(PlainDate.string(from: day)))
+        }
+    }
+
+    private var eveningsThisWeek: Int {
+        weekDots.compactMap { $0 }.filter { $0 }.count
+    }
+}
+
+#Preview("Home") {
+    HomeView().environment(AppState(repo: PreviewRepository()))
+}
+
+#Preview("Day one") {
+    HomeView().environment(AppState(repo: PreviewRepository(places: [])))
+}
