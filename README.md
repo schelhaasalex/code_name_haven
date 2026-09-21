@@ -16,13 +16,37 @@ shows you a shame chart. See [VISION.md](VISION.md) for why that matters.
 | | |
 |---|---|
 | **Database** | Live and tested. Five migrations applied to the hosted project; 17 assertions pass against a scratch Postgres; Supabase's linter reports nothing. |
-| **iOS app** | Written, **not yet compiled.** Authored without a Swift toolchain — see [docs/BUILD-NOTES.md](docs/BUILD-NOTES.md) for where errors will concentrate. |
+| **iOS app** | All 21 screens written, **not yet compiled.** Authored without a Swift toolchain — see [docs/BUILD-NOTES.md](docs/BUILD-NOTES.md) for where errors will concentrate. |
 | **Tests** | `supabase/tests/` runs green. The Swift suite in `ReclaimKit/Tests/` is written and, like the app, **not yet run.** |
 | **Design** | 21 screens plus an IA map, on a canvas. Every string extracted to `copy/strings.json`. |
 | **Ceremony** | A working web rehearsal in `prototype/` — the one thing no mockup can test. |
 
-Not yet built: screen 9 (a place and its arc), 15 (the printed card), 21
-(naming a place), in-app NFC writing, and the iOS 18 Control Centre control.
+Every screen on the canvas now exists, including the ones that were missing a
+week ago: 4 (someone started), 9 (a place and its arc), 15 (the card), 21
+(naming a place), plus tag reading and writing, merging two places, and the
+iOS 18 Control Centre control.
+
+What stands between this and a running app is a Mac: none of it has been
+through a compiler.
+
+## Branches
+
+```
+feature → staging → main
+```
+
+`main` is what has shipped, `staging` is what is about to, and nothing reaches
+`main` except a merge from `staging`. Branch off `staging` and open the pull
+request against it; promoting to `main` is a second pull request from `staging`
+and nothing else. `.github/workflows/branch-flow.yml` fails anything else that
+asks.
+
+**Two settings make this real**, and they are clicks rather than code — in
+**Settings → Branches**, protect `main`: require a pull request, require the
+`Shape`, `Schema` and `Only staging reaches main` checks, and disallow direct
+pushes. Do the same for `staging` without the last one. Set the default branch
+to `staging` in **Settings → General** so a new pull request lands there
+without anyone having to remember.
 
 ## Running it
 

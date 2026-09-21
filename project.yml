@@ -52,6 +52,9 @@ targets:
         INFOPLIST_KEY_NSMotionUsageDescription: >-
           Reclaim notices when your phone has been sitting still, so it can
           offer to count time you already spent away from it.
+        INFOPLIST_KEY_NFCReaderUsageDescription: >-
+          Reclaim writes the card for a place onto a tag, and reads one when
+          you'd rather scan than type.
         INFOPLIST_KEY_NSFaceIDUsageDescription: ""
         INFOPLIST_KEY_NSSupportsLiveActivities: YES
         CODE_SIGN_ENTITLEMENTS: Reclaim/Reclaim.entitlements

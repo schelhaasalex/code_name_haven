@@ -18,6 +18,20 @@ public enum Say {
         n >= 0 && n < smallNumbers.count ? smallNumbers[n] : "\(n)"
     }
 
+    /// "Maya", "Maya and Dad", "Maya, Dad and Sam".
+    ///
+    /// Only ever people who ARE here. Nobody is named for not having arrived,
+    /// so there is no "and 2 others still to come" form of this function and
+    /// there never will be.
+    public static func names(_ people: [String]) -> String {
+        switch people.count {
+        case 0:  ""
+        case 1:  people[0]
+        case 2:  "\(people[0]) and \(people[1])"
+        default: people.dropLast().joined(separator: ", ") + " and " + people[people.count - 1]
+        }
+    }
+
     /// "2h 14m", "48m". Never "0h 48m".
     public static func duration(minutes: Int) -> String {
         let h = minutes / 60, m = minutes % 60

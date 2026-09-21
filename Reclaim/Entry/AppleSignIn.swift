@@ -14,7 +14,7 @@ enum AppleSignIn {
               let token = String(data: tokenData, encoding: .utf8),
               let repo = state.repo as? SupabaseRepository
         else {
-            state.banner = "That didn't go through."
+            state.banner = t("error.signin")
             return
         }
 
@@ -33,7 +33,7 @@ enum AppleSignIn {
             _ = try await repo.upsertProfile(displayName: name)
             await state.load()
         } catch {
-            state.banner = "Couldn't finish signing in."
+            state.banner = t("error.signin.finish")
         }
     }
 }

@@ -1,0 +1,26 @@
+# feature → staging → main, and nothing else reaches main.
+#
+# The workflow is the check. The lock is branch protection on `main`
+# ("Require a pull request" + "Require status checks"), which lives in the
+# repository settings and has to be switched on there — a workflow can fail a
+# pull request but it cannot stop a direct push.
+name: branch flow
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  promotion:
+    name: Only staging reaches main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the source branch
+        if: github.head_ref != 'staging'
+        run: |
+          echo "::error::This pull request targets main from '${{ github.head_ref }}'."
+          echo "main only takes staging. Merge this into staging first, then"
+          echo "open a second pull request from staging to main."
+          exit 1
+      - name: Fine
+        run: echo "staging → main"

@@ -27,7 +27,8 @@ struct CountThatView: View {
                     .font(Type.lede).foregroundStyle(Palette.ink2).lineSpacing(4)
                 PaperCard {
                     StatRow(title: t("docked.where.unnamed"),
-                            subtitle: "\(from.shortTime) until \(to.shortTime)",
+                            subtitle: t("countthat.window",
+                                       "from", from.shortTime, "to", to.shortTime),
                             value: Say.duration(minutes: minutes))
                 }
             }

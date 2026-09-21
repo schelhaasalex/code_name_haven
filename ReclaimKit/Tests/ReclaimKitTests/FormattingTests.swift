@@ -38,6 +38,17 @@ final class FormattingTests: XCTestCase {
         XCTAssertEqual(Say.spokenDuration(minutes: 134), "two hours and 14")
     }
 
+    /// Who is here. There is deliberately no form of this that says how many
+    /// people haven't arrived.
+    func testNamesReadAsASentence() {
+        XCTAssertEqual(Say.names([]), "")
+        XCTAssertEqual(Say.names(["Maya"]), "Maya")
+        XCTAssertEqual(Say.names(["Maya", "Dad"]), "Maya and Dad")
+        XCTAssertEqual(Say.names(["Maya", "Dad", "Sam"]), "Maya, Dad and Sam")
+        XCTAssertEqual(Say.names(["Maya", "Dad", "Sam", "Ellie"]),
+                       "Maya, Dad, Sam and Ellie")
+    }
+
     func testClockPadsSecondsAndFloorsAtZero() {
         XCTAssertEqual(Say.clock(0), "0:00")
         XCTAssertEqual(Say.clock(9), "0:09")

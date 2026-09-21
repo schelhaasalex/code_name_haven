@@ -12,6 +12,7 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
     public var rhythm: Rhythm
     public var summaryValue: PlaceSummary
 
+    public static let kitchenTable = UUID()
     public static let maya = UUID()
     public static let dad  = UUID()
     public static let me   = UUID()
@@ -33,7 +34,7 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
             Member(profileId: PreviewRepository.me,   displayName: "Alex", stillLive: true)
         ],
         places: [Place] = [
-            Place(id: UUID(), name: "The Kitchen Table", handle: "amber-otter"),
+            Place(id: PreviewRepository.kitchenTable, name: "The Kitchen Table", handle: "amber-otter"),
             Place(id: UUID(), name: "Sam's Kitchen",     handle: "quiet-heron"),
             Place(id: UUID(), name: "The Office",        handle: "slow-marten")
         ],
@@ -68,6 +69,9 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
 
     public func liveSession() async throws -> Session? { live }
     public func gathering(_ id: UUID) async throws -> Gathering? { gatheringNow }
+    public func gatherings(ids: [UUID]) async throws -> [Gathering] {
+        ids.compactMap { _ in gatheringNow }
+    }
     public func mySessions(since: Date) async throws -> [Session] { [] }
     public func delete(session id: UUID) async throws { live = nil }
 

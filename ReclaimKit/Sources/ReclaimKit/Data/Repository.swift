@@ -21,6 +21,12 @@ public protocol Repository: Sendable {
 
     func liveSession() async throws -> Session?
     func gathering(_ id: UUID) async throws -> Gathering?
+    /// The gatherings behind your own sessions, in one query.
+    ///
+    /// A gathering is a shared object rather than a person's row — you may read
+    /// the ones you were in — so this stays inside the rule: it says WHERE your
+    /// own evenings happened, and nothing about whose they were.
+    func gatherings(ids: [UUID]) async throws -> [Gathering]
     func mySessions(since: Date) async throws -> [Session]
     func delete(session id: UUID) async throws
 

@@ -88,6 +88,27 @@ project.yml    XcodeGen manifest — the project file is generated, not committe
 
 ---
 
+## Branches
+
+```
+feature → staging → main
+```
+
+`main` is what has shipped. `staging` is what is about to. **Nothing reaches
+`main` except a merge from `staging`** — not a feature branch, not a one-line
+fix, not the exception that seemed small at the time.
+
+- Branch off `staging`. Open the pull request against `staging`.
+- Promoting is its own pull request, `staging` → `main`, and it is where the
+  release note gets written.
+- `.github/workflows/branch-flow.yml` fails any pull request into `main` whose
+  source branch isn't `staging`. That is the check; the lock is branch
+  protection in the repository settings, because a workflow can fail a pull
+  request but cannot stop a direct push.
+
+If `main` ever needs something `staging` hasn't got, the answer is to put it on
+`staging` and promote — not to open a shortcut that then exists forever.
+
 ## Building
 
 The Xcode project is **generated**. `Reclaim.xcodeproj` is not in the repo.

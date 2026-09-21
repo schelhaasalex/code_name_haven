@@ -10,8 +10,6 @@ struct HomeView: View {
     @Environment(AppState.self) private var state
     @State private var route: Route?
 
-    enum Route: Hashable { case places, rhythm, settings }
-
     private var isDayOne: Bool { state.places.isEmpty && state.rhythm.longestRunDays == 0 }
 
     var body: some View {
@@ -27,9 +25,11 @@ struct HomeView: View {
             .ground()
             .navigationDestination(for: Route.self) { route in
                 switch route {
-                case .places:   PlacesView()
-                case .rhythm:   RhythmView()
-                case .settings: SettingsView()
+                case .places:            PlacesView()
+                case .rhythm:            RhythmView()
+                case .settings:          SettingsView()
+                case .place(let place):  PlaceView(place: place)
+                case .card(let id):      CardView(placeId: id)
                 }
             }
             .sheet(item: Binding(get: { state.pending }, set: { _ in state.dismissInterruption() })) {
@@ -40,7 +40,7 @@ struct HomeView: View {
 
     private var header: some View {
         HStack {
-            Eyebrow(text: "Reclaim")
+            Eyebrow(text: t("app.name"))
             Spacer()
             HStack(spacing: 4) {
                 NavigationLink(value: Route.places) {
@@ -48,14 +48,14 @@ struct HomeView: View {
                         .font(.system(size: 19)).foregroundStyle(Palette.ink2)
                         .frame(width: 44, height: 44)
                 }
-                .accessibilityLabel("Your places")
+                .accessibilityLabel(t("home.a11y.places"))
 
                 NavigationLink(value: Route.settings) {
                     Image(systemName: "slider.horizontal.3")
                         .font(.system(size: 19)).foregroundStyle(Palette.ink2)
                         .frame(width: 44, height: 44)
                 }
-                .accessibilityLabel("Settings")
+                .accessibilityLabel(t("home.a11y.settings"))
             }
         }
     }

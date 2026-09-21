@@ -1,4 +1,6 @@
 {
+  "app.name": "Reclaim",
+
   "_": "Reclaim's voice, keyed screen.element. This is the primary brand asset — it is the bundled fallback, and the Supabase copy table overrides it so the voice can change without an App Store release. Every line here was written against the three rules in BRIEF.md: zero setup, the Caregiver voice test, and the knowledge test (what does the app actually know, and when did it learn it). Never show what was missed. Never compare people. Never name someone who hasn't acted.",
 
   "welcome.headline": "Set your phone down. We'll take it from here.",
@@ -32,8 +34,9 @@
   "docked.footer": "Or name it later, when the evening's over.",
 
   "join.eyebrow": "A moment ago",
-  "join.headline": "{name} set hers down at {place}.",
-  "join.body": "Two phones down so far. {names} and you are still holding yours.",
+  "join.someone": "Someone",
+  "join.headline": "{name} set theirs down at {place}.",
+  "join.body": "{count} phones down so far.",
   "join.primary": "Join them",
   "join.secondary": "Not right now",
 
@@ -49,7 +52,6 @@
   "session.line.solo": "Back when you're back.",
   "session.end": "End",
 
-  "lockscreen.brand": "Reclaim",
   "lockscreen.members": "{count} of you",
   "lockscreen.members.solo": "Just you, so far",
   "lockscreen.end": "End",
@@ -72,8 +74,12 @@
   "place.stat.evenings": "evenings",
   "place.stat.hours": "together here",
   "place.lately": "Lately",
+  "place.lately.note": "Your own evenings here, these past four weeks.",
   "place.card.body": "The card for this place. How anyone new joins an evening here.",
   "place.card.print": "Print",
+  "place.card.label": "The card",
+  "place.rename": "Call it something else",
+  "place.a11y.back": "Your places",
 
   "place.stage.new": "New here",
   "place.stage.regular": "A regular table",
@@ -108,6 +114,7 @@
 
   "countthat.eyebrow": "This evening",
   "countthat.headline": "You were away for {duration}.",
+  "countthat.window": "{from} until {to}",
   "countthat.body": "Your phone sat untouched from {time}. We don't know what you were up to — you tell us.",
   "countthat.accept": "Count it",
   "countthat.decline": "No, I was on my laptop",
@@ -115,6 +122,14 @@
 
   "card.instruction": "Tap your phone here, or scan the code. Then set it down.",
   "card.tag": "Tag inside",
+  "card.eyebrow": "The card",
+  "card.share": "Save or print",
+  "card.write": "Write it to a tag",
+  "card.write.hold": "Hold the tag to the top of your phone.",
+  "card.write.done": "Written. Tap it on your way in.",
+  "card.write.failed": "That tag didn't take. Try it again?",
+  "card.missing": "This card was made on another device. The one you printed still works — we just can't draw it again here.",
+  "card.footer": "Anyone who taps or scans this joins the evening. It doesn't expire.",
 
   "settings.title": "Settings",
   "settings.account": "{name} · Signed in with Apple",
@@ -140,14 +155,25 @@
   "places.somewhere.action": "Name them",
   "places.merge": "Two of these really the same place? Merge them.",
   "places.scan": "Scan a card to join a new one",
+  "places.scan.hold": "Hold the card to the top of your phone.",
 
+  "naming.eyebrow": "This place",
   "naming.headline": "What should we call it?",
-  "naming.context": "{count} evenings here so far, all of them around {time}.",
+  "naming.context": "{count} evenings here so far, most of them around {time}.",
   "naming.label": "Name",
   "naming.suggestions.label": "Or take one of these.",
   "naming.suggestions": ["The Kitchen Table", "The Deck", "The Living Room", "The Office", "The Back Porch", "The Dinner Table"],
   "naming.primary": "Name it",
   "naming.skip": "Leave it as Somewhere",
+  "merge.eyebrow": "Two of the same",
+  "merge.headline": "Which two are the same place?",
+  "merge.body": "The evenings from both end up in one, and the older card keeps working — nothing you've printed stops opening.",
+  "merge.from": "Fold this one",
+  "merge.into": "Into this one",
+  "merge.primary": "Merge them",
+  "merge.done": "Merged. Both cards still work.",
+  "merge.cancel": "Leave them as they are",
+
   "naming.footer": "You can change this whenever. The card is {handle} either way, and it keeps working.",
 
   "onetap.eyebrow": "After your fifth evening",
@@ -162,6 +188,17 @@
 
   "notification.nudge": "Your table's free.",
   "notification.nudge.place": "{place} is free, if you are.",
+
+  "control.title": "Set it down",
+  "control.description": "Starts an evening, and ends it.",
+
+  "home.a11y.places": "Your places",
+  "home.a11y.settings": "Settings",
+
+  "error.signin": "That didn't go through.",
+  "error.signin.finish": "Couldn't finish signing in.",
+  "error.card": "That card doesn't match a place.",
+  "error.retry": "That didn't take. Try it again?",
 
   "nudge.siri.phrase": "Start a Reclaim session"
 }

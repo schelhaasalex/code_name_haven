@@ -105,6 +105,13 @@ public final class SupabaseRepository: Repository, @unchecked Sendable {
         return rows.first
     }
 
+    public func gatherings(ids: [UUID]) async throws -> [Gathering] {
+        guard !ids.isEmpty else { return [] }
+        return try await client.from("gatherings").select()
+            .in("id", values: ids)
+            .execute().value
+    }
+
     public func mySessions(since: Date) async throws -> [Session] {
         let me = try requireUser()
         return try await client.from("sessions").select()

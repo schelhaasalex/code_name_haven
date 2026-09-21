@@ -11,7 +11,7 @@ enum URLRouter {
     static func handle(_ url: URL, state: AppState) async {
         guard let secret = Handle.secret(fromCardURL: url) else { return }
         guard let place = try? await state.repo.resolvePlace(secret: secret) else {
-            state.banner = "That card doesn't match a place."
+            state.banner = t("error.card")
             return
         }
         await state.setItDown(place: place, source: .tag)
