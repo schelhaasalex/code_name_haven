@@ -155,6 +155,19 @@ public final class AppState {
 
     public func dismissInterruption() { pending = nil }
 
+    /// Signing out has to reach the screen, not just the server: `load()` then
+    /// finds nobody and shows Welcome. It used to call the auth client directly
+    /// and leave the app looking signed in.
+    public func signOut() async {
+        do {
+            try await repo.signOut()
+            profile = nil
+            await load()
+        } catch {
+            banner = t("error.retry")
+        }
+    }
+
     public func dismissInvitation() { invitation = nil }
 
 }

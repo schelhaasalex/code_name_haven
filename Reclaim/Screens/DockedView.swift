@@ -50,7 +50,9 @@ struct DockedView: View {
                             .font(Type.display(24))
                             .foregroundStyle(state.placeName == nil ? Palette.dim : Palette.cream)
                     }
-                    Text(t("docked.where.body"))
+                    // "If there isn't, it stays Somewhere" stops being true
+                    // the moment it has a place.
+                    Text(state.placeName == nil ? t("docked.where.body") : t("docked.where.known"))
                         .font(Type.body(14)).foregroundStyle(Palette.dust).lineSpacing(3)
 
                     if state.placeName == nil {

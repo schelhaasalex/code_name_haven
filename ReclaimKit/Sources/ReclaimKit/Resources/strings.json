@@ -52,6 +52,7 @@
   "docked.where.label": "Where",
   "docked.where.unnamed": "Somewhere",
   "docked.where.body": "If there's a card on the table, scan it and this becomes that place. If there isn't, it stays Somewhere — which counts exactly the same.",
+  "docked.where.known": "It'll count as an evening here.",
   "docked.scan": "Scan the card",
   "docked.footer": "Or name it later, when the evening's over.",
 

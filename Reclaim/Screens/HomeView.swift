@@ -44,7 +44,9 @@ struct HomeView: View {
             Spacer()
             HStack(spacing: 4) {
                 NavigationLink(value: Route.places) {
-                    Image(systemName: "square.on.square.dashed")
+                    // A table: what most places are. Never a pin — nothing in
+                    // this app reads where you are.
+                    Image(systemName: "table.furniture")
                         .font(.system(size: 19)).foregroundStyle(Palette.ink2)
                         .frame(width: 44, height: 44)
                 }
