@@ -11,8 +11,10 @@ struct ReclaimApp: App {
         // household, in memory, signed in, no network. Not in a release build.
         if ProcessInfo.processInfo.arguments.contains("-sample-data") {
             let repo = PreviewRepository.sampleHousehold()
-            _state = State(initialValue: AppState(repo: repo))
+            let state = AppState(repo: repo)
+            _state = State(initialValue: state)
             IntentEnvironment.repository = repo
+            IntentEnvironment.onSessionChanged = { await state.load() }
             return
         }
         #endif
@@ -22,8 +24,11 @@ struct ReclaimApp: App {
         _state = State(initialValue: state)
 
         // So Siri, the Action Button, a Shortcut and the Live Activity's End
-        // button work without booting the SwiftUI stack.
+        // button work without booting the SwiftUI stack — and so what they did
+        // reaches the app: `load()` reconciles against the database, adopting
+        // an evening started elsewhere or ending one ended elsewhere.
         IntentEnvironment.repository = repo
+        IntentEnvironment.onSessionChanged = { await state.load() }
     }
 
     var body: some Scene {
