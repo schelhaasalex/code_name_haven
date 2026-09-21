@@ -102,9 +102,19 @@ fix, not the exception that seemed small at the time.
 - Promoting is its own pull request, `staging` → `main`, and it is where the
   release note gets written.
 - `.github/workflows/branch-flow.yml` fails any pull request into `main` whose
-  source branch isn't `staging`. That is the check; the lock is branch
-  protection in the repository settings, because a workflow can fail a pull
-  request but cannot stop a direct push.
+  source branch isn't `staging`.
+- `.githooks/pre-push` refuses a direct push to `main` from this clone. Turn it
+  on once, per clone:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+Neither is a lock. A workflow can fail a pull request but cannot stop a push;
+a hook can be skipped with `--no-verify` and never runs for anything done in
+the browser. Branch protection is the real thing and needs GitHub Pro on a
+private repository — until then, these two catch the accident, not the
+intent.
 
 If `main` ever needs something `staging` hasn't got, the answer is to put it on
 `staging` and promote — not to open a shortcut that then exists forever.
