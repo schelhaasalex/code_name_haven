@@ -5,7 +5,7 @@ name: checks
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, staging]
 
 jobs:
   shape:

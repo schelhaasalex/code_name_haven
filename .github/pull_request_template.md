@@ -1,3 +1,6 @@
+<!-- Base branch: `staging`, unless this IS the promotion of staging to main.
+     Nothing else reaches main; a pull request that tries is failed by CI. -->
+
 ## What this changes
 
 <!-- One or two sentences. What someone using the app would notice, or what a

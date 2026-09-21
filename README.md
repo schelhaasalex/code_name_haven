@@ -24,6 +24,25 @@ shows you a shame chart. See [VISION.md](VISION.md) for why that matters.
 Not yet built: screen 9 (a place and its arc), 15 (the printed card), 21
 (naming a place), in-app NFC writing, and the iOS 18 Control Centre control.
 
+## Branches
+
+```
+feature → staging → main
+```
+
+`main` is what has shipped, `staging` is what is about to, and nothing reaches
+`main` except a merge from `staging`. Branch off `staging` and open the pull
+request against it; promoting to `main` is a second pull request from `staging`
+and nothing else. `.github/workflows/branch-flow.yml` fails anything else that
+asks.
+
+**Two settings make this real**, and they are clicks rather than code — in
+**Settings → Branches**, protect `main`: require a pull request, require the
+`Shape`, `Schema` and `Only staging reaches main` checks, and disallow direct
+pushes. Do the same for `staging` without the last one. Set the default branch
+to `staging` in **Settings → General** so a new pull request lands there
+without anyone having to remember.
+
 ## Running it
 
 ```sh
