@@ -1,0 +1,493 @@
+<title>Reclaim Splash Rehearsal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=Work+Sans:wght@400;500;600&display=swap">
+<style>
+  /* The three splash options, at the timings SplashChoreography.swift ships.
+     Every length inside .screen is a SwiftUI point: the screen is laid out at
+     393 x 852 and scaled down, so this is a rehearsal rather than an
+     impression. Change a number here and change it there too — or better,
+     change it there and copy it here. */
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  :root {
+    --bone:  #F7F4EE;
+    --paper: #FFFDF8;
+    --ink:   #1F1B16;
+    --ink-2: #4A4239;
+    --muted: #6B6155;
+    --line:  #E3DDD1;
+    --hair:  #C9C0B0;
+    --clay:  #B4512C;
+    --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+    --sans:  'Work Sans', ui-sans-serif, system-ui, sans-serif;
+
+    /* Device width, as a UNITLESS number, because --k has to be a ratio:
+       `300px / 393` is a length, and `scale()` and the height calc below both
+       silently reject one. */
+    --dwn: 300;
+    --dw: calc(var(--dwn) * 1px);
+    --k:  calc(var(--dwn) / 393);
+  }
+
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bone);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 64px; }
+
+  /* ---- header ---------------------------------------------------------- */
+
+  .eyebrow { display: flex; align-items: center; gap: 10px; }
+  .eyebrow span {
+    font-size: 12px; font-weight: 600; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .mark-sm { width: 18px; height: 18px; flex: none; }
+
+  h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-size: clamp(30px, 5vw, 42px); line-height: 1.1;
+    margin: 18px 0 0; text-wrap: balance; max-width: 18ch;
+  }
+  .lede { font-size: 16px; line-height: 1.6; color: var(--ink-2); margin: 14px 0 0; max-width: 62ch; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .92em; color: var(--muted); }
+  .note { font-size: 13px; line-height: 1.55; color: var(--muted); margin: 10px 0 0; max-width: 62ch; }
+
+  /* ---- controls -------------------------------------------------------- */
+
+  .bar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--line);
+  }
+  button {
+    font-family: var(--sans); font-size: 13px; font-weight: 500;
+    min-height: 38px; padding: 0 16px; border-radius: 19px; cursor: pointer;
+    border: 1px solid var(--hair); background: var(--paper); color: var(--ink-2);
+  }
+  button:hover { border-color: var(--muted); }
+  button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bone); }
+  button:focus-visible { outline: 2px solid var(--clay); outline-offset: 3px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-left: auto; align-items: center; }
+  .legend i { display: inline-flex; align-items: center; gap: 6px; font-style: normal;
+              font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .legend i::before { content: ""; width: 14px; height: 6px; border-radius: 3px; background: var(--ink); }
+  .legend .b-figure::before { background: var(--ink); }
+  .legend .b-core::before   { background: var(--clay); }
+  .legend .b-word::before   { background: var(--muted); }
+  .legend .b-hold::before   { background: repeating-linear-gradient(135deg, var(--hair) 0 2px, transparent 2px 4px); }
+  .legend .b-exit::before   { background: var(--hair); }
+
+  /* ---- the three options ------------------------------------------------ */
+
+  .options {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 36px; margin-top: 36px; align-items: start;
+  }
+  .option { display: flex; flex-direction: column; gap: 16px; }
+  .option > .device { align-self: center; }
+
+  .heading { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .heading h2 { font-family: var(--serif); font-weight: 400; font-size: 23px; margin: 0; }
+  .pick {
+    font-size: 10px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--clay); border: 1px solid var(--clay); border-radius: 3px; padding: 2px 6px;
+  }
+  .kicker { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .why { font-size: 14px; line-height: 1.6; color: var(--ink-2); margin: 0; }
+  .cost { font-size: 13px; line-height: 1.55; color: var(--muted); margin: 0; }
+
+  /* ---- beat strip ------------------------------------------------------- */
+
+  .strip { position: relative; height: 8px; background: var(--line); border-radius: 4px; }
+  .strip b { position: absolute; top: 0; height: 8px; border-radius: 4px; display: block; }
+  .strip .b-figure { background: var(--ink); }
+  .strip .b-core   { background: var(--clay); }
+  .strip .b-word   { background: var(--muted); }
+  .strip .b-exit   { background: var(--hair); }
+  .strip .b-hold   { background: repeating-linear-gradient(135deg, var(--hair) 0 2px, transparent 2px 4px); }
+  .stripfoot { display: flex; justify-content: space-between; font-size: 11px;
+               letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-top: 7px; }
+  .stripfoot b { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+
+  /* ---- the phone -------------------------------------------------------- */
+
+  .device {
+    width: var(--dw); height: calc(852px * var(--k));
+    border-radius: calc(54px * var(--k));
+    border: 1px solid var(--hair);
+    background: var(--bone);
+    overflow: hidden; position: relative;
+    box-shadow: 0 22px 44px rgba(31, 27, 22, .10), 0 2px 6px rgba(31, 27, 22, .06);
+    cursor: pointer;
+  }
+  .device:focus-visible { outline: 2px solid var(--clay); outline-offset: 4px; }
+
+  .screen {
+    position: absolute; top: 0; left: 0;
+    width: 393px; height: 852px;
+    transform: scale(var(--k)); transform-origin: top left;
+  }
+
+  /* what the splash hands over to — real copy, from copy/strings.json */
+  .home {
+    position: absolute; inset: 0; background: var(--bone);
+    padding: 80px 32px 40px; display: flex; flex-direction: column;
+  }
+  .home .eyebrow span { font-size: 12px; }
+  .home h3 {
+    font-family: var(--serif); font-weight: 400; font-size: 44px; line-height: 1.08;
+    margin: 40px 0 0; color: var(--ink);
+  }
+  .home p { font-size: 16px; line-height: 1.6; color: var(--ink-2); margin: 22px 0 0; }
+  .home .pill {
+    margin-top: auto; height: 60px; border-radius: 30px; background: var(--ink);
+    color: var(--bone); display: flex; align-items: center; justify-content: center;
+    font-size: 17px; font-weight: 500;
+  }
+
+  .splash {
+    position: absolute; inset: 0; background: var(--bone);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 26px; overflow: hidden;
+  }
+  .wordmark {
+    font-size: 12px; font-weight: 600; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--muted);
+  }
+
+  .figure { position: relative; width: 96px; height: 96px; display: grid; place-items: center; }
+  .figure > * { grid-area: 1 / 1; }
+  .mark { width: 96px; height: 96px; overflow: visible; }
+  .ring, .dot { transform-box: fill-box; transform-origin: center; }
+  .ring { fill: none; stroke: var(--clay); stroke-width: 6.528; transform: rotate(-90deg); }
+  .dot  { fill: var(--clay); }
+
+  .slab {
+    width: 55.68px; height: 79.13px; border-radius: 13.36px; background: var(--ink);
+  }
+  .shadow {
+    width: 65.7px; height: 12.25px; border-radius: 50%;
+    background: rgba(31, 27, 22, .15); filter: blur(9px); transform: translateY(49px);
+  }
+  .bloom {
+    position: absolute; left: 50%; top: 50%; margin: -249.5px 0 0 -249.5px;
+    width: 499px; height: 499px; border-radius: 50%;
+    background:
+      radial-gradient(circle, rgba(180, 81, 44, .09) 0%, rgba(180, 81, 44, 0) 73%),
+      radial-gradient(circle, rgba(255, 253, 248, 1) 0%, rgba(255, 253, 248, 0) 96%);
+  }
+
+  /* ---- resting state = the composed frame ------------------------------- */
+  /* Everything above is where each option ENDS. The keyframes below start it
+     somewhere else and `animation-fill-mode: both` holds that start through the
+     delay, so nothing has to be described twice. */
+
+  .splash[data-variant="faceDown"] .slab,
+  .splash[data-variant="faceDown"] .shadow { opacity: 0; }
+  .splash[data-variant="faceDown"] .slab { transform: rotate(180deg) scaleY(.86); }
+
+  /* ---- playing ---------------------------------------------------------- */
+
+  .splash.play { animation: dissolve var(--exit-t) ease-in-out var(--exit-d) both; }
+  .splash.play .wordmark { animation: word var(--word-t) cubic-bezier(.2,.7,.3,1) var(--word-d) both; }
+
+  .splash.play[data-variant="settle"] .ring {
+    animation: draw var(--fig-t) cubic-bezier(.22,.61,.36,1) var(--fig-d) both;
+  }
+  .splash.play[data-variant="settle"] .dot {
+    animation: settle-dot var(--core-t) cubic-bezier(.2,.9,.28,1) var(--core-d) both;
+  }
+
+  .splash.play[data-variant="faceDown"] .slab {
+    animation: arrive var(--in-t) ease-out var(--in-d) both,
+               turn var(--turn-t) cubic-bezier(.34,.02,.16,1) var(--turn-d) both,
+               leave var(--out-t) ease-in-out var(--out-d) both;
+  }
+  .splash.play[data-variant="faceDown"] .shadow {
+    animation: arrive var(--in-t) ease-out var(--in-d) both,
+               land var(--turn-t) cubic-bezier(.34,.02,.16,1) var(--turn-d) both,
+               leave var(--out-t) ease-in-out var(--out-d) both;
+  }
+  .splash.play[data-variant="faceDown"] .ring {
+    animation: spread var(--ring-t) cubic-bezier(.2,.7,.24,1) var(--ring-d) both;
+  }
+  .splash.play[data-variant="faceDown"] .dot {
+    animation: settle-dot var(--dotb-t) cubic-bezier(.2,.9,.28,1) var(--dotb-d) both;
+  }
+
+  .splash.play[data-variant="lamp"] .bloom {
+    animation: rise var(--fig-t) cubic-bezier(.16,.8,.28,1) var(--fig-d) both;
+  }
+  .splash.play[data-variant="lamp"] .mark {
+    animation: warm var(--core-t) ease-out var(--core-d) both;
+  }
+
+  @keyframes dissolve    { from { opacity: 1 } to { opacity: 0 } }
+  @keyframes word        { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+  @keyframes draw        { from { stroke-dasharray: 253.34; stroke-dashoffset: 253.34 }
+                           to   { stroke-dasharray: 253.34; stroke-dashoffset: 0 } }
+  @keyframes settle-dot  { from { opacity: 0; transform: scale(.22) } to { opacity: 1; transform: scale(1) } }
+  @keyframes arrive      { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes turn        { from { transform: rotate(0deg) scaleY(1) } to { transform: rotate(180deg) scaleY(.86) } }
+  @keyframes land        { from { transform: translateY(49px) scaleX(.6); filter: blur(4px); opacity: .28 }
+                           to   { transform: translateY(49px) scaleX(1);  filter: blur(9px); opacity: 1 } }
+  @keyframes leave       { to { opacity: 0 } }
+  @keyframes spread      { from { opacity: 0; transform: scale(.69) } to { opacity: 1; transform: scale(1) } }
+  @keyframes rise        { from { opacity: 0; transform: scale(.42) } to { opacity: 1; transform: scale(1) } }
+  @keyframes warm        { from { opacity: .16 } to { opacity: 1 } }
+
+  /* Reduce Motion is a different splash, not a faster one: every option
+     collapses to the composed mark fading up. Matches SplashView. */
+  .splash[data-still="1"] .slab,
+  .splash[data-still="1"] .shadow,
+  .splash[data-still="1"] .bloom { display: none; }
+  .splash.play[data-still="1"] .ring,
+  .splash.play[data-still="1"] .dot,
+  .splash.play[data-still="1"] .mark {
+    animation: arrive var(--word-t) ease-out 0s both;
+  }
+
+  @media (max-width: 1040px) { :root { --dwn: 250; } }
+  @media (max-width: 940px) {
+    .options { grid-template-columns: 1fr; gap: 52px; max-width: 460px; }
+    .legend { margin-left: 0; }
+    :root { --dwn: 300; }
+  }
+  @media (max-width: 420px) { :root { --dwn: 260; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">
+      <svg class="mark-sm" viewBox="0 0 96 96" aria-hidden="true">
+        <circle cx="48" cy="48" r="40.32" fill="none" stroke="#B4512C" stroke-width="6.528"/>
+        <circle cx="48" cy="48" r="14.4" fill="#B4512C"/>
+      </svg>
+      <span>Reclaim</span>
+    </div>
+    <h1>Three ways to open the app</h1>
+    <p class="lede">
+      The mark is a table seen from above. Each of these makes it a different way, and the
+      difference is what there is to choose between. All three run the timings in
+      <code>SplashChoreography.swift</code>, on a screen laid out at 393&nbsp;&times;&nbsp;852
+      points and scaled down — so the pace you see here is the pace on the phone.
+    </p>
+    <p class="note">
+      Each phone plays through to the hand-off, so what you are watching includes the dissolve
+      onto Home. That hand-off is invisible on a device because the static launch screen is now
+      the same paper as the app: the colour is one asset, and a shape check keeps it equal to
+      <code>Palette.bone</code>. Tap a phone to replay it on its own.
+    </p>
+  </header>
+
+  <div class="bar">
+    <button id="loop" aria-pressed="true">Pause</button>
+    <button id="again">Replay all</button>
+    <button id="slow" aria-pressed="false">Half speed</button>
+    <button id="still" aria-pressed="false">Reduce Motion</button>
+    <div class="legend">
+      <i class="b-figure">Figure</i>
+      <i class="b-core">Core</i>
+      <i class="b-word">Wordmark</i>
+      <i class="b-hold">Hold</i>
+      <i class="b-exit">Exit</i>
+    </div>
+  </div>
+
+  <div class="options" id="options"></div>
+</div>
+
+<script>
+  // The same four beats as SplashChoreography.swift, in seconds: [delay, duration].
+  const OPTIONS = [
+    {
+      key: 'settle', name: 'Settle', kicker: 'A table being laid', pick: true,
+      why: 'The ring draws itself from the top, and the dot settles into the middle of it. ' +
+           'Nothing is depicted — the mark simply arrives the way a place is set.',
+      cost: 'The quietest, and the one that survives being seen four hundred times. ' +
+            'Starts from an empty paper screen, so the hand-off from the launch image is exact.',
+      beats: { figure: [0.06, 0.62], core: [0.50, 0.38], word: [0.78, 0.46], hold: 0.30, exit: [1.54, 0.40] }
+    },
+    {
+      key: 'faceDown', name: 'Face down', kicker: 'The gesture makes the table',
+      why: 'A phone stands, turns over, and settles with weight. The ring of the mark then ' +
+           'spreads out from where it landed — the mark is made by the gesture, not cut to.',
+      cost: 'The only one that says anything, and the longest at 2.26s. It also shows the ' +
+            'gesture on paper, where in the app turning a phone over is what takes a screen to night.',
+      beats: { figure: [0.08, 0.66], core: [0.70, 0.52], word: [1.12, 0.44], hold: 0.30, exit: [1.86, 0.40] }
+    },
+    {
+      key: 'lamp', name: 'Lamp', kicker: 'The light finds it',
+      why: 'The mark is already there at hairline weight, and a warm light comes up over it. ' +
+           'Nothing travels and nothing rotates; only light and colour change.',
+      cost: 'The shortest at 1.72s and the most appliance-like. The trade is that the first ' +
+            'frame is not quite empty, so the launch hand-off is near-exact rather than exact.',
+      beats: { figure: [0.04, 0.74], core: [0.20, 0.62], word: [0.68, 0.42], hold: 0.26, exit: [1.36, 0.36] }
+    }
+  ];
+
+  const STILL = { figure: [0, 0.01], core: [0, 0.01], word: [0, 0.24], hold: 0.22, exit: [0.46, 0.22] };
+  const TRACK = 2.4;   // seconds across a full beat strip, so the three compare
+  const GAP = 0.9;     // still paper between loops
+
+  const MARK = '<svg class="mark" viewBox="0 0 96 96" aria-hidden="true">' +
+    '<circle class="ring" cx="48" cy="48" r="40.32"/><circle class="dot" cx="48" cy="48" r="14.4"/></svg>';
+
+  const FIGURE = {
+    settle: MARK,
+    faceDown: '<div class="shadow"></div><div class="slab"></div>' + MARK,
+    lamp: '<div class="bloom"></div>' + MARK
+  };
+
+  const total = b => b.exit[0] + b.exit[1];
+
+  function strip(b) {
+    const pct = s => (s / TRACK * 100).toFixed(2) + '%';
+    const bar = (cls, delay, dur) =>
+      `<b class="${cls}" style="left:${pct(delay)};width:${pct(dur)}"></b>`;
+    return bar('b-figure', b.figure[0], b.figure[1]) +
+           bar('b-core', b.core[0], b.core[1]) +
+           bar('b-word', b.word[0], b.word[1]) +
+           bar('b-hold', b.word[0] + b.word[1], b.hold) +
+           bar('b-exit', b.exit[0], b.exit[1]);
+  }
+
+  function card(o) {
+    const el = document.createElement('section');
+    el.className = 'option';
+    el.innerHTML = `
+      <div class="device" tabindex="0" role="button" aria-label="Replay ${o.name}">
+        <div class="screen">
+          <div class="home">
+            <div class="eyebrow">
+              <svg class="mark-sm" viewBox="0 0 96 96" aria-hidden="true">
+                <circle cx="48" cy="48" r="40.32" fill="none" stroke="#B4512C" stroke-width="6.528"/>
+                <circle cx="48" cy="48" r="14.4" fill="#B4512C"/>
+              </svg>
+              <span>Reclaim</span>
+            </div>
+            <h3>Ready when you are.</h3>
+            <p>Set your phone down and we'll start counting. Where you are is optional.</p>
+            <div class="pill">Set it down</div>
+          </div>
+          <div class="splash" data-variant="${o.key}">
+            <div class="figure">${FIGURE[o.key]}</div>
+            <div class="wordmark">Reclaim</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="heading">
+          <h2>${o.name}</h2>${o.pick ? '<span class="pick">Recommended</span>' : ''}
+        </div>
+        <div class="kicker">${o.kicker}</div>
+      </div>
+      <p class="why">${o.why}</p>
+      <div>
+        <div class="strip">${strip(o.beats)}</div>
+        <div class="stripfoot"><span>Beats</span><b class="total"></b></div>
+      </div>
+      <p class="cost">${o.cost}</p>`;
+    return el;
+  }
+
+  const host = document.getElementById('options');
+  OPTIONS.forEach(o => host.appendChild(card(o)));
+
+  const splashes = [...document.querySelectorAll('.splash')];
+  const strips = [...document.querySelectorAll('.strip')];
+  const totals = [...document.querySelectorAll('.total')];
+
+  let speed = 1, still = false, looping = true, timer = null;
+
+  /* The derived sub-beats are fractions of a named beat, exactly as
+     SplashFaceDown.swift writes them — so retiming means editing one place. */
+  function vars(b) {
+    const f = b.figure, c = b.core;
+    return {
+      '--fig-d': f[0], '--fig-t': f[1],
+      '--core-d': c[0], '--core-t': c[1],
+      '--word-d': b.word[0], '--word-t': b.word[1],
+      '--exit-d': b.exit[0], '--exit-t': b.exit[1],
+      '--in-d': f[0], '--in-t': f[1] * 0.30,
+      '--turn-d': f[0] + f[1] * 0.34, '--turn-t': f[1] * 0.66,
+      '--out-d': c[0], '--out-t': c[1] * 0.60,
+      '--ring-d': c[0], '--ring-t': c[1],
+      '--dotb-d': c[0] + c[1] * 0.45, '--dotb-t': c[1] * 0.70
+    };
+  }
+
+  function apply() {
+    splashes.forEach((el, i) => {
+      const b = still ? STILL : OPTIONS[i].beats;
+      const v = vars(b);
+      for (const k in v) el.style.setProperty(k, (v[k] * speed).toFixed(3) + 's');
+      el.dataset.still = still ? '1' : '0';
+      strips[i].innerHTML = strip(b);
+      totals[i].textContent = total(b).toFixed(2) + 's' + (speed === 1 ? '' : ' at half speed');
+    });
+  }
+
+  const play = el => { el.classList.remove('play'); void el.offsetWidth; el.classList.add('play'); };
+
+  function cycle() {
+    splashes.forEach(play);
+    const longest = Math.max(...splashes.map((_, i) => total(still ? STILL : OPTIONS[i].beats)));
+    timer = setTimeout(cycle, (longest + GAP) * speed * 1000);
+  }
+
+  function setLooping(on) {
+    looping = on;
+    clearTimeout(timer);
+    const btn = document.getElementById('loop');
+    btn.textContent = on ? 'Pause' : 'Play';
+    btn.setAttribute('aria-pressed', String(on));
+    if (on) cycle(); else splashes.forEach(el => el.classList.remove('play'));
+  }
+
+  function toggle(id, onChange) {
+    const btn = document.getElementById(id);
+    btn.addEventListener('click', () => {
+      const next = btn.getAttribute('aria-pressed') !== 'true';
+      btn.setAttribute('aria-pressed', String(next));
+      onChange(next);
+    });
+  }
+
+  document.getElementById('loop').addEventListener('click', () => setLooping(!looping));
+  document.getElementById('again').addEventListener('click', () => {
+    if (looping) setLooping(true); else splashes.forEach(play);
+  });
+  toggle('slow', on => { speed = on ? 2 : 1; apply(); if (looping) setLooping(true); });
+  toggle('still', on => { still = on; apply(); if (looping) setLooping(true); });
+
+  host.addEventListener('click', e => {
+    const device = e.target.closest('.device');
+    if (device) play(device.querySelector('.splash'));
+  });
+  host.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const device = e.target.closest('.device');
+    if (device) { e.preventDefault(); play(device.querySelector('.splash')); }
+  });
+
+  apply();
+
+  // At rest the page shows each option's composed frame. The loop starts a
+  // beat later, so the first thing anyone sees is the thing, not a wipe.
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const btn = document.getElementById('still');
+    btn.setAttribute('aria-pressed', 'true');
+    still = true; apply();
+    setLooping(false);
+  } else {
+    setTimeout(() => { if (looping) cycle(); }, 1200);
+  }
+</script>

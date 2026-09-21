@@ -108,6 +108,34 @@ note "The bundled copy matches copy/strings.json"
 cmp -s copy/strings.json ReclaimKit/Sources/ReclaimKit/Resources/strings.json \
   || bad "copy/strings.json and ReclaimKit/.../Resources/strings.json have drifted"
 
+# 9. The launch screen's colour is Palette.bone written out a second time.
+#    UIKit reads Info.plist before any Swift runs, so a launch screen genuinely
+#    cannot ask the Palette — and two copies of one fact are free to disagree.
+#    Before this pair existed the key was `UILaunchScreen: {}`, which means the
+#    system background: white in light mode, BLACK in dark, and the app then cut
+#    to paper. That cut is the first thing anyone sees.
+note "The launch colour matches the paper ground"
+LAUNCH=Reclaim/Resources/Assets.xcassets/LaunchBone.colorset/Contents.json
+if [ ! -f "$LAUNCH" ]; then
+  bad "$LAUNCH is missing — UILaunchScreen has nothing to point at"
+elif ! grep -q 'UIColorName: *LaunchBone' project.yml; then
+  bad "project.yml does not point UILaunchScreen at LaunchBone"
+else
+  bone=$(sed -n 's/.*bone[[:space:]]*=[[:space:]]*Color(hex:[[:space:]]*0x\([0-9A-Fa-f]\{6\}\)).*/\1/p' \
+         ReclaimKit/Sources/ReclaimKit/Design/Palette.swift | head -1 | tr '[:lower:]' '[:upper:]')
+  flat=$(tr -d ' \n' < "$LAUNCH")
+  launch=""
+  for part in red green blue; do
+    launch="$launch$(printf '%s' "$flat" | sed -n "s/.*\"$part\":\"0x\([0-9A-Fa-f]\{2\}\)\".*/\1/p")"
+  done
+  launch=$(printf '%s' "$launch" | tr '[:lower:]' '[:upper:]')
+  if [ ${#bone} -ne 6 ] || [ ${#launch} -ne 6 ]; then
+    bad "couldn't read both colours (Palette.bone='$bone', LaunchBone='$launch')"
+  elif [ "$bone" != "$launch" ]; then
+    bad "LaunchBone is #$launch and Palette.bone is #$bone — the app will flash on launch"
+  fi
+fi
+
 echo
 if [ "$FAIL" -eq 0 ]; then
   echo "Shape is fine."
