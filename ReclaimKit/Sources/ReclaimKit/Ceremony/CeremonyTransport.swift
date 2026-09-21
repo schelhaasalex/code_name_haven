@@ -76,7 +76,7 @@ public actor SupabaseCeremonyTransport: CeremonyTransport {
 
     public func join(gathering: UUID) async throws {
         await leave()
-        let ch = client.channel("gathering:\(gathering.uuidString)")
+        let ch = privateChannel(CeremonyWire.topic(gathering: gathering))
         let stream = ch.broadcastStream(event: "ceremony")
         do {
             try await ch.subscribeWithError()
@@ -123,7 +123,7 @@ public actor SupabaseCeremonyTransport: CeremonyTransport {
     public func watch(places: [UUID]) async {
         await stopWatching()
         for place in places {
-            guard let ch = await subscribed("place:\(place.uuidString)", listening: true)
+            guard let ch = await subscribed(CeremonyWire.topic(place: place), listening: true)
             else { continue }
             let stream = ch.stream
             placeChannels[place] = ch.channel
@@ -149,7 +149,7 @@ public actor SupabaseCeremonyTransport: CeremonyTransport {
     /// moment their own session starts, and the announcement comes after.
     public func announce(_ invitation: Invitation) async {
         if placeChannels[invitation.place] == nil {
-            guard let ch = await subscribed("place:\(invitation.place.uuidString)", listening: false)
+            guard let ch = await subscribed(CeremonyWire.topic(place: invitation.place), listening: false)
             else { return }
             placeChannels[invitation.place] = ch.channel
         }
@@ -161,7 +161,7 @@ public actor SupabaseCeremonyTransport: CeremonyTransport {
     /// first — callbacks added after subscribing are not guaranteed to fire.
     private func subscribed(_ topic: String, listening: Bool)
         async -> (channel: RealtimeChannelV2, stream: AsyncStream<JSONObject>)? {
-        let ch = client.channel(topic)
+        let ch = privateChannel(topic)
         let stream = listening ? ch.broadcastStream(event: "invitation") : AsyncStream { $0.finish() }
         do {
             try await ch.subscribeWithError()
@@ -170,6 +170,13 @@ public actor SupabaseCeremonyTransport: CeremonyTransport {
             await client.removeChannel(ch)
             return nil
         }
+    }
+
+    /// Every channel is private: Realtime asks the policies in migration 0006
+    /// whether this person may listen or send, and a public channel would skip
+    /// them. Who is at a table is not something the publishable key can hear.
+    private func privateChannel(_ topic: String) -> RealtimeChannelV2 {
+        client.channel(topic) { $0.isPrivate = true }
     }
 
     private func deliver(_ invitation: Invitation) {

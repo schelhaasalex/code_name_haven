@@ -38,7 +38,7 @@ doesn't. `CLAUDE.md` has the reasoning behind each.
 ## Database changes
 
 - [ ] Not applicable
-- [ ] `supabase/tests/run.sh` passes (17 assertions)
+- [ ] `supabase/tests/run.sh` passes (18 assertions)
 - [ ] New tables revoke Supabase's default `GRANT ALL` from `anon` and
       `authenticated`, then grant deliberately
 - [ ] New client-facing functions have a wrapper in `public` (PostgREST doesn't

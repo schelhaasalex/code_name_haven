@@ -65,6 +65,14 @@ final class CeremonyWireTests: XCTestCase {
         XCTAssertNil(CeremonyWire.event(from: p, me: me))
     }
 
+    /// Migration 0006 compares topics against Postgres's lowercase uuid text.
+    /// An uppercase topic would be refused by the policy, silently.
+    func testTopicsAreLowercaseLikePostgres() {
+        let id = UUID(uuidString: "0A1B2C3D-4E5F-4A6B-8C7D-9E0F1A2B3C4D")!
+        XCTAssertEqual(CeremonyWire.topic(gathering: id), "gathering:0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d")
+        XCTAssertEqual(CeremonyWire.topic(place: id), "place:0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d")
+    }
+
     func testAnUnknownKindIsIgnored() {
         let p = CeremonyWire.Payload(kind: "wave", sender: them.uuidString, at: nil, down: nil)
         XCTAssertNil(CeremonyWire.event(from: p, me: me))

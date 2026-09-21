@@ -42,6 +42,10 @@ received nothing, the new one delivers both. Subscribing now uses
 `subscribeWithError()`, and leaving removes the channel, because the client
 caches channels by topic and would hand a dead one back on the next join.
 
+Both channel kinds are private, authorised by the policies in `0006`
+(schema review, finding 15). A private channel needs a signed-in user, so the
+unauthenticated two-client check above no longer works — by design.
+
 ## Compiles, but known to be wrong
 
 Found by reading, not yet fixed. None of these shows up as an error — each
