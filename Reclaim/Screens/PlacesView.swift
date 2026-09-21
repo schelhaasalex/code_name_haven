@@ -68,7 +68,7 @@ struct PlacesView: View {
     }
 
     private var somewhere: some View {
-        HStack(spacing: 14) {
+        DashedCard { HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 5) {
                 Text(t("places.somewhere.title")).font(Type.display(21)).foregroundStyle(Palette.ink2)
                 Text(t("places.somewhere.body", "count", Say.number(4)))
@@ -77,12 +77,7 @@ struct PlacesView: View {
             Spacer()
             Text(t("places.somewhere.action"))
                 .font(Type.body(14, weight: .medium)).foregroundStyle(Palette.clayDeep)
-        }
-        .padding(16)
-        .overlay {
-            RoundedRectangle(cornerRadius: 16)
-                .strokeBorder(Palette.hairline, style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
-        }
+        } }
     }
 }
 

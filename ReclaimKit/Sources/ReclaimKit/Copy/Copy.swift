@@ -34,22 +34,12 @@ public enum Copy {
         bundled[key] as? [String] ?? []
     }
 
-    /// `Copy("place.stage.since", "month", "March")` → "Since March."
-    public static func callAsFunction(_ key: String, _ substitutions: String...) -> String {
-        var out = Copy[key]
-        var i = 0
-        while i + 1 < substitutions.count {
-            out = out.replacingOccurrences(of: "{\(substitutions[i])}", with: substitutions[i + 1])
-            i += 2
-        }
-        return out
-    }
-
     public static func apply(overrides new: [String: String]) { overrides = new }
 }
 
-/// `t("home.headline")` — short enough to use everywhere without friction.
-public func t(_ key: String) -> String { Copy[key] }
+/// `t("home.headline")`, or `t("place.stage.since", "month", "March")` →
+/// "Since March." Short enough to use everywhere without friction, and the one
+/// substitution path — a token nothing replaces reaches a person verbatim.
 public func t(_ key: String, _ substitutions: String...) -> String {
     var out = Copy[key]
     var i = 0

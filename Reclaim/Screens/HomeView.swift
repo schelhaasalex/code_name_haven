@@ -33,7 +33,7 @@ struct HomeView: View {
                 }
             }
             .sheet(item: Binding(get: { state.pending }, set: { _ in state.dismissInterruption() })) {
-                InterruptionSheet(interruption: $0)
+                InterruptionRouter(interruption: $0)
             }
         }
     }
@@ -159,22 +159,11 @@ struct HomeView: View {
         .padding(.top, 26)
     }
 
-    /// Monday-first week. true = docked, false = missed, nil = still to come.
-    private var weekDots: [Bool?] {
-        var cal = Calendar.current
-        cal.firstWeekday = 2
-        guard let week = cal.dateInterval(of: .weekOfYear, for: .now) else { return [] }
-        return (0..<7).compactMap { offset -> Bool?? in
-            guard let day = cal.date(byAdding: .day, value: offset, to: week.start)
-            else { return nil }
-            if cal.startOfDay(for: day) > cal.startOfDay(for: .now) { return .some(nil) }
-            return .some(state.evenings.contains(PlainDate.string(from: day)))
-        }
+    private var weekDots: [EveningCalendar.Day] {
+        EveningCalendar.week(evenings: state.evenings)
     }
 
-    private var eveningsThisWeek: Int {
-        weekDots.compactMap { $0 }.filter { $0 }.count
-    }
+    private var eveningsThisWeek: Int { EveningCalendar.count(weekDots) }
 }
 
 #Preview("Home") {

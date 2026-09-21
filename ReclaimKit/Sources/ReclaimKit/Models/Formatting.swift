@@ -26,10 +26,13 @@ public enum Say {
         return "\(h)h \(m)m"
     }
 
-    /// "an hour and forty" — for prose, where digits read as a readout.
+    /// "an hour and 40" — for prose, where a bare "100m" reads as a readout.
+    /// Small numbers are spelled out; past twelve digits are less fussy than
+    /// "forty-three".
     public static func spokenDuration(minutes: Int) -> String {
         let h = minutes / 60, m = minutes % 60
         switch (h, m) {
+        case (0, 1): return "a minute"
         case (0, let m): return "\(number(m)) minutes"
         case (1, 0): return "an hour"
         case (1, let m): return "an hour and \(number(m))"
@@ -44,12 +47,22 @@ public enum Say {
     }
 
     /// The month a place became itself. "March".
+    ///
+    /// Formats in UTC because `PlainDate` parses in UTC. Without that, the
+    /// first of a month parsed as midnight UTC and rendered in a western
+    /// timezone comes back as the month before.
     public static func month(from isoDate: String?) -> String? {
-        guard let isoDate, let date = PlainDate.formatter.date(from: isoDate)
-        else { return nil }
-        let f = DateFormatter(); f.dateFormat = "LLLL"
-        return f.string(from: date)
+        guard let isoDate, let date = PlainDate.date(from: isoDate) else { return nil }
+        return monthFormatter.string(from: date)
     }
+
+    private static let monthFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(secondsFromGMT: 0)
+        f.dateFormat = "LLLL"
+        return f
+    }()
 }
 
 /// Postgres `date` columns come back as "yyyy-MM-dd" with no zone.

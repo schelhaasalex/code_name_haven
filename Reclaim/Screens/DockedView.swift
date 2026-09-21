@@ -34,7 +34,7 @@ struct DockedView: View {
             Spacer(minLength: 24)
 
             VStack(spacing: 14) {
-                VStack(alignment: .leading, spacing: 16) {
+                NightCard { VStack(alignment: .leading, spacing: 16) {
                     HStack(alignment: .firstTextBaseline) {
                         Text(t("docked.where.label")).eyebrow(Palette.dust)
                         Spacer()
@@ -46,10 +46,7 @@ struct DockedView: View {
                         .font(Type.body(14)).foregroundStyle(Palette.dust).lineSpacing(3)
 
                     QuietButton(title: t("docked.scan"), night: true) { /* NFC scan */ }
-                }
-                .padding(20)
-                .background(Color(hex: 0x1E1A14), in: RoundedRectangle(cornerRadius: 18))
-                .overlay { RoundedRectangle(cornerRadius: 18).stroke(Color(hex: 0x332B22), lineWidth: 1) }
+                } }
 
                 Text(t("docked.footer"))
                     .font(Type.note).foregroundStyle(Palette.dim)

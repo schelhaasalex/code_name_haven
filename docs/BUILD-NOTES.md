@@ -30,6 +30,22 @@ decode target in each RPC. Realtime is deliberately behind the
 
 Everything else is Foundation, SwiftUI, CoreMotion, ActivityKit and AppIntents.
 
+The same caveat covers `ReclaimKit/Tests/` — the assertions were reasoned
+about, not executed. Run them first:
+
+```sh
+xcodebuild test -scheme ReclaimKit -destination 'platform=iOS Simulator,name=iPhone 16'
+```
+
+They need no key and no network, so they are the cheapest thing to get green.
+They do need a simulator: `swift test` can't build ReclaimKit for macOS,
+because `Sensation` imports UIKit and the Live Activity imports ActivityKit.
+
+`CopyTests` reads `copy/strings.json` from the repository through `#filePath`
+rather than from the bundle, so it fails loudly if the file moves instead of
+passing against a stale bundled copy — and it asserts the two are identical,
+which is the failure mode of keeping the same file in two places.
+
 ## What is and isn't here
 
 **Built:** the whole data layer with previews, copy loading, design tokens, the

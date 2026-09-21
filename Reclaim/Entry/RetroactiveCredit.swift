@@ -11,46 +11,34 @@ import ReclaimKit
 /// cost, no always-on sensor, and the permission is Motion & Fitness rather
 /// than Always Location. And no notification — the card waits on Home until you
 /// next look, because nothing about it is urgent.
+///
+/// The reasoning itself is in `StationaryRuns`, where it can be tested against
+/// fixtures. What's left here is CoreMotion and nothing else.
 enum RetroactiveCredit {
 
     private static let activity = CMMotionActivityManager()
 
-    static func candidate(excluding known: [Session]) async -> (Date, Date)? {
+    static func candidate(excluding known: [Session]) async -> StationaryRuns.Run? {
         guard CMMotionActivityManager.isActivityAvailable() else { return nil }
 
         let end = Date()
         let start = end.addingTimeInterval(-60 * 60 * 24)
+        let samples = await samples(from: start, to: end)
 
-        let runs: [(Date, Date)] = await withCheckedContinuation { continuation in
+        return StationaryRuns.candidate(
+            runs: StationaryRuns.runs(from: samples, until: end),
+            existing: known.map { (start: $0.startedAt, end: $0.endedAt ?? end) })
+    }
+
+    private static func samples(from start: Date, to end: Date) async -> [StationaryRuns.Sample] {
+        await withCheckedContinuation { continuation in
             activity.queryActivityStarting(from: start, to: end, to: .main) { activities, _ in
-                guard let activities else { return continuation.resume(returning: []) }
-                var found: [(Date, Date)] = []
-                var runStart: Date?
-                for item in activities {
-                    if item.stationary && item.confidence != .low {
-                        if runStart == nil { runStart = item.startDate }
-                    } else if let began = runStart {
-                        found.append((began, item.startDate))
-                        runStart = nil
-                    }
-                }
-                if let began = runStart { found.append((began, end)) }
-                continuation.resume(returning: found)
+                continuation.resume(returning: (activities ?? []).map {
+                    StationaryRuns.Sample(start: $0.startDate,
+                                          stationary: $0.stationary,
+                                          confident: $0.confidence != .low)
+                })
             }
-        }
-
-        let minimum: TimeInterval = 15 * 60
-        let candidates = runs
-            .filter { $0.1.timeIntervalSince($0.0) >= minimum }
-            .filter { run in
-                // Don't offer something already counted.
-                !known.contains { session in
-                    session.startedAt < run.1 && (session.endedAt ?? .now) > run.0
-                }
-            }
-
-        return candidates.max { a, b in
-            a.1.timeIntervalSince(a.0) < b.1.timeIntervalSince(b.0)
         }
     }
 }

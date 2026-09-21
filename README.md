@@ -17,6 +17,7 @@ shows you a shame chart. See [VISION.md](VISION.md) for why that matters.
 |---|---|
 | **Database** | Live and tested. Five migrations applied to the hosted project; 16 assertions pass against a scratch Postgres; Supabase's linter reports nothing. |
 | **iOS app** | Written, **not yet compiled.** Authored without a Swift toolchain — see [docs/BUILD-NOTES.md](docs/BUILD-NOTES.md) for where errors will concentrate. |
+| **Tests** | `supabase/tests/` runs green. The Swift suite in `ReclaimKit/Tests/` is written and, like the app, **not yet run.** |
 | **Design** | 21 screens plus an IA map, on a canvas. Every string extracted to `copy/strings.json`. |
 | **Ceremony** | A working web rehearsal in `prototype/` — the one thing no mockup can test. |
 
@@ -46,6 +47,18 @@ Database tests, against any local Postgres:
 supabase/tests/run.sh
 ```
 
+Swift tests — formatting, copy, handles, the dot calendar, the retroactive
+offer, and which interruption wins:
+
+```sh
+# ReclaimKit imports UIKit and ActivityKit, so the tests need a simulator —
+# `swift test` cannot build the package for macOS.
+xcodebuild test -scheme ReclaimKit \
+  -destination 'platform=iOS Simulator,name=iPhone 16'
+```
+
+Or open `ReclaimKit/Package.swift` in Xcode and press ⌘U.
+
 ## What's where
 
 ```
@@ -56,6 +69,7 @@ docs/
   APP-SPEC.md        how the app is built: targets, data layer, screens
   SCHEMA-REVIEW.md   fourteen bugs found before any of this shipped
   BUILD-NOTES.md     first-build gotchas
+  STYLE.md           how the code is shaped, and what is worth testing
 copy/strings.json    every user-facing string — the primary brand asset
 supabase/            migrations (applied, tested) and the test harness
 prototype/           the web rehearsal of the five-phone moment

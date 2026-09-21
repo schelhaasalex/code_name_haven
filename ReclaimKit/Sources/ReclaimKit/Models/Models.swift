@@ -67,6 +67,12 @@ public struct Gathering: Codable, Identifiable, Hashable, Sendable {
         case endedAt = "ended_at"
     }
 
+    public init(id: UUID, placeId: UUID?, startedBy: UUID?,
+                startedAt: Date, endedAt: Date? = nil) {
+        self.id = id; self.placeId = placeId; self.startedBy = startedBy
+        self.startedAt = startedAt; self.endedAt = endedAt
+    }
+
     public var isLive: Bool { endedAt == nil }
 }
 
@@ -94,6 +100,17 @@ public struct Session: Codable, Identifiable, Hashable, Sendable {
         case durationMinutes = "duration_minutes"
         case localDate = "local_date"
         case autoClosed = "auto_closed"
+    }
+
+    public init(id: UUID, profileId: UUID, gatheringId: UUID,
+                startedAt: Date, endedAt: Date? = nil, durationMinutes: Int? = nil,
+                localDate: String, qualifying: Bool = false, autoClosed: Bool = false,
+                retroactive: Bool = false, source: SessionSource = .app) {
+        self.id = id; self.profileId = profileId; self.gatheringId = gatheringId
+        self.startedAt = startedAt; self.endedAt = endedAt
+        self.durationMinutes = durationMinutes; self.localDate = localDate
+        self.qualifying = qualifying; self.autoClosed = autoClosed
+        self.retroactive = retroactive; self.source = source
     }
 
     public var isLive: Bool { endedAt == nil }

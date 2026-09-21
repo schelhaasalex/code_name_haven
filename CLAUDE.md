@@ -74,11 +74,12 @@ Never compare people or households against each other.
 
 ```
 VISION.md  BRIEF.md  CLAUDE.md
-docs/          APP-SPEC.md, SCHEMA-REVIEW.md
+docs/          APP-SPEC.md, SCHEMA-REVIEW.md, STYLE.md
 copy/          strings.json — every user-facing string
 supabase/      migrations/ (applied, tested) and tests/
 prototype/     ceremony.html — the web rehearsal of the five-phone moment
 ReclaimKit/    shared Swift package: models, data, ceremony, copy, design
+               — and Tests/, which is where anything testable belongs
 Reclaim/       the app target
 ReclaimWidgets/ Live Activity, widget, Control Center control
 project.yml    XcodeGen manifest — the project file is generated, not committed
@@ -139,6 +140,13 @@ against hosted Supabase.
   network.
 - Screens are named for the canvas (`HomeView` is screen 2). The spec has the
   full mapping.
+- One view per file, components take data rather than `AppState`, and logic
+  worth testing moves to `ReclaimKit` as functions over plain values.
+  `docs/STYLE.md` is the long version.
+
+```sh
+xcodebuild test -scheme ReclaimKit -destination 'platform=iOS Simulator,name=iPhone 16'
+```
 
 ## Scope
 

@@ -63,48 +63,7 @@ struct RhythmView: View {
     }
 
     private var grid: some View {
-        let cells = lastFourWeeks
-        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 9), count: 7),
-                         spacing: 9) {
-            ForEach(Array(cells.enumerated()), id: \.offset) { _, day in
-                RoundedRectangle(cornerRadius: 9)
-                    .fill(fill(day))
-                    .frame(height: 32)
-                    .overlay { stroke(day) }
-            }
-        }
-    }
-
-    private enum Day { case docked, missed, rest, future }
-
-    private func fill(_ day: Day) -> Color {
-        switch day {
-        case .docked: Palette.ink
-        case .missed: Palette.line
-        case .rest:   Palette.restFill
-        case .future: .clear
-        }
-    }
-
-    @ViewBuilder private func stroke(_ day: Day) -> some View {
-        switch day {
-        case .rest:   RoundedRectangle(cornerRadius: 9).stroke(Palette.restStroke, lineWidth: 1.5)
-        case .future: RoundedRectangle(cornerRadius: 9)
-                        .strokeBorder(Palette.line, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-        default:      EmptyView()
-        }
-    }
-
-    private var lastFourWeeks: [Day] {
-        var cal = Calendar.current
-        cal.firstWeekday = 2
-        let today = cal.startOfDay(for: .now)
-        guard let start = cal.date(byAdding: .day, value: -27, to: today) else { return [] }
-        return (0..<28).map { offset in
-            guard let day = cal.date(byAdding: .day, value: offset, to: start) else { return .future }
-            if day > today { return .future }
-            return state.evenings.contains(PlainDate.string(from: day)) ? .docked : .missed
-        }
+        DayGrid(days: EveningCalendar.grid(evenings: state.evenings, weeks: 4))
     }
 
     private var legend: some View {

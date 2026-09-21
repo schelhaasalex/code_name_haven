@@ -16,22 +16,10 @@ public final class AppState {
     }
 
     /// The four screens that surface OVER Home rather than being navigated to.
-    /// Computed on foreground, at most one shown per launch, in this order.
-    public enum Interruption: Identifiable, Equatable {
-        case autoClosed(Session)          // 13
-        case rhythmEnded(Rhythm)          // 14
-        case countThat(from: Date, to: Date)  // 18
-        case makeItOneTap                 // 20
-
-        public var id: String {
-            switch self {
-            case .autoClosed(let s):   "auto-\(s.id)"
-            case .rhythmEnded:         "rhythm-ended"
-            case .countThat(let f, _): "count-\(f.timeIntervalSince1970)"
-            case .makeItOneTap:        "one-tap"
-            }
-        }
-    }
+    /// The enum and the order they arrive in live in `ReclaimKit`, so the
+    /// precedence can be tested without a phone; the typealias keeps them
+    /// spelled `AppState.Interruption` at the call sites.
+    public typealias Interruption = ReclaimKit.Interruption
 
     let repo: any Repository
     let transport: any CeremonyTransport
@@ -40,7 +28,9 @@ public final class AppState {
     public var profile: Profile?
     public var places: [Place] = []
     public var rhythm: Rhythm = .empty
-    public var evenings: [String] = []      // local_date strings, this week
+    /// Distinct qualifying local_dates. A Set because a five-person dinner is
+    /// ONE evening — counting sessions would scale every number with household size.
+    public var evenings: Set<String> = []
     public var pending: Interruption?
     public var banner: String?
 
@@ -94,7 +84,7 @@ public final class AppState {
     private func loadEvenings() async {
         let since = Calendar.current.date(byAdding: .day, value: -35, to: .now) ?? .now
         let sessions = (try? await repo.mySessions(since: since)) ?? []
-        evenings = Array(Set(sessions.filter(\.qualifying).map(\.localDate))).sorted()
+        evenings = Set(sessions.filter(\.qualifying).map(\.localDate))
     }
 
     // MARK: - The loop
@@ -205,20 +195,14 @@ public final class AppState {
     public func computeInterruption() async {
         guard pending == nil, phase == .ready else { return }
         let recent = (try? await repo.mySessions(since: .now.addingTimeInterval(-60 * 60 * 36))) ?? []
-
-        if let closed = recent.first(where: { $0.autoClosed }) {
-            pending = .autoClosed(closed); return
-        }
-        if rhythm.state == .between, rhythm.longestRunDays > 1 {
-            pending = .rhythmEnded(rhythm); return
-        }
-        if let (from, to) = await RetroactiveCredit.candidate(excluding: recent) {
-            pending = .countThat(from: from, to: to); return
-        }
-        let qualifying = recent.filter(\.qualifying).count
-        if qualifying >= 5, !OneTapOffer.hasBeenOffered {
-            pending = .makeItOneTap
-        }
+        pending = await Interruption.first(
+            recent: recent,
+            rhythm: rhythm,
+            // Distinct dates over the last five weeks, not sessions in the last
+            // day and a half: screen 20 arrives after five EVENINGS.
+            evenings: evenings.count,
+            oneTapOffered: OneTapOffer.hasBeenOffered,
+            stationary: { await RetroactiveCredit.candidate(excluding: recent) })
     }
 
     public func dismissInterruption() { pending = nil }

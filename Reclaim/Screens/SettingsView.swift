@@ -28,9 +28,7 @@ struct SettingsView: View {
                     }
                 }
                 .tint(Palette.ink)
-                .padding(18)
-                .background(Palette.paper, in: RoundedRectangle(cornerRadius: 16))
-                .overlay { RoundedRectangle(cornerRadius: 16).stroke(Palette.line, lineWidth: 1) }
+                .paperCard()
                 .onChange(of: nudge) { _, on in
                     Task {
                         try? await state.repo.updateProfile(nudgeEnabled: on,
@@ -39,14 +37,14 @@ struct SettingsView: View {
                     }
                 }
 
-                section(t("settings.how.label")) {
+                LabelledSection(label: t("settings.how.label")) {
                     ForEach(1...3, id: \.self) { i in
                         Text(t("settings.how.\(i)"))
                             .font(Type.body(14)).foregroundStyle(Palette.ink2).lineSpacing(2)
                     }
                 }
 
-                section(t("settings.see.label")) {
+                LabelledSection(label: t("settings.see.label")) {
                     Text(t("settings.see.body"))
                         .font(Type.body(14)).foregroundStyle(Palette.ink2).lineSpacing(2)
                 }
@@ -54,11 +52,9 @@ struct SettingsView: View {
                 Spacer(minLength: 20)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Button(t("settings.signout")) {
+                    TextAction(title: t("settings.signout"), tint: Palette.ink2) {
                         Task { try? await (state.repo as? SupabaseRepository)?.client.auth.signOut() }
                     }
-                    .font(Type.body(16, weight: .medium)).foregroundStyle(Palette.ink2)
-                    .frame(minHeight: 48)
 
                     // App Store guideline 5.1.1(v) — deletion must be in-app.
                     Button { confirmingDelete = true } label: {
@@ -89,13 +85,6 @@ struct SettingsView: View {
         }
     }
 
-    @ViewBuilder
-    private func section(_ label: String, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(label).eyebrow(Palette.muted)
-            VStack(alignment: .leading, spacing: 10) { content() }
-        }
-    }
 }
 
 #Preview {
