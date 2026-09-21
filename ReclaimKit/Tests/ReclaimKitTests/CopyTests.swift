@@ -13,7 +13,7 @@ final class CopyTests: XCTestCase {
     /// verbatim — the failure is silent in production, where a missing key
     /// renders as an empty string.
     private let knownTokens: Set<String> = [
-        "count", "duration", "from", "handle", "month", "name", "names",
+        "count", "day", "duration", "from", "handle", "month", "name", "names",
         "place", "stage", "time", "to"
     ]
 

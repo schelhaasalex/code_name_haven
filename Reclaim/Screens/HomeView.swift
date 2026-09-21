@@ -62,7 +62,7 @@ struct HomeView: View {
 
     private var usual: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(t("home.eyebrow")).eyebrow(Palette.clay)
+            Text(Say.partOfDay(.now)).eyebrow(Palette.clay)
             Text(t("home.headline")).font(Type.hero).foregroundStyle(Palette.ink)
             Text(t("home.body")).font(Type.lede).foregroundStyle(Palette.ink2).lineSpacing(4)
         }

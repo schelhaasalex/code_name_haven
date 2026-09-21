@@ -39,6 +39,16 @@ public final class AppState {
     /// Screen 4. Someone set theirs down at a place you know — the only thing
     /// in the product that interrupts, and only ever to say someone is there.
     public var invitation: Invitation?
+    /// Screen 8, held here rather than in the session view: ending clears
+    /// `session`, which takes the session view off screen with it.
+    public var justEnded: Ended?
+
+    public struct Ended: Equatable {
+        public let startedAt: Date
+        public let minutes: Int
+        public let people: Int
+        public let place: String?
+    }
     /// Your own recent sessions and the gatherings they belong to, kept so a
     /// screen can ask where your evenings happened without a round trip each.
     public private(set) var recent: [Session] = []

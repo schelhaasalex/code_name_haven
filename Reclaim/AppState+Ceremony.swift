@@ -30,9 +30,17 @@ extension AppState {
 
     public func end() async {
         guard let s = session else { return }
+        let people = max(1, members.count)
+        let place = placeName
+        let estimate = Int(Date().timeIntervalSince(startedAt ?? s.startedAt) / 60)
         if let me = profile?.id { await transport.send(.released(profile: me), from: me) }
-        _ = try? await repo.endSession(s.id)
+        // What the database credited is what counted — capped, if it came to
+        // that. The phone's own clock is only the fallback.
+        let credited = try? await repo.endSession(s.id)
         Sensation.ended()
+        // Set in the same turn as the teardown, so Home never flashes between.
+        justEnded = Ended(startedAt: startedAt ?? s.startedAt, minutes: max(0, credited ?? estimate),
+                          people: people, place: place)
         await teardown()
         self.rhythm = (try? await repo.myRhythm()) ?? rhythm
         await loadEvenings()

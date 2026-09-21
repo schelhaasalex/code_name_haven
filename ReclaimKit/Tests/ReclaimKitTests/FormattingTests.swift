@@ -19,6 +19,32 @@ final class FormattingTests: XCTestCase {
         XCTAssertEqual(Say.count(-1), "-1 of you")
     }
 
+    /// Monday 21 September 2026, in one fixed zone and language.
+    private func monday(_ hour: Int, _ minute: Int = 0) -> (Date, Calendar) {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Europe/Amsterdam")!
+        cal.locale = Locale(identifier: "en_US")
+        let date = cal.date(from: DateComponents(year: 2026, month: 9, day: 21,
+                                                 hour: hour, minute: minute))!
+        return (date, cal)
+    }
+
+    func testPartOfDaySaysWhichDayItIs() {
+        let (morning, cal) = monday(9)
+        XCTAssertEqual(Say.partOfDay(morning, calendar: cal), "Monday morning")
+        XCTAssertEqual(Say.partOfDay(monday(12).0, calendar: cal), "Monday afternoon")
+        XCTAssertEqual(Say.partOfDay(monday(19, 30).0, calendar: cal), "Monday evening")
+        XCTAssertEqual(Say.partOfDay(monday(23).0, calendar: cal), "Monday night")
+    }
+
+    /// One in the morning is still the night before — it belongs to the
+    /// evening that started it, as `local_date` does.
+    func testSmallHoursBelongToTheNightBefore() {
+        let (early, cal) = monday(1)
+        XCTAssertEqual(Say.partOfDay(early, calendar: cal), "Sunday night")
+        XCTAssertEqual(Say.partOfDay(monday(5).0, calendar: cal), "Monday morning")
+    }
+
     func testDurationNeverShowsAZeroHour() {
         XCTAssertEqual(Say.duration(minutes: 0), "0m")
         XCTAssertEqual(Say.duration(minutes: 48), "48m")
