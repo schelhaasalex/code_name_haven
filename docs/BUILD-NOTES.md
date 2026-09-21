@@ -46,6 +46,13 @@ Both channel kinds are private, authorised by the policies in `0006`
 (schema review, finding 15). A private channel needs a signed-in user, so the
 unauthenticated two-client check above no longer works — by design.
 
+Nothing awaits a channel. A refused or unreachable subscribe is retried by the
+SDK — five attempts, ten seconds each — so `AppState` hands joining, announcing
+and watching to `CeremonyLink`, which runs them in order off to the side. The
+chime, the face-down sensor, `SessionFlag` and the Live Activity no longer wait
+a minute behind a channel (rule 7). `CeremonyLinkTests` holds joins open to
+check the races: ending mid-join, and starting again before the first lands.
+
 ## Compiles, but known to be wrong
 
 Found by reading, not yet fixed. None of these shows up as an error — each

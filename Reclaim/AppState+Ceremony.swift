@@ -17,22 +17,12 @@ extension AppState {
         do {
             let id = try await repo.startOrJoin(place: place, source: source)
             guard let s = try await repo.liveSession(), s.id == id else { return }
-            await adopt(session: s, at: at)
-            // Render on send, ignore your own echo — otherwise the person who
-            // tapped is the last at the table to feel anything.
+            // The moment, as soon as the database says it counts. Render on
+            // send and ignore your own echo — otherwise the person who tapped
+            // is the last at the table to feel anything, and behind a channel
+            // that can take a minute to refuse, the last by a long way.
             Sensation.docked()
-            if let me = profile?.id {
-                await transport.send(.docked(at: at), from: me)
-            }
-            // And tell the place, so the others get screen 4. Your own name,
-            // from your own row — it is the only way anyone learns it before
-            // they join.
-            if let placeId = gathering?.placeId {
-                await transport.announce(
-                    Invitation(gathering: s.gatheringId, place: placeId,
-                               name: profile?.displayName,
-                               count: max(1, members.count), at: at))
-            }
+            await adopt(session: s, at: at, announcing: true)
         } catch {
             banner = t("error.retry")
         }
@@ -49,13 +39,12 @@ extension AppState {
         await Notifications.reschedule(for: profile)
     }
 
-    func adopt(session s: Session, at: Date? = nil) async {
+    /// Everything on this phone first, then what the database knows, then the
+    /// channel — queued, never awaited. `announcing` is for a session this
+    /// phone just started, as opposed to one found running at launch.
+    func adopt(session s: Session, at: Date? = nil, announcing: Bool = false) async {
         session = s
         startedAt = at ?? s.startedAt
-        gathering = try? await repo.gathering(s.gatheringId)
-        members = (try? await repo.members(of: s.gatheringId)) ?? []
-        try? await transport.join(gathering: s.gatheringId)
-        listen()
         faceDown.start { [weak self] down in
             guard let self else { return }
             Task { @MainActor in await self.setFaceDown(down) }
@@ -63,38 +52,53 @@ extension AppState {
         // Never buzz during a session. A nudge mid-evening is the app becoming
         // the thing it replaces.
         Notifications.silenceForSession()
-        // Nothing invites you to a table you are already sitting at.
-        await stopWatchingPlaces()
         // What the Control Centre toggle draws itself from, since a control
         // can't ask the database and has to answer instantly.
         SessionFlag.isLive = true
+        // Nothing invites you to a table you are already sitting at.
+        invitePump?.cancel(); invitePump = nil
+        listen()
+
+        gathering = try? await repo.gathering(s.gatheringId)
+        members = (try? await repo.members(of: s.gatheringId)) ?? []
         await LiveActivityController.start(
             gatheringId: s.gatheringId,
             startedAt: startedAt ?? s.startedAt,
             memberCount: max(1, members.count),
             placeName: placeName)
+
+        // Your own name, from your own row, to the place — the only way anyone
+        // learns it before they join (screen 4).
+        let invitation = gathering?.placeId.map {
+            Invitation(gathering: s.gatheringId, place: $0, name: profile?.displayName,
+                       count: max(1, members.count), at: startedAt ?? s.startedAt)
+        }
+        link.connect(gathering: s.gatheringId, me: profile?.id,
+                     docked: announcing ? startedAt : nil,
+                     invitation: announcing ? invitation : nil)
     }
 
     private func teardown() async {
         pump?.cancel(); pump = nil
         faceDown.stop()
-        await transport.leave()
+        link.disconnect()
         await LiveActivityController.end()
         session = nil; gathering = nil; members = []; startedAt = nil
         iAmFaceDown = false
         SessionFlag.isLive = false
-        await watchPlaces()
+        watchPlaces()
     }
 
     // MARK: - Invitations
 
     /// Listening at your own places while nothing is running. This is the only
     /// thing the app does in the background, and all it can ever hear is that
-    /// somebody arrived somewhere you both know.
-    func watchPlaces() async {
+    /// somebody arrived somewhere you both know. Queued behind anything the
+    /// link is still doing, so a slow subscribe holds up nothing else.
+    func watchPlaces() {
         let ids = places.map(\.id)
         guard !ids.isEmpty else { return }
-        await transport.watch(places: ids)
+        link.watch(places: ids)
         invitePump?.cancel()
         let stream = transport.invitations()
         invitePump = Task { [weak self] in
@@ -103,11 +107,6 @@ extension AppState {
                 await self.offer(invitation)
             }
         }
-    }
-
-    func stopWatchingPlaces() async {
-        invitePump?.cancel(); invitePump = nil
-        await transport.stopWatching()
     }
 
     private func offer(_ invitation: Invitation) async {
