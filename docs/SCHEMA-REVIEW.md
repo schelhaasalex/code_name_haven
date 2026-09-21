@@ -8,8 +8,9 @@ and asserted in `supabase/tests/01_schema_test.sql`, which runs green.
 supabase/tests/run.sh          # 16 assertions, all passing
 ```
 
-Three of these were found only by **executing** the SQL rather than reading it.
-That is the argument for doing it this way.
+Three were found only by **executing** the SQL against a local Postgres, and
+two more only by applying it to a real hosted project. That is the argument
+for doing it this way rather than reading carefully.
 
 ---
 
@@ -147,7 +148,7 @@ per person per year, so there is no performance argument for caching it.
 The local scratch Postgres proved the logic. It could not prove the platform.
 Both of these appeared the moment the migrations ran against real Supabase.
 
-### 12. `anon` had `GRANT ALL` on every table
+### 13. `anon` had `GRANT ALL` on every table
 
 A hosted project ships with
 
@@ -173,7 +174,7 @@ future migrations don't quietly re-acquire them. Verified on the live project:
 INSERT,SELECT,UPDATE`, `sessions: DELETE,SELECT`, plus column-scoped SELECT on
 `places` with `join_secret_hash` absent and `name` the only updatable column.
 
-### 13. Three functions had a mutable `search_path`
+### 14. Three functions had a mutable `search_path`
 
 Supabase's own database linter flagged `app.qualifying_minutes`,
 `app.auto_close_minutes` and `app.place_stage`
