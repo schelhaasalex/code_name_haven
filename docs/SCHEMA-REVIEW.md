@@ -5,7 +5,7 @@ existed as migrations. Every finding below is fixed in `supabase/migrations/`
 and asserted in `supabase/tests/01_schema_test.sql`, which runs green.
 
 ```
-supabase/tests/run.sh          # 17 assertions, all passing
+supabase/tests/run.sh          # 18 assertions, all passing
 ```
 
 Three were found only by **executing** the SQL against a local Postgres, and
@@ -187,9 +187,44 @@ The linter now reports **no findings**.
 
 ---
 
+## One found from the client side
+
+### 15. The ceremony ran on public Realtime channels
+
+Found while fixing the client's broadcast decoding, not by reading SQL: the
+live check that proved the fix worked needed no sign-in at all. Anyone holding
+the publishable key — which ships inside the app — could subscribe to
+`gathering:<id>` or `place:<id>` and hear who set their phone down and when,
+names included. Row level security never saw it, because public channels don't
+consult the database. Rule 1, broken by a side door.
+
+**Fix.** `0006` puts listen (SELECT) and send (INSERT) policies on
+`realtime.messages`, built on the existing `app.my_gathering_ids()` and
+`app.my_place_ids()`, so a channel is never wider than the tables behind it.
+Broadcast only — presence would be a roster of who is connected. The client
+joins both channel kinds with `isPrivate = true`.
+
+One trap inside the fix: Swift's `uuidString` is uppercase and Postgres prints
+uuids in lowercase, so an exact comparison would have refused every join, and
+a refused join is a channel that simply hears nothing. The policy lowercases
+the topic, the client sends it lowercase, and both are tested.
+
+Assertion 15 runs the policies locally against a stub of `realtime` shaped
+after the hosted one. The same eight cases were then run on the hosted project,
+against the real partitioned table, inside a transaction that raised on purpose
+so nothing was kept: members listen and send, uppercase topics match,
+strangers, `anon`, presence and malformed topics are refused. The linter
+reports nothing.
+
+With public and private channels being separate even under the same topic,
+the client change is what closes the leak. Turning off **Allow public access**
+under Realtime → Settings refuses public channels outright, as a second line.
+
+---
+
 ## Verified against the live project
 
-Beyond the 17 offline assertions, the full flow was run once on the hosted
+Beyond the offline assertions, the full flow was run once on the hosted
 database through the real `auth.uid()` path, with a throwaway user deleted
 afterwards: create a place, start a session by tag, end it, and read back
 `place_summary` (1 evening, 120 wall-clock minutes, stage "new here", no longer
@@ -234,7 +269,7 @@ added `revoke ... from anon` to `0002`, but `run.sh` only ever created the
 `role "anon" does not exist`, while the README went on claiming sixteen green
 assertions. It also applied `0001`–`0003` and stopped, leaving `0004` and the
 `0005` wrappers — the functions the client actually calls — untested locally.
-Both are fixed, the suite runs green against all five migrations, and assertion
+Both are fixed, the suite runs green against all six migrations, and assertion
 12 now checks the wrapper surface: ten functions callable by `authenticated`,
 `app.auto_close_stale` callable by neither, `anon` holding nothing. A test
 suite that isn't run by something is a test suite that has stopped;

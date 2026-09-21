@@ -15,6 +15,12 @@ import Supabase
 ///   number, so decoding has to go through `AnyJSON.decoder`, its pair.
 public enum CeremonyWire {
 
+    /// Channel names, lowercased to match how Postgres prints a uuid. The
+    /// policies in migration 0006 compare against `'gathering:' || id::text`,
+    /// and Swift's `uuidString` is uppercase.
+    public static func topic(gathering: UUID) -> String { "gathering:\(gathering.uuidString.lowercased())" }
+    public static func topic(place: UUID) -> String { "place:\(place.uuidString.lowercased())" }
+
     public struct Payload: Codable, Equatable, Sendable {
         public var kind: String          // "docked" | "facedown" | "released"
         public var sender: String

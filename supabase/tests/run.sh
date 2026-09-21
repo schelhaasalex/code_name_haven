@@ -21,10 +21,12 @@ psql -q -d "$DB" -c "do \$\$ begin
 # wrappers the client actually calls are the least-tested thing in the project.
 psql -v ON_ERROR_STOP=1 -q -d "$DB" \
   -f "$ROOT/supabase/tests/00_local_auth_stub.sql" \
+  -f "$ROOT/supabase/tests/00_local_realtime_stub.sql" \
   -f "$ROOT/supabase/migrations/0001_init.sql" \
   -f "$ROOT/supabase/migrations/0002_rls.sql" \
   -f "$ROOT/supabase/migrations/0003_api.sql" \
   -f "$ROOT/supabase/migrations/0004_function_search_path.sql" \
-  -f "$ROOT/supabase/migrations/0005_public_api.sql"
+  -f "$ROOT/supabase/migrations/0005_public_api.sql" \
+  -f "$ROOT/supabase/migrations/0006_realtime_auth.sql"
 
 psql -v ON_ERROR_STOP=1 -q -d "$DB" -f "$ROOT/supabase/tests/01_schema_test.sql"

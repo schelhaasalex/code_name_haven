@@ -444,4 +444,99 @@ begin
   raise notice 'PASS 12  ten wrappers callable by authenticated, none by anon';
 end $$;
 
+-- ============================================================ FINDING 15
+-- Realtime. A private channel asks realtime.messages whether you may listen
+-- (SELECT) or send (INSERT), with realtime.topic set to the channel. These
+-- helpers do what Realtime does on join: a probe row, the topic, the person,
+-- then the client's role. They live in their own schema so finding 12's count
+-- of what's callable in public stays about the product.
+
+create schema reclaim_test;
+grant usage on schema reclaim_test to authenticated, anon;
+
+create function reclaim_test.can_listen(p_role text, p_user uuid, p_topic text,
+                                        p_ext text default 'broadcast')
+returns boolean language plpgsql as $$
+declare n int;
+begin
+  insert into realtime.messages (topic, extension, event) values (p_topic, p_ext, 'probe');
+  perform set_config('realtime.topic', p_topic, true);
+  perform set_config('request.jwt.claim.sub', coalesce(p_user::text, ''), true);
+  execute format('set local role %I', p_role);
+  select count(*) into n from realtime.messages where topic = p_topic and event = 'probe';
+  reset role;
+  delete from realtime.messages where event = 'probe';
+  return n > 0;
+end $$;
+
+create function reclaim_test.can_send(p_role text, p_user uuid, p_topic text)
+returns boolean language plpgsql as $$
+declare ok boolean := true;
+begin
+  perform set_config('realtime.topic', p_topic, true);
+  perform set_config('request.jwt.claim.sub', coalesce(p_user::text, ''), true);
+  execute format('set local role %I', p_role);
+  begin
+    insert into realtime.messages (topic, extension, event) values (p_topic, 'broadcast', 'probe');
+  exception when insufficient_privilege then
+    ok := false;
+  end;
+  reset role;
+  delete from realtime.messages where event = 'probe';
+  return ok;
+end $$;
+
+grant execute on all functions in schema reclaim_test to authenticated, anon;
+
+do $$
+declare
+  v_host     uuid := '55555555-5555-5555-5555-555555555555';
+  v_stranger uuid := '66666666-6666-6666-6666-666666666666';
+  v_place uuid; v_gathering uuid; g text; p text;
+begin
+  insert into auth.users (id, email) values (v_host, 'host@example.test'),
+                                            (v_stranger, 'stranger@example.test');
+  insert into profiles (id, display_name) values (v_host, 'Host'), (v_stranger, 'Stranger');
+
+  perform auth.login(v_host);
+  v_place := app.create_place('still-lantern', 'yet-another-long-random-secret', 'The Porch');
+  perform app.start_or_join(v_place, 'app', 'UTC');
+  select gathering_id into v_gathering from sessions where profile_id = v_host and ended_at is null;
+  perform auth.logout();
+
+  g := 'gathering:' || v_gathering;
+  p := 'place:' || v_place;
+
+  assert reclaim_test.can_listen('authenticated', v_host, g),     'a member must hear their gathering';
+  assert reclaim_test.can_send('authenticated', v_host, g),       'a member must be able to send to it';
+  assert reclaim_test.can_listen('authenticated', v_host, p),     'a member must hear their place';
+  assert reclaim_test.can_send('authenticated', v_host, p),       'a member must be able to announce at it';
+
+  -- The client builds topics from Swift's uuidString, which is uppercase.
+  assert reclaim_test.can_listen('authenticated', v_host, upper(g)), 'an uppercase topic must still match';
+  assert reclaim_test.can_send('authenticated', v_host, 'PLACE:' || upper(v_place::text)),
+    'an uppercase place topic must still match';
+
+  assert not reclaim_test.can_listen('authenticated', v_stranger, g), 'a stranger must not hear the gathering';
+  assert not reclaim_test.can_send('authenticated', v_stranger, g),   'a stranger must not send to it';
+  assert not reclaim_test.can_listen('authenticated', v_stranger, p), 'a stranger must not hear the place';
+  assert not reclaim_test.can_send('authenticated', v_stranger, p),   'a stranger must not announce at it';
+
+  assert not reclaim_test.can_listen('anon', null, g), 'anon must not hear anything';
+  assert not reclaim_test.can_send('anon', null, p),   'anon must not send anything';
+
+  -- Presence would be a roster of who is connected. Rule 3.
+  assert not reclaim_test.can_listen('authenticated', v_host, g, 'presence'), 'presence must be refused';
+
+  -- Refused, not an error inside a policy.
+  assert not reclaim_test.can_listen('authenticated', v_host, 'gathering:not-a-uuid'), 'a malformed topic is refused';
+  assert not reclaim_test.can_listen('authenticated', v_host, 'somewhere-else'),       'an unknown topic is refused';
+
+  -- Leaving a place closes its channel to you.
+  update place_people set left_at = now() where place_id = v_place and profile_id = v_host;
+  assert not reclaim_test.can_listen('authenticated', v_host, p), 'someone who left must not hear the place';
+
+  raise notice 'PASS 15  channels open to members only, uppercase topics match, anon and presence refused';
+end $$;
+
 do $$ begin raise notice '--- all assertions held ---'; end $$;
