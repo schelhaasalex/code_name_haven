@@ -5,7 +5,7 @@ the same, and the place you did it in slowly becomes something. **V1 has no
 hardware.** The BLE/NFC puck is v2 and out of scope until asked for.
 
 Screens: see the canvas at `https://claude.ai/artifact/RuTNpxy63bmnsAGC6cXLjL`
-(20 screens plus an IA map). Where this document and the screens disagree,
+(21 screens plus an IA map). Where this document and the screens disagree,
 the screens are newer.
 
 ---
@@ -130,8 +130,9 @@ capture it then or lose it permanently; fall back to an empty field and ask.
 `profiles` — `id` (fk auth.users), `display_name`, `nudge_enabled`,
 `nudge_hour`, `created_at`
 
-`places` — `id`, `name` (nullable), `code` (unique, short, printed on the
-card), `created_by`, `site_id` (nullable — see Hierarchy), `created_at`
+`places` — `id`, `name` (nullable), `handle` (unique word pair, printed on the
+card, display only), `join_secret` (long random, lives in the tag and QR),
+`created_by`, `site_id` (nullable — see Hierarchy), `created_at`
 
 `place_people` — `place_id`, `profile_id`, `first_seen_at`. Written the first
 time someone docks there. This is what RLS keys off and what screen 17 lists.
@@ -209,13 +210,33 @@ A place cannot be demoted, isn't a person so ranking it shames nobody, and it
 belongs to everyone who's been there. It also rewards hosting and inviting,
 which is the cold-start problem.
 
-**Place names and ownership.** `code` is the identity; `name` is a label, so
-renaming never invalidates a card, a session or any history. A name is set
-one of three ways, all optional and none blocking: you name it when you print
-its card, you name a "Somewhere" bucket afterwards and its sessions attach to
-the new place, or you never name it at all. Offer two or three one-tap
-suggestions when naming rather than an empty text field — nothing can be
-inferred, but a blank box is the worst moment in any flow.
+**Place names and ownership.** A place has **two identifiers and they do
+different jobs.** The `name` is human and meaningful ("The Kitchen Table").
+The `handle` is a generated word pair ("Amber Otter") printed on the card —
+sayable down a phone, easy to tell two cards apart, and stable forever.
+Renaming therefore never invalidates a card, a session or any history.
+
+Do **not** generate a whimsical name. Colour-plus-animal is the wrong
+archetype (Jester, not Caregiver) and it fights the point of screen 9 —
+"Amber Otter has been a reclaim house since March" is absurd where "The
+Kitchen Table" is not. Defaults stick, so a cute one would quietly displace
+the meaningful one. Generated names are right for the handle and wrong for
+the name.
+
+**The handle is not a credential.** The join secret is a long random value
+inside the NFC tag and the QR; typing "Amber Toucan" gets you nothing. If the
+sayable identifier were also sufficient to join, a small dictionary would be
+brute-forceable and "being in the room" would stop being the access control.
+Rate-limit resolution of the secret regardless.
+
+A name is set one of three ways, all optional and none blocking: you name it
+when you print its card, you name a "Somewhere" bucket afterwards and its
+sessions attach to the new place, or you never name it at all. Offer around
+six one-tap suggestions when naming rather than an empty text field — nothing
+can be inferred, but a blank box is the worst moment in any flow, and the
+list genuinely covers most cases. Never frame an unnamed place as a
+deficiency: "four evenings, somewhere — they count the same", not "you never
+named these".
 
 Only `created_by` can rename. Don't build more permission than that: if you
 think someone's place is misnamed you are sitting in the room with them, and
