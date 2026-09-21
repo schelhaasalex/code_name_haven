@@ -127,58 +127,51 @@ capture it then or lose it permanently; fall back to an empty field and ask.
 
 ## Data model (Supabase / Postgres)
 
-`profiles` — `id` (fk auth.users), `display_name`, `nudge_enabled`,
-`nudge_hour`, `created_at`
+**The schema lives in `supabase/migrations/`, not here.** It has been written,
+executed and tested — see `docs/SCHEMA-REVIEW.md` for the adversarial pass that
+produced it and the eleven findings it fixed. `supabase/tests/run.sh` runs 16
+assertions against a scratch Postgres.
 
-`places` — `id`, `name` (nullable), `handle` (unique word pair, printed on the
-card, display only), `join_secret` (long random, lives in the tag and QR),
-`created_by`, `site_id` (nullable — see Hierarchy), `created_at`
+The invariants worth knowing before you touch it:
 
-`place_people` — `place_id`, `profile_id`, `first_seen_at`. Written the first
-time someone docks there. This is what RLS keys off and what screen 17 lists.
-
-`gatherings` — `id`, `place_id` (nullable), `started_by`, `started_at`,
-`ended_at`. Every session belongs to one; a solo session is a gathering of
-one. This is what "five of you" counts.
-
-`sessions` — `id`, `profile_id`, `gathering_id`, `place_id` (nullable),
-`started_at`, `ended_at` (nullable while live), `duration_minutes`,
-`local_date` (the user's local calendar date at start — computed at write
-time; this is what streak maths uses), `qualifying` (bool, snapshotted),
-`auto_closed` (bool), `retroactive` (bool), `source`
-(`app|tag|control|siri|shortcut|retroactive`), `puck_id` (nullable, always
-null in v1)
-
-`rhythms` (cached, fully recomputable from sessions) — `profile_id`,
-`state` (`in_rhythm|between`), `current_run_days`, `longest_run_days`,
-`last_qualifying_date`, `rest_day_available` (bool)
+- **A gathering owns the place.** Sessions carry no `place_id`, because two
+  copies of one fact are free to disagree. A solo session is a gathering of one.
+- **At most one open gathering per place**, enforced by a partial unique index.
+  That is the fix for two people tapping within seconds of each other;
+  `app.start_or_join` catches the conflict and joins instead.
+- **`local_date` lives on the session**, in the user's timezone at start. It is
+  what rhythm maths uses, and `COUNT(DISTINCT local_date)` is what makes a
+  five-person dinner one evening rather than five.
+- **Other people's session and profile rows are never readable.** RLS cannot
+  express "aggregate but not enumerable", so co-presence comes only from
+  `app.gathering_members` and `app.place_summary`. The client may not read
+  another person's rows directly, ever.
+- **Two hour figures, named apart.** `wall_clock_minutes` (how long the room was
+  gathered — screen 9) and `person_minutes` (summed across people — the "hours
+  reclaimed" supporting metric).
+- **Clients cannot insert or update gatherings and sessions.** The RPCs own the
+  lifecycle, because that is where the invariants live.
+- **A place's `handle` is display only**; the join credential is a hashed secret
+  reachable only through `app.resolve_place`, which also follows merge chains so
+  a merged place's card keeps working.
 
 **Deleted from v1 relative to the original brief:** `households`,
-`household_members`, `reward_tiers`, `redemptions`, `invites`, `streaks`,
-and every points column. Points and rewards are gone entirely — a place
-accrues character, not currency. Inviting a friend is a share-sheet link, not
-a table.
+`household_members`, `reward_tiers`, `redemptions`, `invites`, `streaks`, and
+every points column. Points and rewards are gone entirely — a place accrues
+character, not currency. Inviting a friend is a share-sheet link, not a table.
 
-**Constants, not configuration.** Qualifying minimum (15 min), auto-close
-ceiling (3 hours), rest-day refresh (weekly). Screen 16 states these as facts
-rather than offering them as dials. There is no settings table.
+**Constants, not configuration.** Qualifying minimum (15 min) and auto-close
+ceiling (3 hours) are `IMMUTABLE` functions. Screen 16 states them as facts
+rather than offering them as dials, so there is no settings table.
 
-**Row Level Security.** Everything scopes through `place_people` for the
-calling user. Write the membership check as a `SECURITY DEFINER` function
-returning the caller's place ids and have every policy call it — a policy on
-`place_people` that itself queries `place_people` causes infinite recursion,
-which is the classic footgun with exactly this shape.
+**Hierarchy.** Not built, on purpose. Sessions always happen at a leaf, so a
+parent is only ever a reporting concern and can be added later without touching
+the session model. When it's needed: one nullable `site_id`, **depth one**.
+Arbitrary depth means recursive CTEs and genuinely nasty RLS. The likely failure
+is fragmentation, and the fix for that is `app.merge_places`, which exists.
 
-**Hierarchy.** Don't build a tree. Sessions always happen at a leaf, so a
-parent is only ever a *reporting* concern and can be added later without
-touching the session model. When it's needed: one nullable `site_id`, **depth
-one**, rooms belong to a site and sites never belong to sites. Arbitrary
-depth means recursive CTEs and genuinely nasty RLS. The likely failure is
-fragmentation (four rooms, eight evenings each, every place permanently
-"new here") and the fix for that is **merge**, not nesting.
-
-**V2 note.** A `pucks` table and `sessions.puck_id` going non-null are the
-only schema changes hardware needs. Nothing above should change shape.
+**V2.** `sessions.puck_id` is present and always null. That plus a `pucks` table
+is the only change the hardware needs.
 
 ---
 
