@@ -31,33 +31,3 @@ struct ReclaimApp: App {
         }
     }
 }
-
-struct RootView: View {
-    @Environment(AppState.self) private var state
-    @Environment(\.scenePhase) private var scenePhase
-
-    var body: some View {
-        Group {
-            switch state.phase {
-            case .loading:
-                ZStack { Palette.bone.ignoresSafeArea() }
-            case .signedOut:
-                WelcomeView()
-            case .ready:
-                if state.isLive {
-                    SessionFlowView()
-                } else {
-                    HomeView()
-                }
-            }
-        }
-        .animation(.easeInOut(duration: 0.45), value: state.isLive)
-        .onChange(of: scenePhase) { _, phase in
-            guard phase == .active, state.phase == .ready else { return }
-            Task {
-                await state.load()
-                await state.computeInterruption()
-            }
-        }
-    }
-}

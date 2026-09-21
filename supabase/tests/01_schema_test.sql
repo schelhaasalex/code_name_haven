@@ -404,4 +404,44 @@ begin
   raise notice 'PASS 11  % placeless gatherings adopted by the new place', v_moved;
 end $$;
 
+-- ============================================================ THE CLIENT API
+-- 0005 exists because PostgREST only serves exposed schemas, and `app` is not
+-- one: every RPC would have 404'd. The failure reads like a missing function
+-- rather than a config gap, so it is asserted rather than remembered.
+
+do $$
+declare v_missing text; v_wrapped int; v_anon int;
+begin
+  for v_missing in
+    select name from unnest(array[
+      'resolve_place', 'create_place', 'start_or_join', 'end_session',
+      'record_retroactive', 'gathering_members', 'place_summary', 'my_rhythm',
+      'name_somewhere', 'merge_places']) as name
+    where not exists (
+      select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'public' and p.proname = name)
+  loop
+    assert false, format('public.%s is missing — the client would get a 404', v_missing);
+  end loop;
+
+  select count(*) into v_wrapped
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+     and has_function_privilege('authenticated', p.oid, 'execute');
+  assert v_wrapped = 10, format('expected 10 callable wrappers, found %s', v_wrapped);
+
+  -- The scheduler's job is not a client's to call: nine hours of
+  -- phone-on-the-side becoming 180 minutes has to happen TO you, not by you.
+  assert not has_function_privilege('authenticated', 'app.auto_close_stale()', 'execute'),
+    'auto_close_stale must not be callable by a phone';
+
+  -- anon holds nothing, anywhere. Finding 13 was this being untrue.
+  select count(*) into v_anon
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute');
+  assert v_anon = 0, format('anon can execute %s functions in public', v_anon);
+
+  raise notice 'PASS 12  ten wrappers callable by authenticated, none by anon';
+end $$;
+
 do $$ begin raise notice '--- all assertions held ---'; end $$;

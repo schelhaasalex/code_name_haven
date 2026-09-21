@@ -51,3 +51,8 @@ struct CountThatView: View {
         .ground()
     }
 }
+
+#Preview {
+    CountThatView(from: .now.addingTimeInterval(-9000), to: .now.addingTimeInterval(-1200))
+        .environment(AppState(repo: PreviewRepository()))
+}

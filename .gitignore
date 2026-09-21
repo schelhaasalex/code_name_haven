@@ -11,3 +11,7 @@ DerivedData/
 *.xcuserstate
 xcuserdata/
 .swiftpm/
+
+# Claude Code: the shared hook config IS committed (.claude/settings.json);
+# anything personal is not.
+.claude/settings.local.json

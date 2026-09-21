@@ -61,3 +61,7 @@ struct OneTapView: View {
         dismiss()
     }
 }
+
+#Preview {
+    OneTapView().environment(AppState(repo: PreviewRepository()))
+}

@@ -16,6 +16,15 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
     public static let dad  = UUID()
     public static let me   = UUID()
 
+    /// Screen 13's fixture. Credited AT THE CAP — three hours — rather than at
+    /// the nine the phone actually sat there.
+    public static let autoClosedSession = Session(
+        id: UUID(), profileId: PreviewRepository.me, gatheringId: UUID(),
+        startedAt: Date(timeIntervalSinceNow: -60 * 60 * 14),
+        endedAt: Date(timeIntervalSinceNow: -60 * 60 * 11),
+        durationMinutes: 180, localDate: PlainDate.string(from: .now),
+        qualifying: true, autoClosed: true)
+
     public init(
         live: Session? = nil,
         members: [Member] = [

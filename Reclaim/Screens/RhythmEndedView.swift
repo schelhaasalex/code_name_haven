@@ -41,3 +41,9 @@ struct RhythmEndedView: View {
         .ground()
     }
 }
+
+#Preview {
+    RhythmEndedView(rhythm: Rhythm(state: .between, currentRunDays: 0, longestRunDays: 9,
+                                   lastQualifyingDate: "2026-09-14", restDayAvailable: true))
+        .environment(AppState(repo: PreviewRepository()))
+}

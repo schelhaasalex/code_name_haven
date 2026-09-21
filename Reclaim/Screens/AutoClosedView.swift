@@ -51,3 +51,8 @@ struct AutoClosedView: View {
         }
     }
 }
+
+#Preview {
+    AutoClosedView(session: PreviewRepository.autoClosedSession)
+        .environment(AppState(repo: PreviewRepository()))
+}

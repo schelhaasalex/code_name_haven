@@ -42,3 +42,7 @@ struct SessionFlowView: View {
         }
     }
 }
+
+#Preview {
+    SessionFlowView().environment(AppState(repo: PreviewRepository()))
+}

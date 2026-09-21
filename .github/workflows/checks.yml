@@ -1,0 +1,42 @@
+# What can be checked without a Mac. The Swift tests need a simulator and are
+# not here; everything below runs on a clean Ubuntu box in about a minute.
+name: checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  shape:
+    name: Shape
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/shape.sh
+
+  database:
+    name: Schema
+    runs-on: ubuntu-latest
+    # 17, matching the hosted project. Two of the fourteen findings in the
+    # schema review were invisible until the SQL actually ran.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - run: supabase/tests/run.sh

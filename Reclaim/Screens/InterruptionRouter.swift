@@ -16,3 +16,15 @@ struct InterruptionRouter: View {
         }
     }
 }
+
+#Preview("Rhythm ended") {
+    InterruptionRouter(interruption: .rhythmEnded(
+        Rhythm(state: .between, currentRunDays: 0, longestRunDays: 9,
+               lastQualifyingDate: "2026-09-14", restDayAvailable: true)))
+        .environment(AppState(repo: PreviewRepository()))
+}
+
+#Preview("One tap") {
+    InterruptionRouter(interruption: .makeItOneTap)
+        .environment(AppState(repo: PreviewRepository()))
+}

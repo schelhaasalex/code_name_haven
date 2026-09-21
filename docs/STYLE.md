@@ -149,6 +149,32 @@ Rough shapes, not rules:
 - `ReclaimKit` holds anything both targets need, anything worth testing, and
   anything that would otherwise be duplicated. Everything else stays in the app.
 
+## Keeping it this way
+
+This guide is the second draft of itself. The first one was written on a
+Tuesday over a repository that broke six of its own rules, by the person who
+had just written them — which is the whole argument for the paragraph below.
+
+Anything here that a script can decide, a script decides: `scripts/shape.sh`.
+It reads text, needs no toolchain and takes about a second. Three places run
+it, in increasing order of how annoying it is to reach:
+
+1. **While writing.** A `Stop` hook in `.claude/settings.json` runs it before a
+   session here can end.
+2. **On the branch.** `scripts/shape.sh` by hand, or the checkbox on the pull
+   request template.
+3. **In CI.** `.github/workflows/checks.yml`, on every pull request, alongside
+   the schema tests.
+
+The rule for the rules: **adding one here means adding a check there.** If it
+can't be checked, say so in the same breath, so the next person knows it rests
+on attention rather than on the build. The checks that exist are listed in
+`CLAUDE.md`; each one is there because this repository broke it at least once.
+
+And write the check so it fails first. A check that has never gone red is a
+check nobody has tested — two of these were silently passing on everything
+until they were pointed at a file built to break them.
+
 ## Comments
 
 Comment the decision, not the mechanics. `// loop over members` is noise;

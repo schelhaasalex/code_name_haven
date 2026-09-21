@@ -5,7 +5,7 @@ existed as migrations. Every finding below is fixed in `supabase/migrations/`
 and asserted in `supabase/tests/01_schema_test.sql`, which runs green.
 
 ```
-supabase/tests/run.sh          # 16 assertions, all passing
+supabase/tests/run.sh          # 17 assertions, all passing
 ```
 
 Three were found only by **executing** the SQL against a local Postgres, and
@@ -189,7 +189,7 @@ The linter now reports **no findings**.
 
 ## Verified against the live project
 
-Beyond the 16 offline assertions, the full flow was run once on the hosted
+Beyond the 17 offline assertions, the full flow was run once on the hosted
 database through the real `auth.uid()` path, with a throwaway user deleted
 afterwards: create a place, start a session by tag, end it, and read back
 `place_summary` (1 evening, 120 wall-clock minutes, stage "new here", no longer
@@ -227,6 +227,18 @@ untested.
 
 **The indexes are a guess.** They cover the queries the twenty-one screens
 actually make, but no real data has touched them.
+
+**The harness had stopped running, and nobody noticed.** Fixing finding 13
+added `revoke ... from anon` to `0002`, but `run.sh` only ever created the
+`authenticated` role — so every run since then died on
+`role "anon" does not exist`, while the README went on claiming sixteen green
+assertions. It also applied `0001`–`0003` and stopped, leaving `0004` and the
+`0005` wrappers — the functions the client actually calls — untested locally.
+Both are fixed, the suite runs green against all five migrations, and assertion
+12 now checks the wrapper surface: ten functions callable by `authenticated`,
+`app.auto_close_stale` callable by neither, `anon` holding nothing. A test
+suite that isn't run by something is a test suite that has stopped;
+`.github/workflows/checks.yml` now runs this one on every pull request.
 
 **The test harness stubs `auth`.** `supabase/tests/00_local_auth_stub.sql` fakes
 `auth.users` and `auth.uid()` so the migrations run against bare Postgres. It is

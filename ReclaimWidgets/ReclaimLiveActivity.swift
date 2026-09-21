@@ -53,7 +53,7 @@ struct ReclaimLiveActivity: Widget {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 9) {
                 Brand(color: Palette.ember, size: 18)
-                Text("Reclaim").eyebrow(Palette.dust)
+                Text(t("lockscreen.brand")).eyebrow(Palette.dust)
             }
 
             HStack(alignment: .lastTextBaseline) {

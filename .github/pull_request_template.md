@@ -29,10 +29,13 @@ doesn't. `CLAUDE.md` has the reasoning behind each.
 - [ ] **The knowledge test passes on every new string** — what does the app
       actually know, and when did it learn it?
 
+- [ ] **`scripts/shape.sh` passes.** One view per file, no hardcoded strings,
+      no literal colours, every copy key real. CI runs it too.
+
 ## Database changes
 
 - [ ] Not applicable
-- [ ] `supabase/tests/run.sh` passes
+- [ ] `supabase/tests/run.sh` passes (17 assertions)
 - [ ] New tables revoke Supabase's default `GRANT ALL` from `anon` and
       `authenticated`, then grant deliberately
 - [ ] New client-facing functions have a wrapper in `public` (PostgREST doesn't

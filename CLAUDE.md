@@ -77,6 +77,7 @@ VISION.md  BRIEF.md  CLAUDE.md
 docs/          APP-SPEC.md, SCHEMA-REVIEW.md, STYLE.md
 copy/          strings.json — every user-facing string
 supabase/      migrations/ (applied, tested) and tests/
+scripts/       shape.sh — the style rules, as a check rather than a hope
 prototype/     ceremony.html — the web rehearsal of the five-phone moment
 ReclaimKit/    shared Swift package: models, data, ceremony, copy, design
                — and Tests/, which is where anything testable belongs
@@ -109,7 +110,7 @@ it still doesn't belong in git.
 ## The database
 
 ```sh
-supabase/tests/run.sh      # 16 assertions against a scratch Postgres
+supabase/tests/run.sh      # 17 assertions against a scratch Postgres
 ```
 
 Needs a local Postgres reachable via `PGHOST`/`PGPORT`/`PGUSER`. The harness
@@ -147,6 +148,33 @@ against hosted Supabase.
 ```sh
 xcodebuild test -scheme ReclaimKit -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
+
+## Shape
+
+The rules above are checked mechanically, because the alternative was tried:
+they were written down, and the same week, the file documenting them had six
+components in it and the file beside it had four screens.
+
+```sh
+scripts/shape.sh      # about a second, no toolchain, no network
+```
+
+| Checked | Because |
+|---|---|
+| No Swift file over 220 lines | A file nobody re-reads before adding to it is how it got long |
+| One view per file, named for the file | "Unless they're variants of one idea" is not a rule anyone holds |
+| `Reclaim/Components/` never mentions `AppState` | It's what keeps a component previewable and behaviour-free |
+| No `Text("…")` outside a `#Preview` | Rule 2 — a baked string can't be changed without a release |
+| No literal colours outside `Design/` | A hex in a view drifts from the one beside it |
+| Every view has a `#Preview` | Screens 13, 14, 18 and 20 are unreachable at runtime |
+| Every `t("key")` is in `strings.json` | A missing key is `⟨key⟩` in dev and empty to a person |
+| The bundled `strings.json` matches `copy/` | Same file, two places; keeping them equal is the job |
+
+It runs in CI on every pull request, and from a `Stop` hook in
+`.claude/settings.json` — a session here cannot end on a repo that breaks it.
+
+**A rule added to `docs/STYLE.md` without a check in `scripts/shape.sh` is a
+suggestion.** Write the check, and make it fail before you make it pass.
 
 ## Scope
 
