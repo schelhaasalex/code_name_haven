@@ -86,7 +86,7 @@ struct CardView: View {
 
     private func write(_ url: URL) {
         writing = true
-        TagWriter.write(url) { result in
+        TagSession.write(url) { result in
             writing = false
             wrote = result ? t("card.write.done") : t("card.write.failed")
         }

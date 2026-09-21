@@ -83,7 +83,7 @@ public final class AppState {
             self.places = (try? await places) ?? []
             self.rhythm = (try? await rhythm) ?? .empty
             await loadEvenings()
-            if let s = try? await live, let s { await adopt(session: s) }
+            if let s = try? await live { await adopt(session: s) }
             else { await watchPlaces() }
         } catch {
             phase = .signedOut

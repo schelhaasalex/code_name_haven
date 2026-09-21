@@ -49,7 +49,7 @@ extension AppState {
         await Notifications.reschedule(for: profile)
     }
 
-    private func adopt(session s: Session, at: Date? = nil) async {
+    func adopt(session s: Session, at: Date? = nil) async {
         session = s
         startedAt = at ?? s.startedAt
         gathering = try? await repo.gathering(s.gatheringId)
