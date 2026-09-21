@@ -52,20 +52,20 @@ struct SettingsView: View {
                 Spacer(minLength: 20)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    TextAction(title: t("settings.signout"), tint: Palette.ink2) {
-                        Task { try? await (state.repo as? SupabaseRepository)?.client.auth.signOut() }
+                    TextAction(title: t("settings.signout"), tint: Palette.ink2,
+                               icon: "rectangle.portrait.and.arrow.right") {
+                        Task { await state.signOut() }
                     }
 
-                    // App Store guideline 5.1.1(v) — deletion must be in-app.
+                    // App Store guideline 5.1.1(v) — deletion must be in-app,
+                    // and easy to find. It needn't be loud: the weight, and
+                    // the colour, belong to the confirmation that follows.
                     Button { confirmingDelete = true } label: {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(t("settings.delete"))
-                                .font(Type.body(16, weight: .medium)).foregroundStyle(Palette.clayDeep)
-                            Text(t("settings.delete.body"))
-                                .font(Type.note).foregroundStyle(Palette.muted)
-                        }
+                        Text(t("settings.delete"))
+                            .font(Type.note).foregroundStyle(Palette.muted)
+                            .frame(minHeight: 44)
                     }
-                    .frame(minHeight: 48)
+                    .buttonStyle(.plain)
                 }
                 .padding(.top, 18)
                 .overlay(alignment: .top) { Rectangle().fill(Palette.line).frame(height: 1) }

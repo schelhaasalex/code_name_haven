@@ -72,6 +72,10 @@ public final class SupabaseRepository: Repository, @unchecked Sendable {
         try await client.auth.signOut()
     }
 
+    public func signOut() async throws {
+        try await client.auth.signOut()
+    }
+
     public func myPlaces() async throws -> [Place] {
         try await client.from("places").select()
             .is("merged_into", value: nil)

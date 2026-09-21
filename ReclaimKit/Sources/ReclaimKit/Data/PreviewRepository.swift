@@ -84,6 +84,7 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
         profile.nudgeEnabled = nudgeEnabled; profile.nudgeHour = nudgeHour
     }
     public func deleteAccount() async throws { signedIn = false }
+    public func signOut() async throws { signedIn = false }
 
     public func myPlaces() async throws -> [Place] { places.filter { $0.mergedInto == nil } }
     public func place(_ id: UUID) async throws -> Place? { places.first { $0.id == id } }

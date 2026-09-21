@@ -14,6 +14,7 @@ public protocol Repository: Sendable {
     func upsertProfile(displayName: String?) async throws -> Profile
     func updateProfile(nudgeEnabled: Bool, nudgeHour: Int) async throws
     func deleteAccount() async throws
+    func signOut() async throws
 
     func myPlaces() async throws -> [Place]
     func place(_ id: UUID) async throws -> Place?
