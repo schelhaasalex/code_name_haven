@@ -55,6 +55,16 @@ final class PreviewRepositoryTests: XCTestCase {
         XCTAssertFalse(repo.profile.nudgeEnabled, "a demo shouldn't open with a permission prompt")
     }
 
+    func testMovingAnEveningGivesItThePlace() async throws {
+        let repo = PreviewRepository.sampleHousehold()
+        _ = try await repo.startOrJoin(place: nil, source: .app)
+        let gathering = try await repo.moveEvening(to: PreviewRepository.kitchenTable)
+        let moved = try await repo.gathering(gathering)
+        XCTAssertEqual(moved?.placeId, PreviewRepository.kitchenTable)
+        let live = try await repo.liveSession()
+        XCTAssertEqual(live?.gatheringId, gathering, "still the same evening, now somewhere")
+    }
+
     /// Like `name_somewhere`: your unnamed evenings move onto the new place.
     func testNamingSomewhereAdoptsThePlacelessEvenings() async throws {
         let repo = PreviewRepository.sampleHousehold()

@@ -57,6 +57,19 @@ extension PreviewRepository {
         return minutes
     }
 
+    /// Nobody else is ever at the sample household's places, so there is never
+    /// an evening open there to join: yours simply becomes the place's.
+    public func moveEvening(to place: UUID) async throws -> UUID {
+        guard let s = live, let g = gatheringsById[s.gatheringId] else {
+            throw ReclaimError.noLiveSession
+        }
+        let moved = Gathering(id: g.id, placeId: place, startedBy: g.startedBy,
+                              startedAt: g.startedAt, endedAt: g.endedAt)
+        gatheringsById[g.id] = moved
+        gatheringNow = moved
+        return g.id
+    }
+
     public func recordRetroactive(from: Date, to: Date) async throws -> UUID {
         let g = Gathering(id: UUID(), placeId: nil, startedBy: profile.id, startedAt: from, endedAt: to)
         gatheringsById[g.id] = g

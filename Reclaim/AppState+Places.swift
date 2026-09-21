@@ -38,6 +38,31 @@ extension AppState {
 
     // MARK: - Places
 
+    /// Scanning the card, or picking a place, after the phone is already down.
+    ///
+    /// Joins the evening already open there — the friend who tapped in first —
+    /// or, with nobody there, makes yours the place's. Either way the table
+    /// hears you arrive and the place hears it has an evening (screen 4). Your
+    /// start time doesn't move, so nothing about what counted changes.
+    public func moveHere(_ place: UUID) async {
+        guard let s = session, gathering?.placeId != place else { return }
+        do {
+            let to = try await repo.moveEvening(to: place)
+            session = (try? await repo.liveSession()) ?? s
+            gathering = try? await repo.gathering(to)
+            await learnPlace(of: gathering)
+            await refreshMembers()
+            Sensation.joined()
+            let at = startedAt ?? s.startedAt
+            link.connect(gathering: to, me: profile?.id, docked: at,
+                         invitation: Invitation(gathering: to, place: place,
+                                                name: profile?.displayName,
+                                                count: max(1, members.count), at: at))
+        } catch {
+            banner = t("error.retry")
+        }
+    }
+
     /// Screen 21. Mints a place out of the unnamed history: a handle for the
     /// card, a secret for the tag, and every placeless evening of yours moves
     /// onto it.
@@ -80,6 +105,13 @@ extension AppState {
         } catch {
             banner = t("error.retry")
         }
+    }
+
+    /// A card for somewhere you've never been makes you one of its people, but
+    /// `places` doesn't know yet — and until it does, the name reads Somewhere.
+    func learnPlace(of gathering: Gathering?) async {
+        guard let id = gathering?.placeId, !places.contains(where: { $0.id == id }) else { return }
+        places = (try? await repo.myPlaces()) ?? places
     }
 
     private func reloadPlaces() async {

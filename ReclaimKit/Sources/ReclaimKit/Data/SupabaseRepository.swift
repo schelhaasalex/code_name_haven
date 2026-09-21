@@ -142,6 +142,11 @@ public final class SupabaseRepository: Repository, @unchecked Sendable {
             .execute().value
     }
 
+    public func moveEvening(to place: UUID) async throws -> UUID {
+        struct P: Encodable { let p_place: UUID }
+        return try await client.rpc("move_evening", params: P(p_place: place)).execute().value
+    }
+
     public func recordRetroactive(from: Date, to: Date) async throws -> UUID {
         struct P: Encodable { let p_started: String; let p_ended: String; let p_tz: String }
         return try await client.rpc("record_retroactive",

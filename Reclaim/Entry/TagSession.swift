@@ -31,6 +31,10 @@ final class TagSession: NSObject {
     /// reference to the delegate and a local would be gone before the tag is.
     nonisolated(unsafe) private static var inFlight: TagSession?
 
+    /// False on the simulator, and on the few iPhones without a reader — where
+    /// the choice is picking a place instead, not a button that does nothing.
+    static var canRead: Bool { NFCNDEFReaderSession.readingAvailable }
+
     static func write(_ url: URL, then finished: @escaping @MainActor @Sendable (Bool) -> Void) {
         start(TagSession(url: url, finished: finished, found: nil),
               prompt: t("card.write.hold"), finished: finished)

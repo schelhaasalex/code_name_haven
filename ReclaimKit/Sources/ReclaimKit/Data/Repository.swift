@@ -33,6 +33,10 @@ public protocol Repository: Sendable {
     // ---- anything involving anyone else: RPC only ----
     func startOrJoin(place: UUID?, source: SessionSource) async throws -> UUID
     @discardableResult func endSession(_ id: UUID?) async throws -> Int?
+    /// Scanning a card, or picking a place, after the phone is already down.
+    /// Joins the evening open there, or makes yours the place's. Returns the
+    /// gathering you are now in. Migration 0007.
+    func moveEvening(to place: UUID) async throws -> UUID
     func recordRetroactive(from: Date, to: Date) async throws -> UUID
     func members(of gathering: UUID) async throws -> [Member]
     func summary(of place: UUID) async throws -> PlaceSummary

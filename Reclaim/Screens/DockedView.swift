@@ -6,11 +6,19 @@ import ReclaimKit
 /// Goes dark immediately, which is also the right physical cue as the phone
 /// turns over. It is ALREADY COUNTING — nothing is gated behind saying where
 /// you are, and a session with no place counts exactly the same.
+///
+/// It moves on when the phone goes face down — the gesture it was drawn for —
+/// or after a while if it never does. Not at four seconds, and not on any tap:
+/// both made "Scan the card" a race nobody could win.
 struct DockedView: View {
     @Environment(AppState.self) private var state
     let onwards: () -> Void
 
     @State private var elapsed: TimeInterval = 0
+    @State private var choosing = false
+    /// Face-down is the real cue. This is for a phone left face up, or one
+    /// with no accelerometer, like the simulator.
+    private let fallback: TimeInterval = 20
     private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
@@ -45,7 +53,9 @@ struct DockedView: View {
                     Text(t("docked.where.body"))
                         .font(Type.body(14)).foregroundStyle(Palette.dust).lineSpacing(3)
 
-                    QuietButton(title: t("docked.scan"), night: true) { /* NFC scan */ }
+                    if state.placeName == nil {
+                        QuietButton(title: t("docked.scan"), night: true) { choosing = true }
+                    }
                 } }
 
                 Text(t("docked.footer"))
@@ -54,11 +64,14 @@ struct DockedView: View {
             }
         }
         .ground(night: true)
+        .sheet(isPresented: $choosing) { WhereSheet().environment(state) }
         .onReceive(tick) { _ in
             elapsed = Date().timeIntervalSince(state.startedAt ?? .now)
-            if elapsed > 4 { onwards() }
+            if elapsed > fallback, !choosing { onwards() }
         }
-        .onTapGesture { onwards() }
+        .onChange(of: state.iAmFaceDown) { _, down in
+            if down { onwards() }
+        }
     }
 }
 
