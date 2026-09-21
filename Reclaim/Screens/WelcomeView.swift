@@ -8,7 +8,7 @@ struct WelcomeView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Eyebrow(text: "Reclaim")
+            Eyebrow(text: t("app.name"))
             Spacer(minLength: 24)
 
             VStack(alignment: .leading, spacing: 22) {

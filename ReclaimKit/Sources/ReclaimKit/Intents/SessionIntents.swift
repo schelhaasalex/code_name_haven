@@ -35,6 +35,30 @@ public struct StartSessionIntent: AppIntent {
     }
 }
 
+/// What the Control Centre toggle runs. iOS 18 only — the app's own floor is
+/// 17, and a control is not worth raising it for.
+@available(iOS 18.0, *)
+public struct ToggleSessionIntent: SetValueIntent {
+    public static var title: LocalizedStringResource = "Set it down"
+
+    @Parameter(title: "Running")
+    public var value: Bool
+
+    public init() {}
+
+    public func perform() async throws -> some IntentResult {
+        guard let repo = IntentEnvironment.repository else { return .result() }
+        if value {
+            _ = try await repo.startOrJoin(place: nil, source: .control)
+        } else {
+            try await repo.endSession(nil)
+        }
+        SessionFlag.isLive = value
+        await IntentEnvironment.onSessionChanged?()
+        return .result()
+    }
+}
+
 public struct EndSessionIntent: AppIntent {
     public static var title: LocalizedStringResource = "End the evening"
     public static var description = IntentDescription("Ends the session that's running.")

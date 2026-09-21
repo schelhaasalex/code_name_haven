@@ -129,7 +129,7 @@ Home; the interruptions are presented over it.
 | 1 | Welcome | `WelcomeView` | root when signed out |
 | 2 | Ready when you are | `HomeView` | root |
 | 3 | Docked, place optional | `DockedView` | full-screen cover |
-| 4 | Someone started | `JoinInviteView` | full-screen cover, from broadcast |
+| 4 | Someone started | `JoinInviteView` | full-screen cover, from the place channel |
 | 5 | The count goes up | `CountUpView` | inside the session cover |
 | 6 | In session | `SessionView` | inside the session cover |
 | 7 | Lock screen | Live Activity | `ReclaimWidgets` |
@@ -187,6 +187,32 @@ reference for timing; port what the dinner test settles, don't re-derive it.
 
 **The count goes up, never down.** The app has no roster. Show who joined;
 never name who hasn't.
+
+**A second channel, `place:<uuid>`,** carries invitations — screen 4. While no
+session is running the app subscribes to the places it knows, and the person
+who starts one announces themselves on that channel: gathering, place, their
+own display name, and how many are down so far.
+
+Why the name and the count travel in the message rather than being looked up:
+the receiver is not a member of that gathering yet, and `gathering_members`
+checks membership before it answers. There is no query they could run. So the
+sender tells them, from their own row — and what they can say is bounded by
+the same rule as everything else, because a count of people who HAVE set
+theirs down is the only fact in the payload.
+
+---
+
+## Where a place's join secret lives
+
+`places.join_secret_hash` stores SHA-256, so the plaintext exists only on the
+device that minted it, in the Keychain (`PlaceSecrets`), synchronised across
+that person's own devices by iCloud.
+
+The consequence is visible and deliberate: on a device that never held it,
+screen 15 cannot draw the card, and says so. The alternatives are worse —
+storing plaintext server-side undoes the reason the column is a hash, and
+rotating the secret would stop a card that is already printed and stuck to
+somebody's fridge from working (schema review, finding 8).
 
 ---
 

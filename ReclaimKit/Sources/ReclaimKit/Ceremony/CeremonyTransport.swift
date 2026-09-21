@@ -11,9 +11,41 @@ public enum CeremonyEvent: Sendable, Equatable {
     case released(profile: UUID)
 }
 
+/// "Someone just set theirs down at a place you know."
+///
+/// Sent by the person who started it, carrying their own display name — they
+/// know it, it is their row, and telling the table who you are is the point.
+/// Nobody's name reaches anyone any other way: the RPC that returns members
+/// checks that you are IN the gathering first.
+public struct Invitation: Sendable, Equatable, Identifiable, Codable {
+    public let gathering: UUID
+    public let place: UUID
+    public let name: String?
+    /// How many are down, according to the person who sent it. The receiver
+    /// cannot look this up — `gathering_members` checks membership first, and
+    /// they aren't a member yet — so it is told rather than fetched, and it
+    /// only ever counts people who HAVE set theirs down.
+    public let count: Int
+    public let at: Date
+
+    public var id: UUID { gathering }
+
+    public init(gathering: UUID, place: UUID, name: String?, count: Int, at: Date) {
+        self.gathering = gathering; self.place = place; self.name = name
+        self.count = count; self.at = at
+    }
+}
+
 public protocol CeremonyTransport: Sendable {
     func join(gathering: UUID) async throws
     func leave() async
+
+    /// Listened to while nothing is running, so one person setting theirs down
+    /// can reach the other people who know the place. Screen 4.
+    func watch(places: [UUID]) async
+    func stopWatching() async
+    func announce(_ invitation: Invitation) async
+    func invitations() -> AsyncStream<Invitation>
     func send(_ event: CeremonyEvent, from me: UUID) async
     /// Delivered for every peer's event. Your own echoes are filtered out here,
     /// because the app renders your tap on send — waiting for the round trip
@@ -37,6 +69,10 @@ public actor SupabaseCeremonyTransport: CeremonyTransport {
     private var pump: Task<Void, Never>?
     private var continuation: AsyncStream<CeremonyEvent>.Continuation?
     private var me: UUID?
+
+    private var placeChannels: [UUID: RealtimeChannelV2] = [:]
+    private var placePumps: [UUID: Task<Void, Never>] = [:]
+    private var invitationStream: AsyncStream<Invitation>.Continuation?
 
     public init(client: SupabaseClient) { self.client = client }
 
@@ -101,6 +137,60 @@ public actor SupabaseCeremonyTransport: CeremonyTransport {
         try? await channel.broadcast(event: "ceremony", message: p)
     }
 
+    // MARK: - Invitations
+
+    public func watch(places: [UUID]) async {
+        await stopWatching()
+        for place in places {
+            let ch = client.channel("place:\(place.uuidString)")
+            let stream = ch.broadcastStream(event: "invitation")
+            await ch.subscribe()
+            placeChannels[place] = ch
+            placePumps[place] = Task { [weak self] in
+                for await raw in stream {
+                    guard let self else { return }
+                    guard let data = try? JSONEncoder().encode(raw),
+                          let invitation = try? JSONDecoder().decode(Invitation.self, from: data)
+                    else { continue }
+                    await self.deliver(invitation)
+                }
+            }
+        }
+    }
+
+    public func stopWatching() async {
+        for pump in placePumps.values { pump.cancel() }
+        placePumps.removeAll()
+        for channel in placeChannels.values { await channel.unsubscribe() }
+        placeChannels.removeAll()
+    }
+
+    /// Subscribes if it has to: the announcer stops watching their places the
+    /// moment their own session starts, and the announcement comes after.
+    public func announce(_ invitation: Invitation) async {
+        if placeChannels[invitation.place] == nil {
+            let ch = client.channel("place:\(invitation.place.uuidString)")
+            await ch.subscribe()
+            placeChannels[invitation.place] = ch
+        }
+        try? await placeChannels[invitation.place]?.broadcast(event: "invitation",
+                                                              message: invitation)
+    }
+
+    private func deliver(_ invitation: Invitation) {
+        invitationStream?.yield(invitation)
+    }
+
+    public nonisolated func invitations() -> AsyncStream<Invitation> {
+        AsyncStream { cont in
+            Task { await self.attach(invitations: cont) }
+        }
+    }
+
+    private func attach(invitations cont: AsyncStream<Invitation>.Continuation) {
+        invitationStream = cont
+    }
+
     public nonisolated func events() -> AsyncStream<CeremonyEvent> {
         AsyncStream { cont in
             Task { await self.attach(cont) }
@@ -119,6 +209,10 @@ public struct LocalCeremonyTransport: CeremonyTransport {
     public init() {}
     public func join(gathering: UUID) async throws {}
     public func leave() async {}
+    public func watch(places: [UUID]) async {}
+    public func stopWatching() async {}
+    public func announce(_ invitation: Invitation) async {}
+    public func invitations() -> AsyncStream<Invitation> { AsyncStream { _ in } }
     public func send(_ event: CeremonyEvent, from me: UUID) async {}
     public func events() -> AsyncStream<CeremonyEvent> { AsyncStream { _ in } }
 }

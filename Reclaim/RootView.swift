@@ -24,6 +24,12 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.45), value: state.isLive)
+        // Screen 4 covers whatever you were looking at, because the whole
+        // point is that it reaches you across the room.
+        .fullScreenCover(item: Binding(get: { state.invitation },
+                                       set: { _ in state.dismissInvitation() })) {
+            JoinInviteView(invitation: $0)
+        }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active, state.phase == .ready else { return }
             Task {

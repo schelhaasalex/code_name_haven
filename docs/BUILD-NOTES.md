@@ -22,6 +22,19 @@ Two files touch supabase-swift's API and are where problems will concentrate:
 - `ReclaimKit/Sources/ReclaimKit/Data/SupabaseRepository.swift`
 - `ReclaimKit/Sources/ReclaimKit/Ceremony/CeremonyTransport.swift`
 
+Four newer spots touch framework API shapes worth checking early:
+
+- **`SetItDownControl`** — `ControlWidgetToggle`'s title. If it won't take a
+  `String`, wrap it: `LocalizedStringKey(t("control.title"))`. Controls are
+  iOS 18, so this needs the Xcode 16 SDK to compile at all; the `if #available`
+  in the widget bundle relies on `WidgetBundleBuilder.buildLimitedAvailability`.
+- **`TagSession`** — `NFCNDEFPayload.wellKnownTypeURIPayload()` is a method on
+  read and a static initialiser on write. Easy to get backwards.
+- **`CardView`** — `ImageRenderer` + `ShareLink(item:preview:)` with an
+  `Image`. If `SharePreview(_:image:)` rejects a `String` title, pass `Text`.
+- **`PlaceSecrets`** — Keychain access needs the app's entitlements in place;
+  on the simulator it works unsigned, on device it needs the profile.
+
 The shapes to check first: `client.channel(_:)`, `channel.broadcastStream(event:)`,
 `channel.broadcast(event:message:)`, and whether `.execute().value` infers the
 decode target in each RPC. Realtime is deliberately behind the
@@ -48,20 +61,25 @@ which is the failure mode of keeping the same file in two places.
 
 ## What is and isn't here
 
-**Built:** the whole data layer with previews, copy loading, design tokens, the
-handle/secret generator, the ceremony transport and face-down sensor, the
-chime and haptics, app intents with free Siri phrases, the Live Activity with
-its working End button, and screens 1, 2, 3, 5, 6, 8, 10, 11, 12, 13, 14, 16,
-17, 18 and 20.
+**Built:** all 21 screens, the data layer with previews, copy loading, design
+tokens, the handle/secret generator, the ceremony transport, the place
+invitation channel behind screen 4, face-down detection, the chime and
+haptics, app intents with free Siri phrases, the Live Activity with its
+working End button, the iOS 18 Control Centre toggle, tag reading and writing,
+the printable card, naming, and merging two places.
 
-**Not yet:** screen 9 (a place and its arc), 15 (the printed card), 19's
-in-app NFC *writing* (reading via universal link is wired), 21 (naming a
-place), the Control Center control (iOS 18, `ControlWidget`), and merging two
-places from the UI — `merge_places` exists in the database and has no screen.
+**Not yet:** the fonts (see below), and anything that needs a device.
 
 **Needs an Apple Developer account before it will run on a device:** Sign in
-with Apple, App Groups (the app↔widget bridge), NFC, Associated Domains.
-Individual enrollment is enough — no business entity, no D-U-N-S.
+with Apple, App Groups (the app↔widget bridge), NFC (`NDEF` in the
+entitlements), Associated Domains (`applinks:reclaim.app` — a domain you
+control has to serve `/.well-known/apple-app-site-association` before a
+background tag read can work). Individual enrollment is enough — no business
+entity, no D-U-N-S.
+
+**The simulator can't do NFC.** `NFCNDEFReaderSession.readingAvailable` is
+false there, so `TagSession` returns a failure immediately and the card screen
+says the tag didn't take. That is correct behaviour, not a bug to chase.
 
 ## Fonts
 
@@ -69,6 +87,13 @@ Fraunces and Work Sans are both OFL. Until the `.ttf` files land in
 `Reclaim/Resources/Fonts`, `Type` falls back to the system serif and sans, so
 the app builds and runs from the first commit. `Type.isCustom` says which
 you're looking at.
+
+## The card can only be drawn where it was made
+
+`places.join_secret_hash` is a hash, so the plaintext secret lives only in the
+Keychain of the device that minted the place. Screen 15 on any other device
+says so rather than drawing a square that opens nothing. If a card seems
+"missing" in testing, that is why — and it is the design, not a lost write.
 
 ## The one that will bite quietly
 

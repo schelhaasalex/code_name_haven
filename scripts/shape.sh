@@ -56,9 +56,15 @@ done
 #    from Supabase; a string baked into a view can never be changed without an
 #    App Store release. Previews are exempt — nobody ships a preview.
 note "No hardcoded user-facing strings"
+# Not just Text("…"): a string handed to Eyebrow, to a button's title, or to
+# VoiceOver is read by a person too, and each of these got past an earlier
+# version of this check.
 hits=$(for f in $APP_SWIFT; do
   awk '/^#Preview/ { exit }
-       /Text\("/ && !/Text\("\\\(/ { printf "%s:%d:%s\n", FILENAME, FNR, $0 }' "$f"
+       /Text\("/ && !/Text\("\\\(/ { print FILENAME ":" FNR ":" $0; next }
+       /Eyebrow\(text: *"/ || /accessibilityLabel\("/ || /Label\("/ { print FILENAME ":" FNR ":" $0; next }
+       /(title|label|subtitle|message): *"[^"]/ { print FILENAME ":" FNR ":" $0; next }
+       /(banner|alertMessage) *= *"/ { print FILENAME ":" FNR ":" $0 }' "$f"
 done)
 [ -n "$hits" ] && while IFS= read -r hit; do
   bad "$(echo "$hit" | sed 's/^[[:space:]]*//') — put it in copy/strings.json"
