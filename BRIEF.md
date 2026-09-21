@@ -209,6 +209,23 @@ A place cannot be demoted, isn't a person so ranking it shames nobody, and it
 belongs to everyone who's been there. It also rewards hosting and inviting,
 which is the cold-start problem.
 
+**Place names and ownership.** `code` is the identity; `name` is a label, so
+renaming never invalidates a card, a session or any history. A name is set
+one of three ways, all optional and none blocking: you name it when you print
+its card, you name a "Somewhere" bucket afterwards and its sessions attach to
+the new place, or you never name it at all. Offer two or three one-tap
+suggestions when naming rather than an empty text field — nothing can be
+inferred, but a blank box is the worst moment in any flow.
+
+Only `created_by` can rename. Don't build more permission than that: if you
+think someone's place is misnamed you are sitting in the room with them, and
+not every disagreement needs a UI. Renaming relabels all history and never
+resets the stage or the evening count; it should offer a reprint of the card,
+not force one. Merging asks which name survives. If the owner deletes their
+account the place survives and ownership falls to whoever has the most
+evenings there. **No per-viewer names** — it breaks shared language and
+dilutes the place's character, which is the entire point of screen 9.
+
 **Visibility.** People you dock with see live presence and group totals. They
 never see your per-day history, your rhythm, or how often you weren't there.
 This is not a privacy nicety — it is what makes the product survivable with
