@@ -1,3 +1,4 @@
+import ActivityKit
 import AppIntents
 import Foundation
 
@@ -61,6 +62,7 @@ public struct ToggleSessionIntent: SetValueIntent, LiveActivityIntent {
             _ = try await repo.startOrJoin(place: nil, source: .control)
         } else {
             try await repo.endSession(nil)
+            await ReclaimActivity.endAll()
         }
         SessionFlag.isLive = value
         await IntentEnvironment.onSessionChanged?()
@@ -78,6 +80,11 @@ public struct EndSessionIntent: AppIntent, LiveActivityIntent {
     public func perform() async throws -> some IntentResult {
         guard let repo = IntentEnvironment.repository else { return .result() }
         try await repo.endSession(nil)
+        // Before anything else, and without asking the app to do it: this
+        // runs in a process that was launched to answer the button and may
+        // know nothing about the evening it is ending. See `ReclaimActivity`.
+        await ReclaimActivity.endAll()
+        SessionFlag.isLive = false
         await IntentEnvironment.onSessionChanged?()
         return .result()
     }
