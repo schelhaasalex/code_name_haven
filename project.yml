@@ -64,15 +64,16 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.alexschelhaas.reclaim
         CODE_SIGN_ENTITLEMENTS: Reclaim/Reclaim.entitlements
-      # Archive builds Release, and an App Store build needs no registered
-      # device — only development builds do. Signing Release as Apple
-      # Distribution lets Xcode make the certificate and an App Store profile
-      # itself, instead of first demanding a development profile for a team
-      # with no devices ("Your team has no devices..."). Per target, because
-      # XcodeGen gives the app target its own identity, which would win.
-      configs:
-        Release:
-          "CODE_SIGN_IDENTITY[sdk=iphoneos*]": "Apple Distribution"
+      # NO CODE_SIGN_IDENTITY HERE, deliberately. Signing is automatic, and
+      # automatic signing picks the identity itself — Apple Development to
+      # run, Apple Distribution to archive. Naming one by hand makes Xcode
+      # refuse the whole target: "conflicting provisioning settings ... is
+      # automatically signed for development, but a conflicting code signing
+      # identity Apple Distribution has been manually specified."
+      #
+      # It was added to get around "Your team has no devices...", which is a
+      # different problem with a different answer: register a device. An
+      # Apple-silicon Mac counts, as "My Mac (Designed for iPhone)".
     # Every Info.plist key lives here. INFOPLIST_KEY_* build settings only
     # apply when Xcode generates the plist, and XcodeGen writes this one — so
     # they were silently dropped, and the app ran letterboxed with no motion
@@ -137,15 +138,16 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.alexschelhaas.reclaim.widgets
         CODE_SIGN_ENTITLEMENTS: ReclaimWidgets/ReclaimWidgets.entitlements
-      # Archive builds Release, and an App Store build needs no registered
-      # device — only development builds do. Signing Release as Apple
-      # Distribution lets Xcode make the certificate and an App Store profile
-      # itself, instead of first demanding a development profile for a team
-      # with no devices ("Your team has no devices..."). Per target, because
-      # XcodeGen gives the app target its own identity, which would win.
-      configs:
-        Release:
-          "CODE_SIGN_IDENTITY[sdk=iphoneos*]": "Apple Distribution"
+      # NO CODE_SIGN_IDENTITY HERE, deliberately. Signing is automatic, and
+      # automatic signing picks the identity itself — Apple Development to
+      # run, Apple Distribution to archive. Naming one by hand makes Xcode
+      # refuse the whole target: "conflicting provisioning settings ... is
+      # automatically signed for development, but a conflicting code signing
+      # identity Apple Distribution has been manually specified."
+      #
+      # It was added to get around "Your team has no devices...", which is a
+      # different problem with a different answer: register a device. An
+      # Apple-silicon Mac counts, as "My Mac (Designed for iPhone)".
     info:
       path: ReclaimWidgets/Info.plist
       properties:
