@@ -163,6 +163,18 @@ public final class AppState {
 
     public func dismissInterruption() { pending = nil }
 
+    /// Screen 8's question, and the Settings toggle. Asks the system only on a
+    /// yes, and keeps the local profile in step — the toggle used to save the
+    /// change and then schedule from the profile as it was before.
+    public func setNudge(on: Bool) async {
+        guard var p = profile else { return }
+        try? await repo.updateProfile(nudgeEnabled: on, nudgeHour: p.nudgeHour)
+        p.nudgeEnabled = on
+        profile = p
+        if on, await Notifications.canOffer() { await Notifications.ask() }
+        await Notifications.reschedule(for: p)
+    }
+
     /// Signing out has to reach the screen, not just the server: `load()` then
     /// finds nobody and shows Welcome. It used to call the auth client directly
     /// and leave the app looking signed in.

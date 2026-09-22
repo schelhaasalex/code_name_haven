@@ -26,6 +26,8 @@
   "time.evening": "{day} evening",
   "time.night": "{day} night",
 
+  "welcome.invited.headline": "Someone invited you.",
+  "welcome.invited.body": "Sign in and you'll be in their place. Nothing starts until one of you sets a phone down.",
   "welcome.signin": "Continue with Apple",
   "welcome.footer": "For the people in the room, not the ones in your pocket.",
 
@@ -50,6 +52,7 @@
   "docked.eyebrow": "Counting",
   "docked.headline": "Docked. See you in a bit.",
   "docked.body": "It's already counting. Everything below can wait until you pick this up again.",
+  "docked.first": "Now turn it over. Face down is the whole gesture.",
   "docked.where.label": "Where",
   "docked.where.unnamed": "Somewhere",
   "docked.where.body": "Pick a place you've been, or scan its card if there is one. Or leave it — Somewhere counts exactly the same.",
@@ -132,6 +135,11 @@
   "end.rhythm": "That's {count} evenings this week. A rhythm, more or less.",
   "end.rhythm.first": "The first evening this week.",
   "end.done": "Done",
+  "end.short": "An evening counts from fifteen minutes. This one is kept all the same.",
+  "end.nudge.title": "One nudge an evening?",
+  "end.nudge.body": "At {time}, never during an evening and never to end one. You can turn it off in Settings.",
+  "end.nudge.yes": "Yes, nudge me",
+  "end.nudge.no": "No, thanks",
 
   "place.live": "{names} are here right now.",
   "place.invite": "Invite someone here",

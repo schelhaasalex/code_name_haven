@@ -81,6 +81,18 @@ public enum Say {
         return t(part, "day", weekday.string(from: day))
     }
 
+    /// "7 PM", "19:00" — an hour of the day in the phone's own style. The
+    /// nudge hour used to be written into Settings as "7:00pm", whatever it was.
+    public static func hour(_ hour: Int, calendar: Calendar = .current) -> String {
+        let f = DateFormatter()
+        f.calendar = calendar
+        f.timeZone = calendar.timeZone
+        f.locale = calendar.locale ?? .current
+        f.setLocalizedDateFormatFromTemplate("j")
+        let date = calendar.date(from: DateComponents(year: 2026, month: 1, day: 1, hour: hour)) ?? .now
+        return f.string(from: date)
+    }
+
     public static func clock(_ elapsed: TimeInterval) -> String {
         let s = max(0, Int(elapsed))
         return "\(s / 60):" + String(format: "%02d", s % 60)
