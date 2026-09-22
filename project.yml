@@ -24,8 +24,15 @@ settings:
     # address until there is a real domain; cards printed against it stop
     # working when it changes, invites expire anyway.
     LINK_DOMAIN: haven-links-lime.vercel.app
+    # The version people see, and the build number. App Store Connect refuses
+    # an upload whose build number it has already seen, and the widget's must
+    # match the app's — both targets read these, so bump CURRENT_PROJECT_VERSION
+    # once per TestFlight upload.
     MARKETING_VERSION: "0.1"
     CURRENT_PROJECT_VERSION: "1"
+    # iPhone only. It's a phone you set down; a portrait-only app that also
+    # runs on iPad is refused at upload unless it demands full screen.
+    TARGETED_DEVICE_FAMILY: "1"
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     SWIFT_STRICT_CONCURRENCY: targeted
   configs:
@@ -65,7 +72,13 @@ targets:
       path: Reclaim/Info.plist
       properties:
         CFBundleDisplayName: $(APP_DISPLAY_NAME)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LINK_DOMAIN: $(LINK_DOMAIN)
+        # The app's only encryption is the system's own HTTPS. Saying so here
+        # means App Store Connect doesn't ask about export compliance on
+        # every build uploaded.
+        ITSAppUsesNonExemptEncryption: false
         # The static launch screen is the same flat paper as `Palette.bone`, so
         # there is no flash between it and SplashView's first frame. It was an
         # empty dictionary, which means the system background — white in light
@@ -77,6 +90,9 @@ targets:
         UILaunchScreen:
           UIColorName: LaunchBone
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        # Portrait only, and full screen: a session is one quiet screen, never
+        # a split view. Declared, so the upload check doesn't ask.
+        UIRequiresFullScreen: true
         NSMotionUsageDescription: >-
           $(APP_DISPLAY_NAME) notices when your phone has been sitting still, so it can
           offer to count time you already spent away from it.
@@ -108,6 +124,8 @@ targets:
       path: ReclaimWidgets/Info.plist
       properties:
         CFBundleDisplayName: $(APP_DISPLAY_NAME)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
 

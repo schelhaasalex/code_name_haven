@@ -154,6 +154,27 @@ To check Apple can see it:
 curl -sS https://app-site-association.cdn-apple.com/a/v1/haven-links-lime.vercel.app
 ```
 
+## Getting it onto phones: TestFlight
+
+No cable needed, and it's how anyone else gets a build. Once per app, in App
+Store Connect: My Apps → **+** → New App, iOS, bundle ID
+`com.alexschelhaas.reclaim`, and a name — which must be unique on the store,
+so use a placeholder while the real name isn't settled.
+
+Each build:
+
+1. **Bump `CURRENT_PROJECT_VERSION`** in project.yml and `xcodegen generate`.
+   App Store Connect refuses a build number it has already seen; the widget
+   reads the same setting, so the two always match.
+2. Xcode: scheme **Reclaim**, device **Any iOS Device**, **Product → Archive**.
+3. The Organizer opens: **Distribute App → App Store Connect → Upload**.
+4. After processing (minutes, sometimes longer) it appears under TestFlight.
+
+The upload is already prepared for: an opaque 1024 icon, a privacy manifest in
+the app and in the widget (`PrivacyInfo.xcprivacy` — UserDefaults, and the
+data the app collects), `ITSAppUsesNonExemptEncryption: false` so export
+compliance isn't asked each time, and iPhone-only, full-screen portrait.
+
 ## Fonts
 
 Fraunces and Work Sans are both OFL. Until the `.ttf` files land in
