@@ -100,6 +100,10 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
     public func myRhythm() async throws -> Rhythm { rhythm }
     public func resolvePlace(secret: String) async throws -> UUID? { places.first?.id }
 
+    /// The canvas household shares the kitchen table — unless it was made
+    /// without places, which is day one.
+    public func hasCompany() async throws -> Bool { !places.isEmpty && memberList.count > 1 }
+
     /// Any token will do here: the sample household has no server to ask.
     public func createInvite(place: UUID) async throws -> String { Handle.newSecret() }
 

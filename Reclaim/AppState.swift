@@ -46,6 +46,10 @@ public final class AppState {
     public var joinedPlace: InviteAcceptance?
     /// An invite opened while signed out, kept until sign-in finishes.
     var pendingInvite: String?
+    /// Someone else shares one of your places. Until then Home keeps offering
+    /// an invite; after, it has done its job. A failed read keeps what was
+    /// known, like everything else `load()` asks.
+    public var hasCompany = false
 
     public struct Ended: Equatable {
         public let startedAt: Date
@@ -118,6 +122,7 @@ public final class AppState {
         self.places = (try? await places) ?? self.places
         self.rhythm = (try? await rhythm) ?? self.rhythm
         await loadEvenings()
+        hasCompany = (try? await repo.hasCompany()) ?? hasCompany
         let found: Result<Session?, any Error>
         do { found = .success(try await live) } catch { found = .failure(error) }
         await reconcile(Reconciliation.between(running: session, database: found))
