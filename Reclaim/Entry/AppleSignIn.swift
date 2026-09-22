@@ -7,7 +7,13 @@ import ReclaimKit
 enum AppleSignIn {
 
     @MainActor
-    static func complete(_ result: Result<ASAuthorization, Error>, state: AppState) async {
+    static func complete(_ result: Result<ASAuthorization, Error>, nonce: String,
+                         state: AppState) async {
+        // Cancelling the sheet is a choice, not a failure: back to Welcome,
+        // no banner.
+        if case .failure(let error) = result,
+           (error as? ASAuthorizationError)?.code == .canceled { return }
+
         guard case .success(let auth) = result,
               let credential = auth.credential as? ASAuthorizationAppleIDCredential,
               let tokenData = credential.identityToken,
@@ -20,7 +26,7 @@ enum AppleSignIn {
 
         do {
             try await repo.client.auth.signInWithIdToken(
-                credentials: .init(provider: .apple, idToken: token))
+                credentials: .init(provider: .apple, idToken: token, nonce: nonce))
 
             // APPLE GIVES THE NAME EXACTLY ONCE, on the first authorization
             // ever — not the first on this device, ever. Miss it and it's gone
