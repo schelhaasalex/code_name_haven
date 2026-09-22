@@ -33,7 +33,7 @@ final class EveningCalendarTests: XCTestCase {
     /// every dot by one and is invisible unless the week is asserted whole.
     func testSundayEndsTheWeek() {
         let days = EveningCalendar.week(
-            evenings: ["2026-09-20"],
+            evenings: ["2026-09-13", "2026-09-20"],
             today: date("2026-09-20"),
             calendar: calendar())
         XCTAssertEqual(days, [.missed, .missed, .missed, .missed, .missed, .missed, .docked])
@@ -43,9 +43,26 @@ final class EveningCalendarTests: XCTestCase {
     /// shows absence, and an outlined future dot is the whole difference.
     func testLaterThisWeekIsFutureNotMissed() {
         let days = EveningCalendar.week(
-            evenings: [], today: date("2026-09-21"), calendar: calendar())
+            evenings: ["2026-09-14"], today: date("2026-09-21"), calendar: calendar())
         XCTAssertEqual(days, [.missed, .future, .future, .future, .future, .future, .future])
         XCTAssertEqual(EveningCalendar.count(days), 0)
+    }
+
+    /// Day one: no evenings yet, so nothing has been missed — not today, not
+    /// the four weeks before the app was installed.
+    func testNothingIsMissedBeforeTheFirstEvening() {
+        let week = EveningCalendar.week(evenings: [], today: date("2026-09-24"), calendar: calendar())
+        XCTAssertEqual(week, [.before, .before, .before, .before, .future, .future, .future])
+        let grid = EveningCalendar.grid(evenings: [], weeks: 4, today: date("2026-09-24"), calendar: calendar())
+        XCTAssertFalse(grid.contains(.missed), "a first-day grid must not be four weeks of misses")
+    }
+
+    /// First evening on Wednesday: Monday and Tuesday came before it, Thursday
+    /// (today, nothing yet) comes after it and can be missed.
+    func testOnlyDaysAfterTheFirstEveningCanBeMissed() {
+        let days = EveningCalendar.week(
+            evenings: ["2026-09-23"], today: date("2026-09-24"), calendar: calendar())
+        XCTAssertEqual(days, [.before, .before, .docked, .missed, .future, .future, .future])
     }
 
     func testTheWeekCrossesAMonthBoundary() {

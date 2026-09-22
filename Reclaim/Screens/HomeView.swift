@@ -21,7 +21,9 @@ struct HomeView: View {
                 if isDayOne { dayOne } else { usual }
                 Spacer(minLength: 20)
                 actions
-                if !isDayOne { footer }
+                // Always, day one included: it's the only way to the rhythm,
+                // and seven empty circles are true on a first day too.
+                footer
             }
             .ground()
             .navigationDestination(for: Route.self) { route in
@@ -129,9 +131,12 @@ struct HomeView: View {
 
     private var inviteCard: some View {
         VStack(alignment: .leading, spacing: 14) {
+            // Never truncated: when Home is tight it's the spacers that give.
             Text(t("dayone.invite.title")).font(Type.body(21)).foregroundStyle(Palette.ink)
+                .fixedSize(horizontal: false, vertical: true)
             Text(t("dayone.invite.body")).font(Type.body(14))
                 .foregroundStyle(Palette.ink2).lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
             // An invite is always to a place — sharing the app alone
             // connects you to nobody. The sheet asks where, first.
             Button { inviting = true } label: {
@@ -147,23 +152,30 @@ struct HomeView: View {
         .background(Palette.linen, in: RoundedRectangle(cornerRadius: 18))
     }
 
+    /// The way to the rhythm (screen 10). Labelled like every other section,
+    /// with a chevron you can see, so it reads as somewhere to go — it used to
+    /// be a line of text and some dots, and nobody found it.
     private var footer: some View {
         NavigationLink(value: Route.rhythm) {
-            HStack {
-                Text(footerLine)
-                    .font(Type.body(15)).foregroundStyle(Palette.ink2)
-                Spacer()
-                DotWeek(days: weekDots)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Palette.hairline)
+            VStack(alignment: .leading, spacing: 10) {
+                Text(t("home.rhythm.label")).eyebrow(Palette.muted)
+                HStack(spacing: 12) {
+                    Text(footerLine)
+                        .font(Type.body(15)).foregroundStyle(Palette.ink2)
+                    Spacer(minLength: 8)
+                    DotWeek(days: weekDots)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Palette.muted)
+                }
             }
             .frame(minHeight: 44)
-            .padding(.top, 20)
+            .padding(.top, 18)
             .overlay(alignment: .top) { Rectangle().fill(Palette.line).frame(height: 1) }
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .padding(.top, 26)
+        .padding(.top, 24)
     }
 
     private var weekDots: [EveningCalendar.Day] {

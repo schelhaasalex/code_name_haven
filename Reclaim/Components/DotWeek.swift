@@ -20,7 +20,7 @@ struct DotWeek: View {
         case .docked: Circle().fill(Palette.ink)
         case .missed: Circle().fill(Palette.line)
         case .rest:   Circle().fill(Palette.restFill).overlay { Circle().stroke(Palette.restStroke, lineWidth: 1.5) }
-        case .future: Circle().stroke(Palette.hairline, lineWidth: 1)
+        case .future, .before: Circle().stroke(Palette.hairline, lineWidth: 1)
         }
     }
 }

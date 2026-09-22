@@ -14,12 +14,16 @@ struct RhythmView: View {
                 Eyebrow(text: t("rhythm.eyebrow"))
 
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(state.rhythm.state == .inRhythm
-                         ? t("rhythm.headline")
+                    // Never "that rhythm ended" to someone who hasn't had one.
+                    Text(state.rhythm.state == .inRhythm ? t("rhythm.headline")
+                         : state.rhythm.longestRunDays == 0 ? t("rhythm.none.headline")
                          : t("rhythmended.headline"))
                         .font(Type.display(46)).foregroundStyle(Palette.ink)
                     if state.rhythm.state == .inRhythm {
                         Text(t("rhythm.subhead", "count", Say.number(state.rhythm.currentRunDays)))
+                            .font(Type.display(24)).foregroundStyle(Palette.clay)
+                    } else if state.rhythm.longestRunDays == 0 {
+                        Text(t("rhythm.none.subhead"))
                             .font(Type.display(24)).foregroundStyle(Palette.clay)
                     }
                 }

@@ -23,7 +23,7 @@ struct DayGrid: View {
         case .docked: Palette.ink
         case .missed: Palette.line
         case .rest:   Palette.restFill
-        case .future: .clear
+        case .future, .before: .clear
         }
     }
 
@@ -31,7 +31,7 @@ struct DayGrid: View {
         switch day {
         case .rest:
             RoundedRectangle(cornerRadius: 9).stroke(Palette.restStroke, lineWidth: 1.5)
-        case .future:
+        case .future, .before:
             RoundedRectangle(cornerRadius: 9)
                 .strokeBorder(Palette.line, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
         default:
