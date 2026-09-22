@@ -147,6 +147,15 @@ done
 [ "$(grep -l ': AppShortcutsProvider' $(find Reclaim -name '*.swift') 2>/dev/null | wc -l | tr -d ' ')" = "1" ] \
   || bad "Reclaim/ should declare exactly one AppShortcutsProvider"
 
+# 11. The App Group is one name written three times: two entitlements files and
+#     SessionFlag. If they disagree, the Control Centre toggle reads a store
+#     nothing writes to, and shows "off" forever — no error anywhere.
+note "The App Group is the same everywhere"
+groups=$( { grep -ho 'group\.[A-Za-z0-9.-]*' Reclaim/Reclaim.entitlements ReclaimWidgets/ReclaimWidgets.entitlements
+            grep -ho '"group\.[A-Za-z0-9.-]*"' ReclaimKit/Sources/ReclaimKit/Activity/SessionFlag.swift | tr -d '"'; } | sort -u)
+[ "$(printf '%s\n' "$groups" | grep -c .)" = "1" ] \
+  || bad "App Group differs between the entitlements and SessionFlag: $(echo $groups)"
+
 echo
 if [ "$FAIL" -eq 0 ]; then
   echo "Shape is fine."

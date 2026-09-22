@@ -11,7 +11,7 @@ import Foundation
 /// two ever disagree, the toggle is briefly wrong and one tap fixes it, which
 /// is the correct way round for something this cheap.
 public enum SessionFlag {
-    public static let appGroup = "group.com.reclaim.app"
+    public static let appGroup = "group.com.alexschelhaas.reclaim"
     private static let key = "reclaim.session.live"
 
     private static var store: UserDefaults? { UserDefaults(suiteName: appGroup) }

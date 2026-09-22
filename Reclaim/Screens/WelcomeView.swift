@@ -5,6 +5,8 @@ import ReclaimKit
 /// Screen 1.
 struct WelcomeView: View {
     @Environment(AppState.self) private var state
+    /// One per attempt: its hash goes to Apple, the nonce itself to Supabase.
+    @State private var nonce = AppleNonce.make()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -28,8 +30,11 @@ struct WelcomeView: View {
                     // Apple hands over the name EXACTLY ONCE, on the first
                     // authorization ever. Capture it then or lose it for good.
                     request.requestedScopes = [.fullName]
+                    request.nonce = AppleNonce.hashed(nonce)
                 } onCompletion: { result in
-                    Task { await AppleSignIn.complete(result, state: state) }
+                    let used = nonce
+                    nonce = AppleNonce.make()
+                    Task { await AppleSignIn.complete(result, nonce: used, state: state) }
                 }
                 .signInWithAppleButtonStyle(.black)
                 .frame(height: 54)
