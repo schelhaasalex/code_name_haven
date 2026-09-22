@@ -156,6 +156,16 @@ groups=$( { grep -ho 'group\.[A-Za-z0-9.-]*' Reclaim/Reclaim.entitlements Reclai
 [ "$(printf '%s\n' "$groups" | grep -c .)" = "1" ] \
   || bad "App Group differs between the entitlements and SessionFlag: $(echo $groups)"
 
+# 12. One domain, set once. Links are printed onto cards and sent in messages,
+#     and there's no real domain yet — a host written into Swift is one the
+#     rename will miss. They go through `Links.domain` (LINK_DOMAIN in
+#     project.yml), and so does the entitlement that lets them open the app.
+note "Links use LINK_DOMAIN"
+hardcoded=$(grep -nE '"https?://[A-Za-z0-9]' $ALL_SWIFT 2>/dev/null)
+[ -n "$hardcoded" ] && bad "A link host is written into Swift — use Links.domain: $(echo "$hardcoded" | head -1)"
+grep -q 'applinks:$(LINK_DOMAIN)' Reclaim/Reclaim.entitlements \
+  || bad "Reclaim.entitlements should say applinks:\$(LINK_DOMAIN), not a literal domain"
+
 echo
 if [ "$FAIL" -eq 0 ]; then
   echo "Shape is fine."

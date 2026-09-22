@@ -3,6 +3,12 @@
 Reclaim — a phone-free ritual app for iOS. You set your phone down, the people
 around you do the same, and the place you did it in slowly becomes something.
 
+> **"Reclaim" is a working name.** The business name isn't settled, and there
+> is no real domain yet. Keep both out of anything that's hard to change: a
+> person sees the name through `APP_DISPLAY_NAME` (project.yml) and `app.name`
+> (copy); links go through `LINK_DOMAIN`, for now a Vercel testing address.
+> Module and target names (`ReclaimKit`, `Reclaim/`) stay — nobody sees them.
+
 Read `VISION.md` for why, `BRIEF.md` for what, `docs/APP-SPEC.md` for how.
 `docs/SCHEMA-REVIEW.md` records fourteen bugs found before any of this shipped
 and is worth skimming before touching the database.
@@ -207,6 +213,7 @@ scripts/shape.sh      # about a second, no toolchain, no network
 | The bundled `strings.json` matches `copy/` | Same file, two places; keeping them equal is the job |
 | `LaunchBone` matches `Palette.bone` | UIKit reads `Info.plist` before any Swift runs, so the launch colour genuinely is the same fact twice |
 | Siri phrases live in the app target | App Shortcuts declared in ReclaimKit built fine and were never registered |
+| Links use `LINK_DOMAIN` | There's no real domain yet; a host written into Swift is one the rename misses |
 | The App Group is the same everywhere | Two entitlements and `SessionFlag` name it; if they differ, Control Centre shows "off" forever |
 
 It runs in CI on every pull request, and from a `Stop` hook in
@@ -217,6 +224,10 @@ suggestion.** Write the check, and make it fail before you make it pass.
 
 ## Scope
 
-**Out until explicitly asked for:** the BLE/NFC puck, geofencing, Android,
-office/B2B mode, parent mode, payments of any kind. The app is free; the puck
-is the business.
+**In:** phone-to-phone proximity — joining the evening of the phone face down
+on the table without a card or a link (in scope since 2026-09-22). It is the
+puck's software rehearsal.
+
+**Out until explicitly asked for:** the BLE/NFC puck itself, geofencing,
+Android, office/B2B mode, parent mode, payments of any kind. The app is free;
+the puck is the business.

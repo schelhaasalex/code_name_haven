@@ -39,15 +39,15 @@ final class HandleTests: XCTestCase {
         let secret = "abc-123_XYZ"
         let url = Handle.cardURL(secret: secret)
         XCTAssertEqual(url.scheme, "https")
-        XCTAssertEqual(url.absoluteString, "https://reclaim.app/p/abc-123_XYZ")
+        XCTAssertEqual(url.absoluteString, "https://\(Links.domain)/p/abc-123_XYZ")
         XCTAssertEqual(Handle.secret(fromCardURL: url), secret)
     }
 
     func testSomethingElseOnTheDoormatIsNotASecret() {
-        for junk in ["https://reclaim.app/",
-                     "https://reclaim.app/p",
-                     "https://reclaim.app/p/abc/def",
-                     "https://reclaim.app/x/abc"] {
+        for junk in ["https://\(Links.domain)/",
+                     "https://\(Links.domain)/p",
+                     "https://\(Links.domain)/p/abc/def",
+                     "https://\(Links.domain)/x/abc"] {
             XCTAssertNil(Handle.secret(fromCardURL: URL(string: junk)!), junk)
         }
     }
@@ -77,8 +77,8 @@ final class HandleTests: XCTestCase {
 
     func testAnythingElseScannedIsNotACard() {
         for text in ["https://example.com/p/a-long-random-secret",   // another site, same shape
-                     "http://reclaim.app/p/a-long-random-secret",     // not https
-                     "https://reclaim.app/about",                     // ours, but not a card
+                     "http://\(Links.domain)/p/a-long-random-secret",     // not https
+                     "https://\(Links.domain)/about",                     // ours, but not a card
                      "reclaim://p/a-long-random-secret",              // a scheme, not a link
                      "WIFI:S:home;T:WPA;P:hunter2;;",                 // somebody's wifi card
                      ""] {
