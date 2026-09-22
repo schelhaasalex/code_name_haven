@@ -170,6 +170,12 @@ Each build:
 3. The Organizer opens: **Distribute App → App Store Connect → Upload**.
 4. After processing (minutes, sometimes longer) it appears under TestFlight.
 
+Archiving needs no registered iPhone: Release builds sign as **Apple
+Distribution** (per target in project.yml), so Xcode makes the certificate and
+an App Store profile itself. Without that, a new team with no devices gets
+"Your team has no devices from which to generate a provisioning profile" —
+development profiles need a device, App Store ones don't.
+
 The upload is already prepared for: an opaque 1024 icon, a privacy manifest in
 the app and in the widget (`PrivacyInfo.xcprivacy` — UserDefaults, and the
 data the app collects), `ITSAppUsesNonExemptEncryption: false` so export
