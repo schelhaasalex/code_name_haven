@@ -29,6 +29,7 @@ psql -v ON_ERROR_STOP=1 -q -d "$DB" \
   -f "$ROOT/supabase/migrations/0005_public_api.sql" \
   -f "$ROOT/supabase/migrations/0006_realtime_auth.sql" \
   -f "$ROOT/supabase/migrations/0007_move_evening.sql" \
-  -f "$ROOT/supabase/migrations/0008_invites.sql"
+  -f "$ROOT/supabase/migrations/0008_invites.sql" \
+  -f "$ROOT/supabase/migrations/0009_has_company.sql"
 
 psql -v ON_ERROR_STOP=1 -q -d "$DB" -f "$ROOT/supabase/tests/01_schema_test.sql"

@@ -50,6 +50,9 @@ public protocol Repository: Sendable {
     /// place; starts nothing.
     func createInvite(place: UUID) async throws -> String
     func acceptInvite(token: String) async throws -> InviteAcceptance
+    /// Whether anyone else shares one of your places. One boolean — never
+    /// who, never how many (migration 0009).
+    func hasCompany() async throws -> Bool
 }
 
 public extension Repository {

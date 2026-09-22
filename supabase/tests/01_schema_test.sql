@@ -417,7 +417,7 @@ begin
       'resolve_place', 'create_place', 'start_or_join', 'end_session',
       'record_retroactive', 'gathering_members', 'place_summary', 'my_rhythm',
       'name_somewhere', 'merge_places', 'move_evening',
-      'create_invite', 'accept_invite']) as name
+      'create_invite', 'accept_invite', 'has_company']) as name
     where not exists (
       select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'public' and p.proname = name)
@@ -429,7 +429,7 @@ begin
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public'
      and has_function_privilege('authenticated', p.oid, 'execute');
-  assert v_wrapped = 13, format('expected 13 callable wrappers, found %s', v_wrapped);
+  assert v_wrapped = 14, format('expected 14 callable wrappers, found %s', v_wrapped);
 
   -- The scheduler's job is not a client's to call: nine hours of
   -- phone-on-the-side becoming 180 minutes has to happen TO you, not by you.
@@ -442,7 +442,7 @@ begin
    where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute');
   assert v_anon = 0, format('anon can execute %s functions in public', v_anon);
 
-  raise notice 'PASS 12  thirteen wrappers callable by authenticated, none by anon';
+  raise notice 'PASS 12  fourteen wrappers callable by authenticated, none by anon';
 end $$;
 
 -- ============================================================ FINDING 15
@@ -681,6 +681,39 @@ begin
   assert v_failed, 'invites must not be readable by clients';
 
   raise notice 'PASS 17  an invite joins the place and starts nothing; expired, forged and non-member invites refused';
+end $$;
+
+-- ============================================================ 18
+-- Company. Home keeps offering an invite until someone else shares one of
+-- your places. The answer is a single boolean — never who, never how many.
+
+do $$
+declare
+  v_lone  uuid := 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1';
+  v_other uuid := 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2';
+  v_place uuid; v_token text;
+begin
+  insert into auth.users (id, email) values (v_lone, 'lone@example.test'), (v_other, 'other@example.test');
+  insert into profiles (id, display_name) values (v_lone, 'Lone'), (v_other, 'Other');
+
+  perform auth.login(v_lone);
+  assert not app.has_company(), 'no places, no company';
+  v_place := app.create_place('lone-table', 'a-card-on-the-lone-table', 'The Lone Table');
+  assert not app.has_company(), 'a place of your own is not company';
+  v_token := app.create_invite(v_place);
+
+  perform auth.login(v_other);
+  perform app.accept_invite(v_token);
+
+  perform auth.login(v_lone);
+  assert app.has_company(), 'someone else in your place is company';
+
+  -- They leave: on your own again, and the offer comes back.
+  update place_people set left_at = now() where place_id = v_place and profile_id = v_other;
+  assert not app.has_company(), 'someone who left is not company';
+
+  perform auth.logout();
+  raise notice 'PASS 18  company is one boolean: someone else, still there, in a place of yours';
 end $$;
 
 do $$ begin raise notice '--- all assertions held ---'; end $$;

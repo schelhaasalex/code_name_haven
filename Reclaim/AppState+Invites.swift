@@ -42,6 +42,7 @@ extension AppState {
         do {
             joinedPlace = try await repo.acceptInvite(token: token)
             await reloadPlaces()
+            hasCompany = true
             if !isLive { watchPlaces() }
         } catch {
             banner = t("error.invite")

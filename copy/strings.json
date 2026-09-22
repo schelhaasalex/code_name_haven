@@ -37,6 +37,7 @@
   "home.suggestion.title": "Start it at {place}",
   "home.suggestion.body": "Your usual place, lately.",
   "home.suggestion.note": "A guess from your history, not from your location. You can also name the place afterwards, or leave it unnamed.",
+  "home.invite": "Invite someone you'd set it down with",
   "home.rhythm.label": "Your rhythm",
   "home.footer": "{count} evenings this week.",
   "home.footer.one": "One evening this week.",
@@ -44,9 +45,6 @@
 
   "dayone.headline": "Nothing here yet.",
   "dayone.body": "Which is the right amount for a first evening. There's nothing to set up — put your phone down and we'll start from there.",
-  "dayone.invite.title": "It's better with someone else in it.",
-  "dayone.invite.body": "Invite someone to a place you share. When one of you sets it down, the other will know.",
-  "dayone.invite.action": "Invite someone",
   "dayone.footer": "No streak, no score, no setup. Those arrive on their own.",
 
   "docked.eyebrow": "Counting",

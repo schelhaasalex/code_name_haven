@@ -87,10 +87,13 @@ struct HomeView: View {
                 Task { await state.setItDown() }
             }
 
-            if isDayOne {
-                inviteCard
-            } else if let place = state.usualPlace, let name = place.name {
+            if !isDayOne, let place = state.usualPlace, let name = place.name {
                 suggestion(place: place, name: name)
+            }
+            // Until someone else shares one of your places — day one or not.
+            // A line, not a card: it shouldn't compete with setting it down.
+            if !state.hasCompany {
+                TextAction(title: t("home.invite"), icon: "person.badge.plus") { inviting = true }
             }
         }
     }
@@ -129,28 +132,6 @@ struct HomeView: View {
         }
     }
 
-    private var inviteCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            // Never truncated: when Home is tight it's the spacers that give.
-            Text(t("dayone.invite.title")).font(Type.body(21)).foregroundStyle(Palette.ink)
-                .fixedSize(horizontal: false, vertical: true)
-            Text(t("dayone.invite.body")).font(Type.body(14))
-                .foregroundStyle(Palette.ink2).lineSpacing(3)
-                .fixedSize(horizontal: false, vertical: true)
-            // An invite is always to a place — sharing the app alone
-            // connects you to nobody. The sheet asks where, first.
-            Button { inviting = true } label: {
-                Text(t("dayone.invite.action"))
-                    .font(Type.body(15, weight: .medium))
-                    .frame(maxWidth: .infinity, minHeight: 46)
-                    .foregroundStyle(Palette.ink2)
-                    .overlay { Capsule().stroke(Palette.hairline, lineWidth: 1) }
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(20)
-        .background(Palette.linen, in: RoundedRectangle(cornerRadius: 18))
-    }
 
     /// The way to the rhythm (screen 10). Labelled like every other section,
     /// with a chevron you can see, so it reads as somewhere to go — it used to
