@@ -18,6 +18,9 @@ struct InviteSheet: View {
     @State private var link: URL?
     @State private var name = ""
     @State private var working = false
+    /// Said here, in the sheet. AppState's banner sits on the screen under
+    /// it, so a failure used to look like a button that did nothing.
+    @State private var failed = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -50,12 +53,20 @@ struct InviteSheet: View {
                 .submitLabel(.done)
                 .padding(.vertical, 10)
                 .overlay(alignment: .bottom) { Rectangle().fill(Palette.hairline).frame(height: 1) }
+            if failed {
+                Text(t("error.retry")).font(Type.note).foregroundStyle(Palette.clayDeep)
+            }
             PrimaryButton(title: t("invite.name.action")) {
                 let named = name.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !named.isEmpty, !working else { return }
                 working = true
+                failed = false
                 Task {
-                    if let made = await state.makePlace(named: named) { await choose(made) }
+                    if let made = await state.makePlace(named: named) {
+                        await choose(made)
+                    } else {
+                        failed = true
+                    }
                     working = false
                 }
             }
@@ -103,6 +114,9 @@ struct InviteSheet: View {
                         .background(Palette.ink, in: Capsule())
                 }
                 .padding(.top, 8)
+            } else if failed {
+                Text(t("error.retry")).font(Type.note).foregroundStyle(Palette.clayDeep)
+                QuietButton(title: t("invite.retry")) { Task { await choose(place) } }
             } else {
                 Text(t("invite.preparing")).font(Type.note).foregroundStyle(Palette.muted)
             }
@@ -121,7 +135,9 @@ struct InviteSheet: View {
 
     private func choose(_ place: Place) async {
         chosen = place
+        failed = false
         link = await state.inviteLink(to: place.id)
+        failed = link == nil
     }
 }
 

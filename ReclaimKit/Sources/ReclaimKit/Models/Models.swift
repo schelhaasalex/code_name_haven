@@ -38,6 +38,12 @@ public struct Place: Codable, Identifiable, Hashable, Sendable {
     public let createdBy: UUID?
     public let mergedInto: UUID?
 
+    /// What a client may read of a place: every column except
+    /// `join_secret_hash`, which is granted to no one (schema review, 3c). A
+    /// bare `select()` asks for all columns, and Postgres then refuses the
+    /// whole read — so it is always this list. `scripts/shape.sh` checks.
+    public static let readableColumns = "id, name, handle, created_by, merged_into"
+
     enum CodingKeys: String, CodingKey {
         case id, name, handle
         case createdBy = "created_by"

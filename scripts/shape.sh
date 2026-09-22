@@ -166,6 +166,14 @@ hardcoded=$(grep -nE '"https?://[A-Za-z0-9]' $ALL_SWIFT 2>/dev/null)
 grep -q 'applinks:$(LINK_DOMAIN)' Reclaim/Reclaim.entitlements \
   || bad "Reclaim.entitlements should say applinks:\$(LINK_DOMAIN), not a literal domain"
 
+# 13. places.join_secret_hash is granted to no client, so a read of every column
+#     is refused outright — and the app took the refusal for "no places". It
+#     was invisible until a real account made one: the place was created, and
+#     then couldn't be found. Places are read by `Place.readableColumns`.
+note "Places are read by named columns"
+bare=$(grep -nE 'from\("places"\)[[:space:]]*\.select\(\)' $ALL_SWIFT 2>/dev/null)
+[ -n "$bare" ] && bad "A bare select() on places is refused by the database — use Place.readableColumns: $(echo "$bare" | head -1)"
+
 echo
 if [ "$FAIL" -eq 0 ]; then
   echo "Shape is fine."
