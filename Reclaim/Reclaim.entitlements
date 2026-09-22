@@ -6,11 +6,12 @@
   <array><string>Default</string></array>
   <key>com.apple.developer.nfc.readersession.formats</key>
   <array><string>NDEF</string></array>
-  <!-- The tag by the door carries an https link, so the system can open it
-       with the app closed. Needs a domain you control serving
-       /.well-known/apple-app-site-association. -->
+  <!-- The tag by the door, the card's QR and an invite all carry an https
+       link, so the system can open the app with it closed. LINK_DOMAIN is set
+       in project.yml; that site serves the apple-app-site-association
+       (links/). -->
   <key>com.apple.developer.associated-domains</key>
-  <array><string>applinks:reclaim.app</string></array>
+  <array><string>applinks:$(LINK_DOMAIN)</string></array>
   <key>com.apple.security.application-groups</key>
   <array><string>group.com.alexschelhaas.reclaim</string></array>
 </dict>

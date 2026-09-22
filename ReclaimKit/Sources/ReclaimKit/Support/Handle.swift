@@ -44,14 +44,14 @@ public enum Handle {
     /// What goes on the tag and in the QR. An https URL, because iOS only
     /// offers to open http(s) from a background NFC read — a custom scheme
     /// would need the app already open, which defeats the point.
-    public static func cardURL(secret: String, domain: String = "reclaim.app") -> URL {
+    public static func cardURL(secret: String, domain: String = Links.domain) -> URL {
         URL(string: "https://\(domain)/p/\(secret)")!
     }
 
     /// Whatever a camera read, if it is one of ours. A QR code can say
     /// anything, so only the exact shape the app prints — https, this domain,
     /// `/p/<secret>` — is taken for a card. Anything else is "not a card".
-    public static func cardURL(fromScanned text: String, domain: String = "reclaim.app") -> URL? {
+    public static func cardURL(fromScanned text: String, domain: String = Links.domain) -> URL? {
         guard let url = URL(string: text.trimmingCharacters(in: .whitespacesAndNewlines)),
               url.scheme?.lowercased() == "https",
               url.host?.lowercased() == domain,

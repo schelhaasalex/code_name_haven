@@ -130,7 +130,7 @@ struct HomeView: View {
             Text(t("dayone.invite.title")).font(Type.body(21)).foregroundStyle(Palette.ink)
             Text(t("dayone.invite.body")).font(Type.body(14))
                 .foregroundStyle(Palette.ink2).lineSpacing(3)
-            ShareLink(item: URL(string: "https://reclaim.app")!) {
+            ShareLink(item: URL(string: "https://\(Links.domain)")!) {
                 Text(t("dayone.invite.action"))
                     .font(Type.body(15, weight: .medium))
                     .frame(maxWidth: .infinity, minHeight: 46)

@@ -133,6 +133,27 @@ an evening work, in memory, following the database's rules (one live evening,
 three-hour cap, fifteen minutes to count). Nobody else's phone is there, so
 every evening started in it is just you. Every launch starts fresh.
 
+## Links, and the domain they use
+
+A card, an invite, or a tag read with the phone locked opens the app only if a
+website says the app may: `links/` is that website — an
+apple-app-site-association claiming `/p/*` and `/i/*`, and a fallback page.
+It deploys to the Vercel project **haven-links** from `staging`, with `links`
+as the Root Directory so nothing else in the repository is ever served.
+
+There's no real domain yet, so `LINK_DOMAIN` in project.yml is the testing
+address, **haven-links-lime.vercel.app** — not `haven-links.vercel.app`, which
+belongs to someone else's app. Everything reads that one setting: the
+entitlement, `Links.domain`, cards and the scanner. **Don't print a card you
+mean to keep** until the real domain is set: the QR code carries the domain
+forever.
+
+To check Apple can see it:
+
+```sh
+curl -sS https://app-site-association.cdn-apple.com/a/v1/haven-links-lime.vercel.app
+```
+
 ## Fonts
 
 Fraunces and Work Sans are both OFL. Until the `.ttf` files land in

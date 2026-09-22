@@ -14,6 +14,16 @@ settings:
   base:
     SWIFT_VERSION: "5.9"
     DEVELOPMENT_TEAM: 73TQJ9R77A   # public: it is in every app this team signs
+    # "Reclaim" is a WORKING NAME — the business name isn't settled. Every
+    # place a person sees it reads this, so renaming is one line here plus
+    # `app.name` in copy/strings.json. Target and module names stay: nobody
+    # sees them.
+    APP_DISPLAY_NAME: Reclaim
+    # Where card, invite and tag links point, and the site whose
+    # apple-app-site-association lets them open the app (links/). A testing
+    # address until there is a real domain; cards printed against it stop
+    # working when it changes, invites expire anyway.
+    LINK_DOMAIN: haven-links-lime.vercel.app
     MARKETING_VERSION: "0.1"
     CURRENT_PROJECT_VERSION: "1"
     ENABLE_USER_SCRIPT_SANDBOXING: YES
@@ -54,7 +64,8 @@ targets:
     info:
       path: Reclaim/Info.plist
       properties:
-        CFBundleDisplayName: Reclaim
+        CFBundleDisplayName: $(APP_DISPLAY_NAME)
+        LINK_DOMAIN: $(LINK_DOMAIN)
         # The static launch screen is the same flat paper as `Palette.bone`, so
         # there is no flash between it and SplashView's first frame. It was an
         # empty dictionary, which means the system background — white in light
@@ -67,13 +78,13 @@ targets:
           UIColorName: LaunchBone
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSMotionUsageDescription: >-
-          Reclaim notices when your phone has been sitting still, so it can
+          $(APP_DISPLAY_NAME) notices when your phone has been sitting still, so it can
           offer to count time you already spent away from it.
         NSCameraUsageDescription: >-
-          Reclaim reads the code on a place's card, so you can join the
+          $(APP_DISPLAY_NAME) reads the code on a place's card, so you can join the
           evening there. Nothing else is looked at, and nothing is kept.
         NFCReaderUsageDescription: >-
-          Reclaim writes the card for a place onto a tag, and reads one when
+          $(APP_DISPLAY_NAME) writes the card for a place onto a tag, and reads one when
           you'd rather scan than type.
         NSSupportsLiveActivities: true
         SUPABASE_URL: $(SUPABASE_URL)
@@ -96,7 +107,7 @@ targets:
     info:
       path: ReclaimWidgets/Info.plist
       properties:
-        CFBundleDisplayName: Reclaim
+        CFBundleDisplayName: $(APP_DISPLAY_NAME)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
 

@@ -2,6 +2,9 @@
 
 **The people in the room matter more than the ones in your pocket.**
 
+> "Reclaim" is a working name — the business name isn't settled, and there's no
+> real domain yet. See the note at the top of [CLAUDE.md](CLAUDE.md).
+
 A phone-free ritual app for iOS. One person sets their phone down and everyone
 else's answers — a chime, a screen going dark across the table, a count that
 climbs. The place you did it in slowly becomes something.
@@ -146,5 +149,7 @@ The app is free. The business is the puck — a small object by the door that
 makes the gesture physical. Everything in v1 (the printed card, the tag, the
 tap) is that object's software ancestor on purpose.
 
-Out until explicitly asked for: the BLE/NFC puck, geofencing, Android,
+In scope: phone-to-phone proximity, the puck's software rehearsal.
+
+Out until explicitly asked for: the BLE/NFC puck itself, geofencing, Android,
 office/B2B mode, parent mode, and payments of any kind.
