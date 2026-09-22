@@ -198,6 +198,19 @@ public final class SupabaseRepository: Repository, @unchecked Sendable {
             .execute().value
     }
 
+    public func createInvite(place: UUID) async throws -> String {
+        struct P: Encodable { let p_place: UUID }
+        return try await client.rpc("create_invite", params: P(p_place: place)).execute().value
+    }
+
+    public func acceptInvite(token: String) async throws -> InviteAcceptance {
+        struct P: Encodable { let p_token: String }
+        let rows: [InviteAcceptance] = try await client
+            .rpc("accept_invite", params: P(p_token: token)).execute().value
+        guard let row = rows.first else { throw ReclaimError.placeNotFound }
+        return row
+    }
+
     public func mergePlaces(from: UUID, into: UUID) async throws {
         struct P: Encodable { let p_from: UUID; let p_into: UUID }
         try await client.rpc("merge_places", params: P(p_from: from, p_into: into)).execute()

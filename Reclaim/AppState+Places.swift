@@ -114,7 +114,7 @@ extension AppState {
         places = (try? await repo.myPlaces()) ?? places
     }
 
-    private func reloadPlaces() async {
+    func reloadPlaces() async {
         places = (try? await repo.myPlaces()) ?? places
         await loadEvenings()
     }

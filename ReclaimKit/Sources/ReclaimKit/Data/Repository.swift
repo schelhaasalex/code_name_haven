@@ -46,6 +46,10 @@ public protocol Repository: Sendable {
     func createPlace(handle: String, secret: String, name: String?) async throws -> UUID
     func nameSomewhere(handle: String, secret: String, name: String) async throws -> UUID
     func mergePlaces(from: UUID, into: UUID) async throws
+    /// A week-long link into one of your places (migration 0008). Joins the
+    /// place; starts nothing.
+    func createInvite(place: UUID) async throws -> String
+    func acceptInvite(token: String) async throws -> InviteAcceptance
 }
 
 public extension Repository {

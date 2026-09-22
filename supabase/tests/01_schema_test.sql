@@ -416,7 +416,8 @@ begin
     select name from unnest(array[
       'resolve_place', 'create_place', 'start_or_join', 'end_session',
       'record_retroactive', 'gathering_members', 'place_summary', 'my_rhythm',
-      'name_somewhere', 'merge_places', 'move_evening']) as name
+      'name_somewhere', 'merge_places', 'move_evening',
+      'create_invite', 'accept_invite']) as name
     where not exists (
       select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'public' and p.proname = name)
@@ -428,7 +429,7 @@ begin
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public'
      and has_function_privilege('authenticated', p.oid, 'execute');
-  assert v_wrapped = 11, format('expected 11 callable wrappers, found %s', v_wrapped);
+  assert v_wrapped = 13, format('expected 13 callable wrappers, found %s', v_wrapped);
 
   -- The scheduler's job is not a client's to call: nine hours of
   -- phone-on-the-side becoming 180 minutes has to happen TO you, not by you.
@@ -441,7 +442,7 @@ begin
    where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute');
   assert v_anon = 0, format('anon can execute %s functions in public', v_anon);
 
-  raise notice 'PASS 12  eleven wrappers callable by authenticated, none by anon';
+  raise notice 'PASS 12  thirteen wrappers callable by authenticated, none by anon';
 end $$;
 
 -- ============================================================ FINDING 15
@@ -610,6 +611,76 @@ begin
 
   perform auth.logout();
   raise notice 'PASS 16  scanning in mid-evening joins the evening already there, start time kept';
+end $$;
+
+-- ============================================================ 17
+-- Invitations. Alex invites a guest to the Porch by message. Accepting makes
+-- the guest one of the Porch's people and STARTS NOTHING — a link opened on a
+-- Tuesday is not someone sitting at the table.
+
+do $$
+declare
+  v_alex   uuid := '99999999-9999-9999-9999-999999999991';
+  v_guest  uuid := '99999999-9999-9999-9999-999999999992';
+  v_third  uuid := '99999999-9999-9999-9999-999999999993';
+  v_stray  uuid := '99999999-9999-9999-9999-999999999994';
+  v_place uuid; v_token text; v_row record; v_failed boolean; v_sessions int;
+begin
+  insert into auth.users (id, email) values (v_alex, 'inviter@example.test'), (v_guest, 'invited@example.test'),
+                                            (v_third, 'forwarded@example.test'), (v_stray, 'stray@example.test');
+  insert into profiles (id, display_name) values (v_alex, 'Alex'), (v_guest, 'Guest'),
+                                                 (v_third, 'Third'), (v_stray, 'Stray');
+
+  perform auth.login(v_alex);
+  v_place := app.create_place('warm-porch', 'a-card-on-the-porch-secret', 'The Porch');
+  v_token := app.create_invite(v_place);
+  assert length(v_token) >= 20, 'the token should be long and random';
+  assert not exists (select 1 from invites where token_hash = v_token),
+    'only the hash may be stored';
+
+  -- Someone who isn't one of the Porch's people can't bring anyone in.
+  perform auth.login(v_stray);
+  v_failed := false;
+  begin perform app.create_invite(v_place); exception when others then v_failed := true; end;
+  assert v_failed, 'a non-member must not be able to invite to a place';
+
+  perform auth.login(v_guest);
+  select * into v_row from app.accept_invite(v_token);
+  assert v_row.place_id = v_place, 'accepting should land in the Porch';
+  assert v_row.place_name = 'The Porch' and v_row.invited_by = 'Alex',
+    format('the welcome needs the place and who asked, got %s / %s', v_row.place_name, v_row.invited_by);
+  assert exists (select 1 from place_people where place_id = v_place and profile_id = v_guest and left_at is null),
+    'the guest must now be one of the Porch''s people';
+  select count(*) into v_sessions from sessions where profile_id = v_guest;
+  assert v_sessions = 0, 'accepting an invite must not start an evening';
+
+  -- Forwarded to a family group: still good within the week.
+  perform auth.login(v_third);
+  perform app.accept_invite(v_token);
+  assert (select uses from invites where place_id = v_place) = 2, 'both uses should be counted';
+
+  -- A wrong token, and an expired one, are refused.
+  v_failed := false;
+  begin perform app.accept_invite('not-a-real-token-at-all'); exception when others then v_failed := true; end;
+  assert v_failed, 'a made-up token must be refused';
+
+  update invites set expires_at = now() - interval '1 minute' where place_id = v_place;
+  perform auth.login(v_stray);
+  v_failed := false;
+  begin perform app.accept_invite(v_token); exception when others then v_failed := true; end;
+  assert v_failed, 'an expired invite must be refused';
+  assert not exists (select 1 from place_people where place_id = v_place and profile_id = v_stray),
+    'and must not have let anyone in';
+
+  -- Clients never touch the table itself.
+  perform auth.logout();
+  set local role authenticated;
+  v_failed := false;
+  begin perform 1 from invites limit 1; exception when insufficient_privilege then v_failed := true; end;
+  reset role;
+  assert v_failed, 'invites must not be readable by clients';
+
+  raise notice 'PASS 17  an invite joins the place and starts nothing; expired, forged and non-member invites refused';
 end $$;
 
 do $$ begin raise notice '--- all assertions held ---'; end $$;

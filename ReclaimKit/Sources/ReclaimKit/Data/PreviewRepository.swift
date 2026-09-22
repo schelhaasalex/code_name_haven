@@ -99,4 +99,13 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
     public func summary(of place: UUID) async throws -> PlaceSummary { summaryValue }
     public func myRhythm() async throws -> Rhythm { rhythm }
     public func resolvePlace(secret: String) async throws -> UUID? { places.first?.id }
+
+    /// Any token will do here: the sample household has no server to ask.
+    public func createInvite(place: UUID) async throws -> String { Handle.newSecret() }
+
+    /// An invite to the sample household's own table, from Maya — enough to
+    /// see the welcome screen with `xcrun simctl openurl booted reclaim://i/x`.
+    public func acceptInvite(token: String) async throws -> InviteAcceptance {
+        InviteAcceptance(placeId: Self.kitchenTable, placeName: "The Kitchen Table", invitedBy: "Maya")
+    }
 }
