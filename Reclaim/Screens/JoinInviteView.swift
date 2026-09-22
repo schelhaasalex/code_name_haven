@@ -17,19 +17,28 @@ struct JoinInviteView: View {
     let invitation: Invitation
 
     private var placeName: String {
-        state.places.first { $0.id == invitation.place }?.name
+        invitation.place.flatMap { id in state.places.first { $0.id == id }?.name }
             ?? t("places.somewhere.title")
+    }
+
+    /// The knowledge test, as two lines. Over the channel, the person who
+    /// started it sent their own name and you both know the place. Over the
+    /// radio the app has been told neither — only that an evening near this
+    /// phone is open — so it says that and nothing more.
+    private var headline: String {
+        invitation.isNearby
+            ? t("nearby.headline")
+            : t("join.headline", "name", invitation.name ?? t("join.someone"), "place", placeName)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Eyebrow(text: t("join.eyebrow"), mark: Palette.ember, tint: Palette.dust)
+            Eyebrow(text: invitation.isNearby ? t("nearby.eyebrow") : t("join.eyebrow"),
+                    mark: Palette.ember, tint: Palette.dust)
             Spacer(minLength: 24)
 
             VStack(alignment: .leading, spacing: 16) {
-                Text(t("join.headline",
-                       "name", invitation.name ?? t("join.someone"),
-                       "place", placeName))
+                Text(headline)
                     .font(Type.display(40)).foregroundStyle(Palette.cream)
                     .lineSpacing(2)
                 Text(t("join.body", "count", Say.number(invitation.count)))
@@ -52,11 +61,18 @@ struct JoinInviteView: View {
     }
 }
 
-#Preview {
+#Preview("From a place") {
     JoinInviteView(invitation: Invitation(gathering: UUID(),
                                           place: PreviewRepository.kitchenTable,
                                           name: "Maya",
                                           count: 2,
                                           at: .now))
+        .environment(AppState(repo: PreviewRepository()))
+}
+
+#Preview("From across the table") {
+    JoinInviteView(invitation: Invitation(gathering: UUID(), place: nil, name: nil,
+                                          count: 3, at: .now,
+                                          key: "abcDEF123-_abcDEF123-_xy"))
         .environment(AppState(repo: PreviewRepository()))
 }

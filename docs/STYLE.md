@@ -171,6 +171,28 @@ it, in increasing order of how annoying it is to reach:
 3. **In CI.** `.github/workflows/checks.yml`, on every pull request, alongside
    the schema tests.
 
+## Sensors and radios
+
+A sensor proposes; a person decides (rule 4). Nothing a sensor hears may start,
+end or credit an evening on its own — the most it can do is put a question on
+screen, and the most a refused permission may cost is that question.
+
+Anything that talks to another phone follows the same shape as `Nearby`:
+
+- **What travels is a key, not an address.** A place id works forever; a key
+  minted for one evening is worthless the moment it ends. If a value picked up
+  off a radio would still let someone in tomorrow, it is the wrong value.
+- **Believe the shape before the content.** Any device can advertise our ids
+  and answer with anything. Bytes off the air are checked against what one of
+  ours looks like (`Nearby.key`) before they ever reach a request.
+- **Ask when the question makes sense.** The Bluetooth prompt happens at the
+  dock, because "so the phones around you can find this table" only means
+  something a second after somebody set a phone down. The scanner stays silent
+  until then rather than prompting someone who has just signed in.
+- **Listen in the foreground, talk in the background.** The phone in a hand is
+  the one about to be put down; the phone already down is the one that has to
+  keep saying so.
+
 The rule for the rules: **adding one here means adding a check there.** If it
 can't be checked, say so in the same breath, so the next person knows it rests
 on attention rather than on the build. The checks that exist are listed in

@@ -72,6 +72,14 @@ public final class AppState {
     public var iAmFaceDown = false
 
     let faceDown = FaceDownSensor()
+    /// The radio. The beacon talks while your phone is down — including in
+    /// the background, which is the whole point of it — and the scanner
+    /// listens only while you're holding the phone with nothing running.
+    /// `AppState+Nearby` has the shape of it.
+    let beacon = NearbyBeacon()
+    let scanner = NearbyScanner()
+    /// Asked once per table, never twice (`NearbyOffers`).
+    var offers = NearbyOffers()
     var pump: Task<Void, Never>?
     var invitePump: Task<Void, Never>?
     /// The places being listened at, so a return to the foreground doesn't

@@ -5,7 +5,7 @@ import Foundation
 // names it rather than silently decoding nil.
 
 public enum SessionSource: String, Codable, Sendable {
-    case app, tag, control, siri, shortcut, retroactive
+    case app, tag, control, siri, shortcut, retroactive, nearby
 }
 
 public struct Profile: Codable, Identifiable, Hashable, Sendable {

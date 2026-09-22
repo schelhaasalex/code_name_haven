@@ -66,6 +66,8 @@ extension AppState {
         // Nothing invites you to a table you are already sitting at.
         invitePump?.cancel(); invitePump = nil
         watching = []
+        stopListeningNearby()
+        offers.forget()
         listen()
 
         gathering = try? await repo.gathering(s.gatheringId)
@@ -86,6 +88,7 @@ extension AppState {
         link.connect(gathering: s.gatheringId, me: profile?.id,
                      docked: announcing ? startedAt : nil,
                      invitation: announcing ? invitation : nil)
+        await beFindable()
     }
 
     /// What `load()` does once it knows what the database thinks is running.
@@ -104,6 +107,7 @@ extension AppState {
     private func teardown() async {
         pump?.cancel(); pump = nil
         faceDown.stop()
+        beacon.stop()
         link.disconnect()
         await LiveActivityController.end()
         session = nil; gathering = nil; members = []; startedAt = nil
@@ -119,6 +123,9 @@ extension AppState {
     /// somebody arrived somewhere you both know. Queued behind anything the
     /// link is still doing, so a slow subscribe holds up nothing else.
     func watchPlaces() {
+        // The radio doesn't need a place to be worth listening to — a table
+        // you've never been to is exactly what it's for.
+        listenNearby()
         let ids = places.map(\.id)
         guard !ids.isEmpty, ids != watching else { return }
         watching = ids
@@ -133,10 +140,13 @@ extension AppState {
         }
     }
 
-    private func offer(_ invitation: Invitation) async {
+    func offer(_ invitation: Invitation) async {
         // Not while you're already in one, and not for one that has been sitting
-        // there since before you picked the phone up.
-        guard !isLive, invitation.at.timeIntervalSinceNow > -60 * 60 else { return }
+        // there since before you picked the phone up — that last part only for
+        // the channel. A table found by radio is one you are standing next to,
+        // and a dinner that began two hours ago is still worth joining.
+        guard !isLive else { return }
+        guard invitation.isNearby || invitation.at.timeIntervalSinceNow > -60 * 60 else { return }
         self.invitation = invitation
         Sensation.joined()
     }
@@ -146,7 +156,11 @@ extension AppState {
     /// database settles the race, not the phone.
     public func join(_ invitation: Invitation) async {
         self.invitation = nil
-        await setItDown(place: invitation.place, source: .app)
+        if let key = invitation.key {
+            await joinNearby(key)
+        } else if let place = invitation.place {
+            await setItDown(place: place, source: .app)
+        }
     }
 
     private func setFaceDown(_ down: Bool) async {

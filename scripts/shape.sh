@@ -174,6 +174,21 @@ note "Places are read by named columns"
 bare=$(grep -nE 'from\("places"\)[[:space:]]*\.select\(\)' $ALL_SWIFT 2>/dev/null)
 [ -n "$bare" ] && bad "A bare select() on places is refused by the database — use Place.readableColumns: $(echo "$bare" | head -1)"
 
+# 14. The phone that is DOWN is the one that has to keep talking, and it does
+#     that with the screen off. Without `bluetooth-peripheral` in
+#     UIBackgroundModes iOS stops the advertisement the moment the app leaves
+#     the foreground — which is one second after the person sets the phone
+#     down, and is the entire feature. Nothing errors; the other phones simply
+#     never hear it. The usage string is the other half: its absence is not a
+#     silent failure but a crash on first use.
+note "A phone that is down keeps talking"
+if grep -lq 'CBPeripheralManager' $ALL_SWIFT 2>/dev/null; then
+  grep -q 'bluetooth-peripheral' project.yml \
+    || bad "Something advertises over Bluetooth, but UIBackgroundModes has no bluetooth-peripheral"
+  grep -q 'NSBluetoothAlwaysUsageDescription' project.yml \
+    || bad "Bluetooth is used with no NSBluetoothAlwaysUsageDescription — the app crashes on first use"
+fi
+
 echo
 if [ "$FAIL" -eq 0 ]; then
   echo "Shape is fine."

@@ -112,4 +112,27 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
     public func acceptInvite(token: String) async throws -> InviteAcceptance {
         InviteAcceptance(placeId: Self.kitchenTable, placeName: "The Kitchen Table", invitedBy: "Maya")
     }
+
+    // MARK: - The radio
+
+    /// There is no radio in a preview and no second phone in the simulator, so
+    /// these answer the way the database would and nothing ever calls them
+    /// from the air.
+    public func openNearby() async throws -> String? {
+        live != nil && gatheringNow?.placeId != nil ? Handle.newSecret() : nil
+    }
+
+    /// A table across the room, already set — the offer screen 4 shows when it
+    /// came off a phone rather than through a place. No name, no place: that
+    /// is all a phone is told before someone taps.
+    public func nearbyOffer(key: String) async throws -> Invitation? {
+        guard live == nil else { return nil }
+        return Invitation(gathering: UUID(), place: nil, name: nil, count: 2,
+                          at: Date(timeIntervalSinceNow: -20 * 60), key: key)
+    }
+
+    public func joinNearby(key: String) async throws -> UUID {
+        _ = try await startOrJoin(place: Self.kitchenTable, source: .nearby)
+        return live?.gatheringId ?? UUID()
+    }
 }

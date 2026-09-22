@@ -417,7 +417,8 @@ begin
       'resolve_place', 'create_place', 'start_or_join', 'end_session',
       'record_retroactive', 'gathering_members', 'place_summary', 'my_rhythm',
       'name_somewhere', 'merge_places', 'move_evening',
-      'create_invite', 'accept_invite', 'has_company']) as name
+      'create_invite', 'accept_invite', 'has_company',
+      'open_nearby', 'nearby_offer', 'join_nearby']) as name
     where not exists (
       select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'public' and p.proname = name)
@@ -429,7 +430,7 @@ begin
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public'
      and has_function_privilege('authenticated', p.oid, 'execute');
-  assert v_wrapped = 14, format('expected 14 callable wrappers, found %s', v_wrapped);
+  assert v_wrapped = 17, format('expected 17 callable wrappers, found %s', v_wrapped);
 
   -- The scheduler's job is not a client's to call: nine hours of
   -- phone-on-the-side becoming 180 minutes has to happen TO you, not by you.
@@ -714,6 +715,150 @@ begin
 
   perform auth.logout();
   raise notice 'PASS 18  company is one boolean: someone else, still there, in a place of yours';
+end $$;
+
+-- ============================================================ FINDING 19
+-- Proximity (0010). One phone already down at a table, another across it with
+-- nothing to scan. What travels between them is a key that dies with the
+-- evening — never a place id, which would outlive it by years.
+
+do $$
+declare
+  v_host  uuid := 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1';
+  v_guest uuid := 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2';
+  v_place uuid; v_key text; v_stale text; v_row record; v_failed boolean := false;
+  v_gathering uuid; v_sessions int;
+begin
+  insert into auth.users (id, email) values (v_host, 'host@example.test'), (v_guest, 'guest@example.test');
+  insert into profiles (id, display_name) values (v_host, 'Host'), (v_guest, 'Guest');
+
+  -- Nothing running: nothing to advertise, and NOT an error — the phone asks
+  -- whenever the radio wants a key and shouldn't have to know the answer.
+  perform auth.login(v_host);
+  assert app.open_nearby() is null, 'with no evening running there is nothing to advertise';
+
+  -- A placeless evening stays off the radio: joining one would make you one
+  -- of the people of a place that doesn't exist.
+  perform app.start_or_join(null, 'app', 'UTC');
+  assert app.open_nearby() is null, 'a placeless evening must not be findable';
+  perform app.end_session(null);
+
+  v_place := app.create_place('host-table', 'a-card-on-the-host-table', 'The Host Table');
+  perform app.start_or_join(v_place, 'app', 'UTC');
+  v_key := app.open_nearby();
+  assert v_key is not null, 'an evening at a place should be findable';
+  assert not exists (select 1 from nearby_keys where token_hash = v_key),
+    'the key itself must never be stored, only its hash';
+
+  -- The host is already at the table: there is nothing to offer them.
+  assert not exists (select 1 from app.nearby_offer(v_key)),
+    'no offer to someone already in the evening';
+
+  perform auth.login(v_guest);
+  select * into v_row from app.nearby_offer(v_key);
+  assert v_row.gathering is not null, 'the guest should be offered the evening';
+  assert v_row.people = 1, format('one phone down so far, got %s', v_row.people);
+
+  -- Everything the offer does NOT carry, asserted at the shape of the
+  -- function rather than at one call of it. The guest has not joined
+  -- anything yet: a place id in here would be a way into that house that
+  -- outlives the evening by years, and a name would be someone else's to
+  -- give. Adding either breaks this line on purpose.
+  assert (select proargnames from pg_proc
+           where proname = 'nearby_offer' and pronamespace = 'app'::regnamespace)
+         = array['p_token', 'gathering', 'people', 'since'],
+    'the offer must carry the evening, the count and the time — nothing else';
+
+  v_gathering := app.join_nearby(v_key, 'UTC');
+  assert v_gathering = v_row.gathering, 'joining should land in the evening that was offered';
+  select count(*) into v_sessions from sessions where gathering_id = v_gathering;
+  assert v_sessions = 2, format('expected two phones down, got %s', v_sessions);
+  assert exists (select 1 from place_people where place_id = v_place and profile_id = v_guest),
+    'joining over the air makes you one of the place''s people, as a card does';
+  assert (select source from sessions where gathering_id = v_gathering and profile_id = v_guest)
+         = 'nearby', 'the evening should record how it was joined';
+
+  -- The key is spent on the evening, not on the guest: a second phone may use
+  -- the same one, which is the five-people-at-a-table case.
+  perform auth.logout();
+  perform auth.login('44444444-4444-4444-4444-444444444444');
+  assert exists (select 1 from app.nearby_offer(v_key)), 'one key, several phones';
+  perform auth.logout();
+
+  -- The host picks their phone up first. The evening is the TABLE'S, not
+  -- theirs: the guest is still down, so it is still happening and still
+  -- findable.
+  perform auth.login(v_host);
+  perform app.end_session(null);
+  perform auth.login('44444444-4444-4444-4444-444444444444');
+  assert exists (select 1 from app.nearby_offer(v_key)),
+    'an evening someone is still sitting in is still open to join';
+
+  -- And it dies with the evening. This is the whole reason a key exists
+  -- rather than a place id.
+  perform auth.login(v_guest);
+  perform app.end_session(null);
+  perform auth.login('44444444-4444-4444-4444-444444444444');
+  assert not exists (select 1 from app.nearby_offer(v_key)), 'a key must not outlive the evening';
+  begin perform app.join_nearby(v_key, 'UTC'); exception when others then v_failed := true; end;
+  assert v_failed, 'joining an evening that has ended must be refused';
+
+  -- A forged key resolves to nothing.
+  assert not exists (select 1 from app.nearby_offer('not-a-real-key-at-all')),
+    'a forged key must offer nothing';
+
+  -- Expiry, the backstop for an evening that was never closed.
+  perform auth.login(v_host);
+  perform app.start_or_join(v_place, 'app', 'UTC');
+  v_stale := app.open_nearby();
+  update nearby_keys set expires_at = now() - interval '1 minute'
+   where token_hash = encode(extensions.digest(v_stale, 'sha256'), 'hex');
+  perform auth.login('44444444-4444-4444-4444-444444444444');
+  assert not exists (select 1 from app.nearby_offer(v_stale)), 'an expired key must offer nothing';
+
+  -- Nobody reads this table but the functions. Asserted as a privilege
+  -- rather than as a failed read, because the harness runs as the owner and
+  -- would be let through either way.
+  assert not has_table_privilege('authenticated', 'public.nearby_keys', 'select'),
+    'nearby keys must not be readable by a client';
+  assert not has_table_privilege('anon', 'public.nearby_keys', 'select'),
+    'nearby keys must not be readable by anon';
+
+  perform auth.logout();
+  raise notice 'PASS 19  a key over the air joins the evening, and is worthless once it ends';
+end $$;
+
+-- The guest who was already having an evening of their own: the table they
+-- walk up to takes it over rather than starting a second one (0007).
+do $$
+declare
+  v_host  uuid := 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3';
+  v_guest uuid := 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4';
+  v_place uuid; v_key text; v_was uuid; v_now uuid; v_started timestamptz;
+begin
+  insert into auth.users (id, email) values (v_host, 'host2@example.test'), (v_guest, 'guest2@example.test');
+  insert into profiles (id, display_name) values (v_host, 'Host2'), (v_guest, 'Guest2');
+
+  perform auth.login(v_host);
+  v_place := app.create_place('host-porch', 'a-card-on-the-host-porch', 'The Host Porch');
+  perform app.start_or_join(v_place, 'app', 'UTC');
+  v_key := app.open_nearby();
+
+  -- Their own evening, started before they walked in.
+  perform auth.login(v_guest);
+  perform app.start_or_join(null, 'app', 'UTC');
+  select gathering_id, started_at into v_was, v_started
+    from sessions where profile_id = v_guest and ended_at is null;
+
+  v_now := app.join_nearby(v_key, 'UTC');
+  assert v_now <> v_was, 'the guest should have moved to the host''s evening';
+  assert (select count(*) from sessions where profile_id = v_guest and ended_at is null) = 1,
+    'one live session per person, still';
+  assert (select started_at from sessions where profile_id = v_guest and ended_at is null) = v_started,
+    'moving an evening must not change what it started at, or what it counts';
+
+  perform auth.logout();
+  raise notice 'PASS 20  an evening of your own moves to the table rather than splitting it';
 end $$;
 
 do $$ begin raise notice '--- all assertions held ---'; end $$;

@@ -152,7 +152,7 @@ it still doesn't belong in git.
 ## The database
 
 ```sh
-supabase/tests/run.sh      # 21 assertions against a scratch Postgres
+supabase/tests/run.sh      # 113 assertions, in 23 blocks, on a scratch Postgres
 ```
 
 Needs a local Postgres reachable via `PGHOST`/`PGPORT`/`PGUSER`. The harness
@@ -215,6 +215,7 @@ scripts/shape.sh      # about a second, no toolchain, no network
 | Siri phrases live in the app target | App Shortcuts declared in ReclaimKit built fine and were never registered |
 | Links use `LINK_DOMAIN` | There's no real domain yet; a host written into Swift is one the rename misses |
 | The App Group is the same everywhere | Two entitlements and `SessionFlag` name it; if they differ, Control Centre shows "off" forever |
+| A phone that is down keeps talking | Without `bluetooth-peripheral` the advertisement stops a second after the phone is set down, and nothing says so |
 
 It runs in CI on every pull request, and from a `Stop` hook in
 `.claude/settings.json` — a session here cannot end on a repo that breaks it.

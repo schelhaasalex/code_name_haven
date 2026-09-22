@@ -111,10 +111,18 @@ targets:
         NFCReaderUsageDescription: >-
           $(APP_DISPLAY_NAME) writes the card for a place onto a tag, and reads one when
           you'd rather scan than type.
+        NSBluetoothAlwaysUsageDescription: >-
+          When you set your phone down, $(APP_DISPLAY_NAME) lets the phones at the same
+          table find this evening, so the people around you can join it without
+          scanning anything. It is never used to work out where you are.
         NSSupportsLiveActivities: true
         SUPABASE_URL: $(SUPABASE_URL)
         SUPABASE_PUBLISHABLE_KEY: $(SUPABASE_PUBLISHABLE_KEY)
-        UIBackgroundModes: []
+        # The phone that is DOWN keeps saying so while the screen is off —
+        # that is the whole evening, and it is the only reason this is here.
+        # The phone still in a hand listens in the foreground only, which
+        # needs no mode at all, so `bluetooth-central` is deliberately absent.
+        UIBackgroundModes: [bluetooth-peripheral]
         CFBundleURLTypes:
           - CFBundleURLSchemes: [reclaim]
 
