@@ -50,12 +50,12 @@
   "docked.eyebrow": "Counting",
   "docked.headline": "Docked. See you in a bit.",
   "docked.body": "It's already counting. Everything below can wait until you pick this up again.",
-  "docked.first": "Now turn it over. Face down is the whole gesture.",
+  "docked.first": "Turn it over, or put it away. Either way, it's counting.",
   "docked.where.label": "Where",
   "docked.where.unnamed": "Somewhere",
   "docked.where.body": "Pick a place you've been, or scan its card if there is one. Or leave it — Somewhere counts exactly the same.",
   "docked.where.known": "It'll count as an evening here.",
-  "docked.where.choose": "Say where",
+  "docked.where.choose": "Choose a place",
   "docked.scan": "Scan the card",
   "docked.footer": "Or name it later, when the evening's over.",
 
@@ -116,7 +116,7 @@
   "session.count.solo": "Just you.",
   "session.line": "Docked. See you in a bit.",
   "session.line.solo": "Back when you're back.",
-  "session.where": "Say where",
+  "session.where": "Choose a place",
   "session.end": "End",
 
   "lockscreen.members": "{count}",
