@@ -67,4 +67,22 @@ final class HandleTests: XCTestCase {
             XCTAssertEqual(Handle.secret(fromCardURL: Handle.cardURL(secret: secret)), secret)
         }
     }
+
+    /// The camera reads whatever QR is in front of it. Only a card is a card.
+    func testAScannedCardIsRecognised() {
+        let printed = Handle.cardURL(secret: "a-long-random-secret").absoluteString
+        XCTAssertEqual(Handle.cardURL(fromScanned: printed)?.absoluteString, printed)
+        XCTAssertNotNil(Handle.cardURL(fromScanned: "  \(printed)\n"), "stray whitespace from the scanner")
+    }
+
+    func testAnythingElseScannedIsNotACard() {
+        for text in ["https://example.com/p/a-long-random-secret",   // another site, same shape
+                     "http://reclaim.app/p/a-long-random-secret",     // not https
+                     "https://reclaim.app/about",                     // ours, but not a card
+                     "reclaim://p/a-long-random-secret",              // a scheme, not a link
+                     "WIFI:S:home;T:WPA;P:hunter2;;",                 // somebody's wifi card
+                     ""] {
+            XCTAssertNil(Handle.cardURL(fromScanned: text), text)
+        }
+    }
 }

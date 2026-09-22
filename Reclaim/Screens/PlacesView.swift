@@ -6,6 +6,7 @@ struct PlacesView: View {
     @Environment(AppState.self) private var state
     @State private var merging = false
     @State private var naming = false
+    @State private var scanning = false
 
     var body: some View {
         ScrollView {
@@ -29,15 +30,17 @@ struct PlacesView: View {
                         .frame(minHeight: 44)
                 }
 
-                Button(action: scan) {
-                    Label(t("places.scan"), systemImage: "wave.3.right")
-                        .font(Type.body(16, weight: .medium))
-                        .frame(maxWidth: .infinity, minHeight: 56)
-                        .foregroundStyle(Palette.ink)
-                        .background(Palette.paper, in: Capsule())
-                        .overlay { Capsule().stroke(Palette.line, lineWidth: 1) }
+                if ScanCardView.isPossible {
+                    Button { scanning = true } label: {
+                        Label(t("places.scan"), systemImage: "qrcode.viewfinder")
+                            .font(Type.body(16, weight: .medium))
+                            .frame(maxWidth: .infinity, minHeight: 56)
+                            .foregroundStyle(Palette.ink)
+                            .background(Palette.paper, in: Capsule())
+                            .overlay { Capsule().stroke(Palette.line, lineWidth: 1) }
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
             .padding(.horizontal, 32)
             .padding(.vertical, 24)
@@ -46,14 +49,14 @@ struct PlacesView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $merging) { MergeView() }
         .sheet(isPresented: $naming) { NamingView() }
-    }
-
-    /// The same URL a tag by the door would hand the system, taking the same
-    /// path through `URLRouter` — so scanning in the app and tapping on the way
-    /// in cannot drift apart.
-    private func scan() {
-        TagSession.read { url in
-            Task { await URLRouter.handle(url, state: state) }
+        // The same URL a tag by the door would hand the system, taking the
+        // same path through `URLRouter` — so scanning in the app and tapping
+        // on the way in cannot drift apart.
+        .fullScreenCover(isPresented: $scanning) {
+            ScanCardView { url in
+                scanning = false
+                Task { await URLRouter.handle(url, state: state) }
+            }
         }
     }
 

@@ -118,6 +118,11 @@ entity, no D-U-N-S.
 false there, so `TagSession` returns a failure immediately and the card screen
 says the tag didn't take. That is correct behaviour, not a bug to chase.
 
+**It has no camera either.** Scanning a card is the in-app QR scanner
+(`ScanCardView`, VisionKit) with the tag as the extra option; with neither,
+"Scan the card" isn't offered at all and the where-sheet says the phone can't
+read cards. Both scanning paths need a real iPhone.
+
 ## Seeing it before sign-in works
 
 Sign in with Apple needs a paid developer team, so until then the real app
