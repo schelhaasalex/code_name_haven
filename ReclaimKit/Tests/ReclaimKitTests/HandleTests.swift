@@ -85,4 +85,25 @@ final class HandleTests: XCTestCase {
             XCTAssertNil(Handle.cardURL(fromScanned: text), text)
         }
     }
+
+    /// An invite link and a card link must never be mistaken for each other:
+    /// one joins a place, the other starts an evening there.
+    func testAnInviteLinkRoundTripsAndIsNotACard() {
+        let url = Links.inviteURL(token: "tok_123-abc")
+        XCTAssertEqual(url.absoluteString, "https://\(Links.domain)/i/tok_123-abc")
+        XCTAssertEqual(Links.inviteToken(from: url), "tok_123-abc")
+        XCTAssertNil(Handle.secret(fromCardURL: url), "an invite is not a card")
+        XCTAssertNil(Links.inviteToken(from: Handle.cardURL(secret: "tok_123-abc")), "a card is not an invite")
+    }
+
+    func testTheSimulatorSchemeIsAnInviteToo() {
+        XCTAssertEqual(Links.inviteToken(from: URL(string: "reclaim://i/tok")!), "tok")
+    }
+
+    func testSomeoneElsesInviteShapedLinkIsNotOurs() {
+        for text in ["https://example.com/i/tok", "http://\(Links.domain)/i/tok",
+                     "https://\(Links.domain)/i", "https://\(Links.domain)/i/a/b", "reclaim://p/tok"] {
+            XCTAssertNil(Links.inviteToken(from: URL(string: text)!), text)
+        }
+    }
 }

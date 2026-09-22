@@ -5,7 +5,7 @@ existed as migrations. Every finding below is fixed in `supabase/migrations/`
 and asserted in `supabase/tests/01_schema_test.sql`, which runs green.
 
 ```
-supabase/tests/run.sh          # 19 assertions, all passing
+supabase/tests/run.sh          # 20 assertions, all passing
 ```
 
 Three were found only by **executing** the SQL against a local Postgres, and
@@ -269,7 +269,7 @@ added `revoke ... from anon` to `0002`, but `run.sh` only ever created the
 `role "anon" does not exist`, while the README went on claiming sixteen green
 assertions. It also applied `0001`–`0003` and stopped, leaving `0004` and the
 `0005` wrappers — the functions the client actually calls — untested locally.
-Both are fixed, the suite runs green against all seven migrations, and assertion
+Both are fixed, the suite runs green against all eight migrations, and assertion
 12 now checks the wrapper surface: ten functions callable by `authenticated`,
 `app.auto_close_stale` callable by neither, `anon` holding nothing. A test
 suite that isn't run by something is a test suite that has stopped;

@@ -42,6 +42,10 @@ public final class AppState {
     /// Screen 8, held here rather than in the session view: ending clears
     /// `session`, which takes the session view off screen with it.
     public var justEnded: Ended?
+    /// You've just accepted an invite: the welcome that says where you're in.
+    public var joinedPlace: InviteAcceptance?
+    /// An invite opened while signed out, kept until sign-in finishes.
+    var pendingInvite: String?
 
     public struct Ended: Equatable {
         public let startedAt: Date
@@ -117,6 +121,10 @@ public final class AppState {
         let found: Result<Session?, any Error>
         do { found = .success(try await live) } catch { found = .failure(error) }
         await reconcile(Reconciliation.between(running: session, database: found))
+        if let token = pendingInvite {
+            pendingInvite = nil
+            await accept(inviteToken: token)
+        }
     }
 
     /// The qualifying days behind the dot week on Home and the grid on screen 10.

@@ -17,6 +17,7 @@ struct PlaceView: View {
 
     @State private var summary: PlaceSummary?
     @State private var renaming = false
+    @State private var inviting = false
 
     private var isLive: Bool { state.gathering?.placeId == place.id && !others.isEmpty }
 
@@ -48,6 +49,7 @@ struct PlaceView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { summary = try? await state.repo.summary(of: place.id) }
         .sheet(isPresented: $renaming) { NamingView(place: place) }
+        .sheet(isPresented: $inviting) { InviteSheet(place: place) }
     }
 
     private var heading: some View {
@@ -127,6 +129,8 @@ struct PlaceView: View {
                     .overlay { Capsule().stroke(Palette.hairline, lineWidth: 1) }
             }
             .buttonStyle(.plain)
+            // The other way in: for someone who isn't at the table to scan it.
+            TextAction(title: t("place.invite"), icon: "person.badge.plus") { inviting = true }
         }
     }
 

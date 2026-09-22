@@ -18,7 +18,7 @@ shows you a shame chart. See [VISION.md](VISION.md) for why that matters.
 
 | | |
 |---|---|
-| **Database** | Live and tested. Seven migrations applied to the hosted project; 19 assertions pass against a scratch Postgres; Supabase's linter reports nothing. |
+| **Database** | Live and tested. Eight migrations applied to the hosted project; 20 assertions pass against a scratch Postgres; Supabase's linter reports nothing. |
 | **iOS app** | All 21 screens written. **Builds and launches in the simulator**; nothing behind sign-in exercised yet. [docs/BUILD-NOTES.md](docs/BUILD-NOTES.md) lists what compiles but is known to be wrong. |
 | **Tests** | `supabase/tests/` runs green. The Swift suite in `ReclaimKit/Tests/` runs green on the simulator — 61 tests. |
 | **Design** | 21 screens plus an IA map, on a canvas. Every string extracted to `copy/strings.json`. |

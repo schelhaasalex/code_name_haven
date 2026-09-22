@@ -152,7 +152,7 @@ it still doesn't belong in git.
 ## The database
 
 ```sh
-supabase/tests/run.sh      # 19 assertions against a scratch Postgres
+supabase/tests/run.sh      # 20 assertions against a scratch Postgres
 ```
 
 Needs a local Postgres reachable via `PGHOST`/`PGPORT`/`PGUSER`. The harness

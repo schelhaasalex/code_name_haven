@@ -9,6 +9,7 @@ import ReclaimKit
 struct HomeView: View {
     @Environment(AppState.self) private var state
     @State private var route: Route?
+    @State private var inviting = false
 
     private var isDayOne: Bool { state.places.isEmpty && state.rhythm.longestRunDays == 0 }
 
@@ -32,6 +33,7 @@ struct HomeView: View {
                 case .card(let id):      CardView(placeId: id)
                 }
             }
+            .sheet(isPresented: $inviting) { InviteSheet(place: nil) }
             .sheet(item: Binding(get: { state.pending }, set: { _ in state.dismissInterruption() })) {
                 InterruptionRouter(interruption: $0)
             }
@@ -130,13 +132,16 @@ struct HomeView: View {
             Text(t("dayone.invite.title")).font(Type.body(21)).foregroundStyle(Palette.ink)
             Text(t("dayone.invite.body")).font(Type.body(14))
                 .foregroundStyle(Palette.ink2).lineSpacing(3)
-            ShareLink(item: URL(string: "https://\(Links.domain)")!) {
+            // An invite is always to a place — sharing the app alone
+            // connects you to nobody. The sheet asks where, first.
+            Button { inviting = true } label: {
                 Text(t("dayone.invite.action"))
                     .font(Type.body(15, weight: .medium))
                     .frame(maxWidth: .infinity, minHeight: 46)
                     .foregroundStyle(Palette.ink2)
                     .overlay { Capsule().stroke(Palette.hairline, lineWidth: 1) }
             }
+            .buttonStyle(.plain)
         }
         .padding(20)
         .background(Palette.linen, in: RoundedRectangle(cornerRadius: 18))

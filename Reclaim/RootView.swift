@@ -46,6 +46,10 @@ struct RootView: View {
         }
         // Screen 4 covers whatever you were looking at, because the whole
         // point is that it reaches you across the room.
+        .sheet(item: Binding(get: { state.joinedPlace },
+                             set: { _ in state.joinedPlace = nil })) {
+            JoinedPlaceView(joined: $0)
+        }
         .fullScreenCover(item: Binding(get: { state.invitation },
                                        set: { _ in state.dismissInvitation() })) {
             JoinInviteView(invitation: $0)
