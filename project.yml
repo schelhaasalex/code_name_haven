@@ -69,6 +69,9 @@ targets:
         NSMotionUsageDescription: >-
           Reclaim notices when your phone has been sitting still, so it can
           offer to count time you already spent away from it.
+        NSCameraUsageDescription: >-
+          Reclaim reads the code on a place's card, so you can join the
+          evening there. Nothing else is looked at, and nothing is kept.
         NFCReaderUsageDescription: >-
           Reclaim writes the card for a place onto a tag, and reads one when
           you'd rather scan than type.

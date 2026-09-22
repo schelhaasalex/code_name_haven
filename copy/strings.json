@@ -61,6 +61,16 @@
   "where.body": "Pick somewhere you've been, or scan its card. If someone here has already started, you'll be in it together.",
   "where.scan.unavailable": "This phone can't read cards.",
   "where.new": "Somewhere new? You can name it when the evening's over.",
+
+  "scan.eyebrow": "The card",
+  "scan.title": "Point at the code on the card.",
+  "scan.notcard": "That's not a Reclaim card. Still looking.",
+  "scan.denied": "The camera's off for Reclaim. You can turn it on in Settings — or pick a place instead.",
+  "scan.settings": "Open Settings",
+  "scan.tag": "Or tap the tag",
+  "scan.tag.only": "Hold the top of your phone to the card's tag.",
+  "scan.tag.start": "Ready — tap the tag",
+  "scan.close": "Not now",
   "where.places": "Somewhere you've been",
   "where.stay": "Leave it as Somewhere",
 

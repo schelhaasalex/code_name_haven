@@ -12,6 +12,7 @@ import ReclaimKit
 struct WhereSheet: View {
     @Environment(AppState.self) private var state
     @Environment(\.dismiss) private var dismiss
+    @State private var scanning = false
 
     /// Your places, less the one this evening is already at.
     private var elsewhere: [Place] {
@@ -41,8 +42,8 @@ struct WhereSheet: View {
             }
 
             VStack(alignment: .leading, spacing: 16) {
-                if TagSession.canRead {
-                    QuietButton(title: t("docked.scan"), night: true, action: scan)
+                if ScanCardView.isPossible {
+                    QuietButton(title: t("docked.scan"), night: true) { scanning = true }
                 } else {
                     Text(t("where.scan.unavailable")).font(Type.note).foregroundStyle(Palette.dim)
                 }
@@ -54,6 +55,15 @@ struct WhereSheet: View {
             TextAction(title: t("where.stay"), tint: Palette.dust) { dismiss() }
         }
         .ground(night: true)
+        .fullScreenCover(isPresented: $scanning) {
+            // The same path as a card tapped on the way in: `URLRouter`, which
+            // sees the evening is already running and moves it.
+            ScanCardView { url in
+                scanning = false
+                dismiss()
+                Task { await URLRouter.handle(url, state: state) }
+            }
+        }
     }
 
     private func row(_ place: Place) -> some View {
@@ -76,14 +86,6 @@ struct WhereSheet: View {
         Task { await state.moveHere(place) }
     }
 
-    /// The same path as a card tapped on the way in: `URLRouter`, which sees
-    /// the evening is already running and moves it rather than starting one.
-    private func scan() {
-        dismiss()
-        TagSession.read { url in
-            Task { await URLRouter.handle(url, state: state) }
-        }
-    }
 }
 
 #Preview {
