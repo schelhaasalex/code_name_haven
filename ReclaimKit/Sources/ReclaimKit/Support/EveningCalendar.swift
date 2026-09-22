@@ -21,6 +21,10 @@ public enum EveningCalendar {
         /// Later this week. Drawn as an outline — it hasn't happened yet, and
         /// an un-happened day is not a missed one.
         case future
+        /// Before your first evening. Nothing could be missed before there was
+        /// anything to miss — a first-day grid of "missed" squares is false,
+        /// and exactly the guilt this product doesn't do. Drawn like `.future`.
+        case before
     }
 
     /// Monday-first, the current week only.
@@ -36,7 +40,8 @@ public enum EveningCalendar {
         let dates = dateFormatter(for: cal)
         return (0..<7).map { offset in
             guard let day = cal.date(byAdding: .day, value: offset, to: start) else { return .future }
-            return classify(day, evenings: evenings, today: today, calendar: cal, dates: dates)
+            return classify(day, evenings: evenings, first: evenings.min(), today: today,
+                            calendar: cal, dates: dates)
         }
     }
 
@@ -61,16 +66,24 @@ public enum EveningCalendar {
         let dates = dateFormatter(for: cal)
         return (0..<days).map { offset in
             guard let day = cal.date(byAdding: .day, value: offset, to: start) else { return .future }
-            return classify(day, evenings: evenings, today: today, calendar: cal, dates: dates)
+            return classify(day, evenings: evenings, first: evenings.min(), today: today,
+                            calendar: cal, dates: dates)
         }
     }
 
+    /// `first` is the earliest evening in the set — the earliest the app knows
+    /// of. `local_date` strings sort as dates, so `min()` is the first one.
+    /// With a long gap older than what's loaded, days before the gap read as
+    /// `.before` rather than `.missed`: the kinder of the two ways to be wrong.
     private static func classify(
-        _ day: Date, evenings: Set<String>, today: Date,
+        _ day: Date, evenings: Set<String>, first: String?, today: Date,
         calendar: Calendar, dates: DateFormatter
     ) -> Day {
         if calendar.startOfDay(for: day) > calendar.startOfDay(for: today) { return .future }
-        return evenings.contains(dates.string(from: day)) ? .docked : .missed
+        let key = dates.string(from: day)
+        if evenings.contains(key) { return .docked }
+        guard let first, key > first else { return .before }
+        return .missed
     }
 
     /// `local_date` is the date in the PERSON'S timezone, so the key for a day
