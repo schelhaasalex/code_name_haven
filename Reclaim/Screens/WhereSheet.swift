@@ -5,9 +5,10 @@ import ReclaimKit
 /// screen, or the session screen for as long as the evening has no place.
 ///
 /// Never a race and never required: Somewhere counts exactly the same, and
-/// leaving is as easy as choosing. Scanning the card is how a first-time guest
-/// gets in; picking a place is for somewhere you've been, where the card is
-/// across the room.
+/// leaving is as easy as choosing. Picking comes first because it works
+/// everywhere, card or not; scanning is how a first-time guest gets in. And
+/// somewhere new with no card is neither — it gets named after the evening
+/// (screen 21), which the sheet says rather than leaving a dead end.
 struct WhereSheet: View {
     @Environment(AppState.self) private var state
     @Environment(\.dismiss) private var dismiss
@@ -27,15 +28,6 @@ struct WhereSheet: View {
             }
             .padding(.top, 28)
 
-            Group {
-                if TagSession.canRead {
-                    QuietButton(title: t("docked.scan"), night: true, action: scan)
-                } else {
-                    Text(t("where.scan.unavailable")).font(Type.note).foregroundStyle(Palette.dim)
-                }
-            }
-            .padding(.top, 24)
-
             if !elsewhere.isEmpty {
                 Text(t("where.places")).eyebrow(Palette.dust).padding(.top, 32).padding(.bottom, 12)
                 ScrollView {
@@ -45,7 +37,18 @@ struct WhereSheet: View {
                         }
                     }
                 }
+                .fixedSize(horizontal: false, vertical: true)
             }
+
+            VStack(alignment: .leading, spacing: 16) {
+                if TagSession.canRead {
+                    QuietButton(title: t("docked.scan"), night: true, action: scan)
+                } else {
+                    Text(t("where.scan.unavailable")).font(Type.note).foregroundStyle(Palette.dim)
+                }
+                Text(t("where.new")).font(Type.note).foregroundStyle(Palette.dim)
+            }
+            .padding(.top, 24)
 
             Spacer(minLength: 16)
             TextAction(title: t("where.stay"), tint: Palette.dust) { dismiss() }

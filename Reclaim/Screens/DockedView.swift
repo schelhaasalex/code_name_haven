@@ -56,7 +56,7 @@ struct DockedView: View {
                         .font(Type.body(14)).foregroundStyle(Palette.dust).lineSpacing(3)
 
                     if state.placeName == nil {
-                        QuietButton(title: t("docked.scan"), night: true) { choosing = true }
+                        QuietButton(title: t("docked.where.choose"), night: true) { choosing = true }
                     }
                 } }
 

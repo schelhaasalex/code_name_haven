@@ -42,8 +42,7 @@ struct SessionView: View {
                 // For as long as it's Somewhere, saying where stays one tap
                 // away — the friend who arrives at nine can still find you.
                 if state.placeName == nil {
-                    TextAction(title: t("session.where"), tint: Palette.dust,
-                               icon: "wave.3.right") { choosing = true }
+                    TextAction(title: t("session.where"), tint: Palette.dust) { choosing = true }
                 }
                 QuietButton(title: t("session.end"), night: true, action: onEnd)
             }

@@ -51,14 +51,16 @@
   "docked.body": "It's already counting. Everything below can wait until you pick this up again.",
   "docked.where.label": "Where",
   "docked.where.unnamed": "Somewhere",
-  "docked.where.body": "If there's a card on the table, scan it and this becomes that place. If there isn't, it stays Somewhere — which counts exactly the same.",
+  "docked.where.body": "Pick a place you've been, or scan its card if there is one. Or leave it — Somewhere counts exactly the same.",
   "docked.where.known": "It'll count as an evening here.",
+  "docked.where.choose": "Say where",
   "docked.scan": "Scan the card",
   "docked.footer": "Or name it later, when the evening's over.",
 
   "where.title": "Where is this?",
-  "where.body": "Scan the card on the table, or pick somewhere you've been. If someone here has already started, you'll be in it together.",
-  "where.scan.unavailable": "This phone can't read cards. Pick a place instead.",
+  "where.body": "Pick somewhere you've been, or scan its card. If someone here has already started, you'll be in it together.",
+  "where.scan.unavailable": "This phone can't read cards.",
+  "where.new": "Somewhere new? You can name it when the evening's over.",
   "where.places": "Somewhere you've been",
   "where.stay": "Leave it as Somewhere",
 
@@ -79,7 +81,7 @@
   "session.count.solo": "Just you.",
   "session.line": "Docked. See you in a bit.",
   "session.line.solo": "Back when you're back.",
-  "session.where": "Scan the card, or pick a place",
+  "session.where": "Say where",
   "session.end": "End",
 
   "lockscreen.members": "{count}",
