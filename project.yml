@@ -29,7 +29,7 @@ settings:
     # match the app's — both targets read these, so bump CURRENT_PROJECT_VERSION
     # once per TestFlight upload.
     MARKETING_VERSION: "0.1"
-    CURRENT_PROJECT_VERSION: "1"
+    CURRENT_PROJECT_VERSION: "2"
     # iPhone only. It's a phone you set down; a portrait-only app that also
     # runs on iPad is refused at upload unless it demands full screen.
     TARGETED_DEVICE_FAMILY: "1"

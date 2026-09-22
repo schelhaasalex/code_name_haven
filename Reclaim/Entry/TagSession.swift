@@ -12,12 +12,19 @@ import ReclaimKit
 ///
 /// Neither is the main path. A tag by the door is read by the SYSTEM, with the
 /// app closed and the screen locked, through Associated Domains — that is the
-/// product. This is for the two moments you are already holding the phone:
-/// making a card, and joining someone else's.
+/// product, and it needs none of this. This is for the two moments you are
+/// already holding the phone: making a card, and joining someone else's.
+///
+/// It reads and writes through `NFCTagReaderSession` — the TAG format — rather
+/// than the shorter `NFCNDEFReaderSession`, because App Store Connect refuses
+/// a build made with the iOS 26 SDK that asks for the NDEF format: "NDEF is
+/// disallowed … TAG is missing in the entitlement" (error 90778). The tag
+/// still holds an ordinary NDEF URI record; this connects to the tag first and
+/// asks it for its NDEF, instead of being handed the message.
 final class TagSession: NSObject {
 
-    private var session: NFCNDEFReaderSession?
-    /// A successful write invalidates the session, which calls back through
+    private var session: NFCTagReaderSession?
+    /// A finished session invalidates, which calls back through
     /// didInvalidateWithError — so without this, every success would be
     /// reported a moment later as a failure.
     private var done = false
@@ -33,7 +40,7 @@ final class TagSession: NSObject {
 
     /// False on the simulator, and on the few iPhones without a reader — where
     /// the choice is picking a place instead, not a button that does nothing.
-    static var canRead: Bool { NFCNDEFReaderSession.readingAvailable }
+    static var canRead: Bool { NFCTagReaderSession.readingAvailable }
 
     static func write(_ url: URL, then finished: @escaping @MainActor @Sendable (Bool) -> Void) {
         start(TagSession(url: url, finished: finished, found: nil),
@@ -49,7 +56,7 @@ final class TagSession: NSObject {
 
     private static func start(_ session: TagSession, prompt: String,
                               finished: @escaping @MainActor @Sendable (Bool) -> Void) {
-        guard NFCNDEFReaderSession.readingAvailable else {
+        guard NFCTagReaderSession.readingAvailable else {
             Task { @MainActor in finished(false) }
             return
         }
@@ -65,22 +72,34 @@ final class TagSession: NSObject {
         self.found = found
     }
 
+    /// The three polling standards a tag in a house might speak. A card sticker
+    /// is almost always ISO 14443 (NTAG); the other two cost nothing to listen
+    /// for and cover the rest.
     private func begin(prompt: String) {
-        let session = NFCNDEFReaderSession(delegate: self, queue: nil,
-                                           invalidateAfterFirstRead: url == nil)
+        guard let session = NFCTagReaderSession(
+            pollingOption: [.iso14443, .iso15693, .iso18092], delegate: self, queue: nil)
+        else {
+            failed(nil)
+            return
+        }
         session.alertMessage = prompt
         session.begin()
         self.session = session
     }
 
-    private func end(_ success: Bool, message: String) {
+    /// `message` nil ends the session without a word: a read that found nothing
+    /// is the person moving the phone away, not an error to announce.
+    private func end(_ success: Bool, message: String?) {
         guard !done else { return }
         done = true
-        if success {
+        switch (success, message) {
+        case (true, let message?):
             session?.alertMessage = message
             session?.invalidate()
-        } else {
+        case (false, let message?):
             session?.invalidate(errorMessage: message)
+        default:
+            session?.invalidate()
         }
         session = nil
         let finished = finished
@@ -89,46 +108,42 @@ final class TagSession: NSObject {
             TagSession.inFlight = nil
         }
     }
+
+    /// A write that didn't take says so; a read that didn't just stops.
+    private func failed(_ session: NFCTagReaderSession?) {
+        end(false, message: url == nil ? nil : t("card.write.failed"))
+    }
 }
 
-extension TagSession: NFCNDEFReaderSessionDelegate {
+extension TagSession: NFCTagReaderSessionDelegate {
 
-    /// The read path. A card carries one URI record; anything else on the tag
-    /// is somebody else's and none of our business.
-    func readerSession(_ session: NFCNDEFReaderSession, didDetectNDEFs messages: [NFCNDEFMessage]) {
-        let urls = messages.flatMap(\.records).compactMap { $0.wellKnownTypeURIPayload() }
-        guard let url = urls.first, let found else { return }
-        done = true
-        self.session = nil
-        Task { @MainActor in
-            found(url)
-            TagSession.inFlight = nil
+    func tagReaderSessionDidBecomeActive(_ session: NFCTagReaderSession) {}
+
+    func tagReaderSession(_ session: NFCTagReaderSession, didDetect tags: [NFCTag]) {
+        guard let tag = tags.first, let ndef = Self.ndef(tag) else {
+            failed(session)
+            return
         }
-    }
-
-    func readerSession(_ session: NFCNDEFReaderSession, didDetect tags: [NFCNDEFTag]) {
-        guard let url, let tag = tags.first else { return }
         session.connect(to: tag) { [weak self] error in
             guard let self, error == nil else {
-                self?.end(false, message: t("card.write.failed"))
+                self?.failed(session)
                 return
             }
-            tag.queryNDEFStatus { status, _, _ in
-                guard status == .readWrite,
-                      let payload = NFCNDEFPayload.wellKnownTypeURIPayload(url: url)
-                else {
-                    self.end(false, message: t("card.write.failed"))
+            ndef.queryNDEFStatus { status, _, error in
+                guard error == nil, status != .notSupported else {
+                    self.failed(session)
                     return
                 }
-                tag.writeNDEF(NFCNDEFMessage(records: [payload])) { error in
-                    self.end(error == nil,
-                             message: error == nil ? t("card.write.done") : t("card.write.failed"))
+                if let url = self.url {
+                    self.write(url, to: ndef, status: status)
+                } else {
+                    self.read(from: ndef)
                 }
             }
         }
     }
 
-    func readerSession(_ session: NFCNDEFReaderSession, didInvalidateWithError error: Error) {
+    func tagReaderSession(_ session: NFCTagReaderSession, didInvalidateWithError error: Error) {
         // Includes the person tapping Cancel, which is not a failure worth
         // reporting as one — the label just goes back to how it was.
         guard !done else { return }
@@ -138,6 +153,51 @@ extension TagSession: NFCNDEFReaderSessionDelegate {
         Task { @MainActor in
             finished(false)
             TagSession.inFlight = nil
+        }
+    }
+
+    /// Every tag the reader can return carries NDEF under a different name.
+    private static func ndef(_ tag: NFCTag) -> NFCNDEFTag? {
+        switch tag {
+        case .miFare(let tag):   return tag
+        case .iso7816(let tag):  return tag
+        case .iso15693(let tag): return tag
+        case .feliCa(let tag):   return tag
+        @unknown default:        return nil
+        }
+    }
+
+    /// A card carries one URI record; anything else on the tag is somebody
+    /// else's and none of our business.
+    private func read(from tag: NFCNDEFTag) {
+        tag.readNDEF { [weak self] message, _ in
+            guard let self else { return }
+            guard let url = message?.records.compactMap({ $0.wellKnownTypeURIPayload() }).first,
+                  let found
+            else {
+                self.end(false, message: nil)
+                return
+            }
+            done = true
+            session?.invalidate()
+            session = nil
+            Task { @MainActor in
+                found(url)
+                TagSession.inFlight = nil
+            }
+        }
+    }
+
+    private func write(_ url: URL, to tag: NFCNDEFTag, status: NFCNDEFStatus) {
+        guard status == .readWrite,
+              let payload = NFCNDEFPayload.wellKnownTypeURIPayload(url: url)
+        else {
+            end(false, message: t("card.write.failed"))
+            return
+        }
+        tag.writeNDEF(NFCNDEFMessage(records: [payload])) { [weak self] error in
+            self?.end(error == nil,
+                      message: error == nil ? t("card.write.done") : t("card.write.failed"))
         }
     }
 }
