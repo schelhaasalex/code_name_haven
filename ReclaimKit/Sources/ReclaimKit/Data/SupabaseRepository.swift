@@ -77,14 +77,14 @@ public final class SupabaseRepository: Repository, @unchecked Sendable {
     }
 
     public func myPlaces() async throws -> [Place] {
-        try await client.from("places").select()
+        try await client.from("places").select(Place.readableColumns)
             .is("merged_into", value: nil)
             .order("created_at", ascending: false)
             .execute().value
     }
 
     public func place(_ id: UUID) async throws -> Place? {
-        let rows: [Place] = try await client.from("places").select()
+        let rows: [Place] = try await client.from("places").select(Place.readableColumns)
             .eq("id", value: id).limit(1).execute().value
         return rows.first
     }
