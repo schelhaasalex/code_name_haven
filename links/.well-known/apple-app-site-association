@@ -1,0 +1,13 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["73TQJ9R77A.com.alexschelhaas.reclaim"],
+        "components": [
+          { "/": "/p/*", "comment": "A place's card: tapped, scanned, or opened from the Camera" },
+          { "/": "/i/*", "comment": "An invitation to a place, sent in a message" }
+        ]
+      }
+    ]
+  }
+}
