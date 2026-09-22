@@ -76,7 +76,7 @@
   "invite.preparing": "Making the link…",
   "invite.retry": "Try again",
   "invite.subject": "Join me at {place}",
-  "invite.message": "Join me at {place}. When one of us puts our phone down, the other will know.",
+  "invite.message": "Join me at {place}. When one of us puts our phone down, the other will know.\n{link}",
   "invite.note": "The link works for a week. Anyone you send it to can join {place}.",
   "invite.close": "Not now",
 

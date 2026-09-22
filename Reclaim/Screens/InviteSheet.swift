@@ -104,9 +104,12 @@ struct InviteSheet: View {
             Text(t("invite.title", "place", label(place))).font(Type.title).foregroundStyle(Palette.ink)
             Text(t("invite.body")).font(Type.lede).foregroundStyle(Palette.ink2).lineSpacing(3)
             if let link {
-                ShareLink(item: link,
-                          subject: Text(t("invite.subject", "place", label(place))),
-                          message: Text(t("invite.message", "place", label(place)))) {
+                // One piece of plain text with the link in it. Shared as a URL
+                // plus a message, some apps received the URL as an archived
+                // object and pasted "bplist00…" into a friend's chat. Messages
+                // still turns the link in text into a preview.
+                ShareLink(item: t("invite.message", "place", label(place), "link", link.absoluteString),
+                          subject: Text(t("invite.subject", "place", label(place)))) {
                     Text(t("invite.send"))
                         .font(Type.body(17, weight: .medium))
                         .frame(maxWidth: .infinity, minHeight: 60)
