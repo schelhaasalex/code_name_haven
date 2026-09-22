@@ -184,6 +184,65 @@ cannot be committed and CI cannot go green on it. That is the point of the
 check, not a side effect: a stripped `Reclaim.entitlements` builds, installs
 and runs, and the failure would arrive on somebody else's clone at screen 1.
 
+## The day the membership lands
+
+Individual enrollment is usually approved in a day or two. Ordered, because
+the first two block the rest, and because `auth.users` is still empty — no
+sign-in has ever completed against the hosted project.
+
+**1. Register the identifiers.** Developer portal → Identifiers. `com.reclaim.app`
+with Sign in with Apple, NFC (NDEF), Associated Domains and App Groups;
+`com.reclaim.app.widgets` with App Groups. Create the group
+`group.com.reclaim.app` and tick it on both. That string is named in three
+places on this side and `scripts/shape.sh` keeps them equal; nothing checks it
+against the portal, so it is worth pasting rather than typing.
+
+**2. `DEVELOPMENT_TEAM` in `project.yml`.** It's blank with a comment saying
+what it's waiting for. A team ID is not a secret — it ships inside every build
+— so it belongs in the file rather than in each person's Xcode.
+
+**3. The Apple provider in Supabase.** Authentication → Providers → Apple:
+enable it, and put `com.reclaim.app` in **Client IDs**. That is the whole
+configuration.
+
+There is no Services ID and no `.p8` secret key, which is most of what the
+Sign in with Apple documentation is about — that is the *web* OAuth flow.
+`AppleSignIn.complete` calls `signInWithIdToken(provider: .apple)` with the
+token Authentication Services already handed it, and the audience of that
+token is the App ID. The pleasant consequence: Apple's six-month secret
+rotation, the one that silently breaks sign-in for everybody on a Tuesday,
+does not apply to this project at all.
+
+The unpleasant one: **Client IDs must match the bundle identifier exactly.**
+`scripts/free-team.sh` renames the bundle, so a build made by it can never
+sign in even with a paid team — the audience won't match, and the error
+surfaces as `error.signin.finish`, which does not say so.
+
+**4. The real key.** `Config/Secrets.xcconfig` — Settings → API → publishable.
+Gitignored; the URL in the example file is already right.
+
+**5. Associated domains, only when `reclaim.app` is yours.** `applinks:` needs
+that domain serving `/.well-known/apple-app-site-association` before a
+background tag read resolves. The entitlement builds and installs without it
+and simply never fires, so this one fails by doing nothing. Everything else
+works meanwhile.
+
+**6. The name arrives exactly once.** Apple returns `fullName` on the first
+authorization *ever* for this Apple ID and App ID — not the first on this
+device, and not again after a reinstall. `AppleSignIn` reads it on that one
+pass. If the first attempt throws after Apple has already returned, the name
+is gone for good and the profile falls back to nil.
+
+To get another first attempt: revoke the app under Settings → your name →
+Sign-In & Security → Sign in with Apple, **and** delete the user from the
+Supabase dashboard. Doing only one of the two gives a sign-in that succeeds
+with no name and no explanation.
+
+**7. TestFlight, for the only test that matters.** Four other phones at one
+table is the thing the whole ceremony is designed around and the one thing no
+single device can rehearse. It needs an App Store Connect record on the same
+bundle ID; internal testers need no review.
+
 ## Fonts
 
 Fraunces and Work Sans are both OFL. Until the `.ttf` files land in
