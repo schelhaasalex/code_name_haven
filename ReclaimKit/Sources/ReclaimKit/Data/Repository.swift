@@ -53,6 +53,17 @@ public protocol Repository: Sendable {
     /// Whether anyone else shares one of your places. One boolean — never
     /// who, never how many (migration 0009).
     func hasCompany() async throws -> Bool
+
+    // ---- the radio (migration 0010) ----
+    /// A key for the phone that is down to hand to the phones around it. Nil
+    /// when there is nothing to find: no evening, or one at no place.
+    func openNearby() async throws -> String?
+    /// What a key picked up off the air is worth. Nil when that evening is
+    /// over, or when you are already in it.
+    func nearbyOffer(key: String) async throws -> Invitation?
+    /// Join the evening that key belongs to. The key becomes a place on the
+    /// server and never leaves it as one. Returns the gathering.
+    func joinNearby(key: String) async throws -> UUID
 }
 
 public extension Repository {

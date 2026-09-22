@@ -105,6 +105,8 @@
   "join.body": "{count} phones down so far.",
   "join.primary": "Join them",
   "join.secondary": "Not right now",
+  "nearby.eyebrow": "Near you",
+  "nearby.headline": "Someone nearby set theirs down.",
 
   "countup.headline": "Turn your phone over.",
   "countup.count": "{count} so far.",

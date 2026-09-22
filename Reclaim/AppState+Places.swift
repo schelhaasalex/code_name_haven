@@ -58,6 +58,9 @@ extension AppState {
                          invitation: Invitation(gathering: to, place: place,
                                                 name: profile?.displayName,
                                                 count: max(1, members.count), at: at))
+            // An evening that has somewhere to be is findable; one that
+            // didn't a moment ago wasn't.
+            await beFindable()
         } catch {
             banner = t("error.retry")
         }
@@ -80,6 +83,9 @@ extension AppState {
             let id = try await repo.nameSomewhere(handle: handle, secret: secret, name: name)
             PlaceSecrets.save(secret, for: id)
             await reloadPlaces()
+            // Naming moves the evening you're in onto the new place, which is
+            // the moment it becomes something another phone can join.
+            await beFindable()
             return places.first { $0.id == id }
         } catch {
             banner = t("error.retry")

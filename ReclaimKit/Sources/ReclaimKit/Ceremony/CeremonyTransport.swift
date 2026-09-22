@@ -11,31 +11,6 @@ public enum CeremonyEvent: Sendable, Equatable {
     case released(profile: UUID)
 }
 
-/// "Someone just set theirs down at a place you know."
-///
-/// Sent by the person who started it, carrying their own display name — they
-/// know it, it is their row, and telling the table who you are is the point.
-/// Nobody's name reaches anyone any other way: the RPC that returns members
-/// checks that you are IN the gathering first.
-public struct Invitation: Sendable, Equatable, Identifiable, Codable {
-    public let gathering: UUID
-    public let place: UUID
-    public let name: String?
-    /// How many are down, according to the person who sent it. The receiver
-    /// cannot look this up — `gathering_members` checks membership first, and
-    /// they aren't a member yet — so it is told rather than fetched, and it
-    /// only ever counts people who HAVE set theirs down.
-    public let count: Int
-    public let at: Date
-
-    public var id: UUID { gathering }
-
-    public init(gathering: UUID, place: UUID, name: String?, count: Int, at: Date) {
-        self.gathering = gathering; self.place = place; self.name = name
-        self.count = count; self.at = at
-    }
-}
-
 public protocol CeremonyTransport: Sendable {
     func join(gathering: UUID) async throws
     func leave() async
@@ -147,14 +122,17 @@ public actor SupabaseCeremonyTransport: CeremonyTransport {
 
     /// Subscribes if it has to: the announcer stops watching their places the
     /// moment their own session starts, and the announcement comes after.
+    /// An offer with no place is one that came off the radio, and the radio is
+    /// the only way it travels — there is no channel for a table the two of
+    /// you don't already share.
     public func announce(_ invitation: Invitation) async {
-        if placeChannels[invitation.place] == nil {
-            guard let ch = await subscribed(CeremonyWire.topic(place: invitation.place), listening: false)
+        guard let place = invitation.place else { return }
+        if placeChannels[place] == nil {
+            guard let ch = await subscribed(CeremonyWire.topic(place: place), listening: false)
             else { return }
-            placeChannels[invitation.place] = ch.channel
+            placeChannels[place] = ch.channel
         }
-        try? await placeChannels[invitation.place]?.broadcast(event: "invitation",
-                                                              message: invitation)
+        try? await placeChannels[place]?.broadcast(event: "invitation", message: invitation)
     }
 
     /// A subscribed channel, or nil. Listening means registering the stream
