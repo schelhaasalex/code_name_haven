@@ -44,7 +44,7 @@ extension AppState {
         await teardown()
         self.rhythm = (try? await repo.myRhythm()) ?? rhythm
         await loadEvenings()
-        await Notifications.reschedule(for: profile)
+        await rescheduleNudges()
     }
 
     /// Everything on this phone first, then what the database knows, then the
@@ -96,7 +96,7 @@ extension AppState {
         case .adopt(let s):  await adopt(session: s)
         case .end:
             await teardown()
-            await Notifications.reschedule(for: profile)
+            await rescheduleNudges()
         case .idle:          watchPlaces()
         }
     }

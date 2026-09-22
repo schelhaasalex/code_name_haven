@@ -38,7 +38,6 @@ struct ReclaimApp: App {
                 .task {
                     await state.load()
                     await state.computeInterruption()
-                    await Notifications.reschedule(for: state.profile)
                 }
                 .onOpenURL { url in
                     Task { await URLRouter.handle(url, state: state) }
