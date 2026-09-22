@@ -69,7 +69,22 @@ committed — adding a Swift file needs no project edit.
 
 **Running on a physical device** needs an Apple Developer membership for Sign
 in with Apple, App Groups, NFC and Associated Domains. *Individual* enrollment
-is enough — no business entity, no D-U-N-S number.
+is enough — no business entity, no D-U-N-S number. It is also the only way
+anyone else's phone gets a build, via TestFlight, which is what a real dinner
+test needs.
+
+To get it onto *your* phone for an afternoon without paying, a free Apple ID
+signs a seven-day install once the four entitlements are gone:
+
+```sh
+scripts/free-team.sh        # strip to what a personal team can sign
+                            # …build the Reclaim (Sample data) scheme…
+scripts/free-team.sh --restore
+```
+
+That build is already signed in against the canvas household, so the
+capabilities it removes are the ones it never asks for.
+[docs/BUILD-NOTES.md](docs/BUILD-NOTES.md) has what stops working.
 
 The style rules, as a check rather than a hope — no toolchain, about a second:
 

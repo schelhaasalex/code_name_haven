@@ -147,6 +147,44 @@ done
 [ "$(grep -l ': AppShortcutsProvider' $(find Reclaim -name '*.swift') 2>/dev/null | wc -l | tr -d ' ')" = "1" ] \
   || bad "Reclaim/ should declare exactly one AppShortcutsProvider"
 
+# 11. The capabilities the app ships with, still declared. `scripts/free-team.sh`
+#     empties both entitlements files so a free Apple ID can sign the build —
+#     which is a thing to do on a Mac for an afternoon and never a thing to
+#     commit. A stripped Reclaim.entitlements builds, installs, runs, and has
+#     no Sign in with Apple, so the failure arrives on someone else's clone at
+#     screen 1.
+note "The app still declares what it ships with"
+for key in com.apple.developer.applesignin \
+           com.apple.developer.nfc.readersession.formats \
+           com.apple.developer.associated-domains \
+           com.apple.security.application-groups; do
+  grep -q "$key" Reclaim/Reclaim.entitlements \
+    || bad "Reclaim.entitlements has no $key — scripts/free-team.sh --restore"
+done
+grep -q 'com.apple.security.application-groups' ReclaimWidgets/ReclaimWidgets.entitlements \
+  || bad "ReclaimWidgets.entitlements has no app group — the control can't read SessionFlag"
+
+# 12. The app group, like the launch colour, is one fact written out three
+#     times: the two entitlements files and the string SessionFlag opens. Both
+#     processes have to name the same container or the Control Centre toggle
+#     reads a different suite from the one the app writes — and
+#     UserDefaults(suiteName:) returns nil for a group you don't hold, so a
+#     mismatch is a toggle that is always off and never an error.
+note "The app group is one container in three places"
+GROUP=$(sed -n 's/.*appGroup *= *"\([^"]*\)".*/\1/p' \
+        ReclaimKit/Sources/ReclaimKit/Activity/SessionFlag.swift | head -1)
+if [ -z "$GROUP" ]; then
+  bad "couldn't read SessionFlag.appGroup — it is the name the entitlements match"
+else
+  for f in Reclaim/Reclaim.entitlements ReclaimWidgets/ReclaimWidgets.entitlements; do
+    declared=$(grep -o '<string>group\.[^<]*</string>' "$f" \
+               | sed 's|<string>||; s|</string>||' | head -1)
+    [ -n "$declared" ] || continue      # check 11 has already said so
+    [ "$declared" = "$GROUP" ] \
+      || bad "$f declares $declared and SessionFlag opens $GROUP"
+  done
+fi
+
 echo
 if [ "$FAIL" -eq 0 ]; then
   echo "Shape is fine."

@@ -5,6 +5,9 @@
 # Local configuration, including the Supabase key
 Config/Secrets.xcconfig
 
+# The real entitlements, while scripts/free-team.sh has them stripped
+.free-team-backup/
+
 .DS_Store
 .build/
 DerivedData/

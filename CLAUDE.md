@@ -207,6 +207,8 @@ scripts/shape.sh      # about a second, no toolchain, no network
 | The bundled `strings.json` matches `copy/` | Same file, two places; keeping them equal is the job |
 | `LaunchBone` matches `Palette.bone` | UIKit reads `Info.plist` before any Swift runs, so the launch colour genuinely is the same fact twice |
 | Siri phrases live in the app target | App Shortcuts declared in ReclaimKit built fine and were never registered |
+| Both entitlements files still declare all four capabilities | `free-team.sh` empties them to sideload, and that state builds, runs, and has no sign-in |
+| The app group matches in both entitlements and `SessionFlag` | A suite you don't hold returns nil, so a mismatch is a toggle that is always off and never an error |
 
 It runs in CI on every pull request, and from a `Stop` hook in
 `.claude/settings.json` — a session here cannot end on a repo that breaks it.

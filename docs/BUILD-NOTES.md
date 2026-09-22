@@ -128,6 +128,62 @@ an evening work, in memory, following the database's rules (one live evening,
 three-hour cap, fifteen minutes to count). Nobody else's phone is there, so
 every evening started in it is just you. Every launch starts fresh.
 
+## Onto a phone with a free Apple ID
+
+The simulator is not the product. The ceremony is a thing that happens to a
+slab of glass you put face down on a table, and the only way to know whether
+the timing lands is to hold one.
+
+A paid membership is the honest answer, and the only one that reaches anyone
+else's phone (TestFlight) or lasts longer than a week. Short of that, a free
+Apple ID signs a seven-day install — but it can sign **none** of the four
+capabilities in `Reclaim.entitlements`. Sign in with Apple, Core NFC,
+Associated Domains and App Groups are all paid entitlements, and Xcode refuses
+the build rather than dropping them quietly.
+
+```sh
+scripts/free-team.sh            # empties both entitlements files, renames the
+                                # bundle, writes Secrets.xcconfig if it's absent
+xcodegen generate
+open Reclaim.xcodeproj          # Reclaim (Sample data) scheme, phone as the
+                                # destination, Run
+scripts/free-team.sh --restore  # afterwards, always
+```
+
+The rename matters: `com.reclaim.app` may already be registered to another
+account, and the portal allows one owner. The script derives a prefix from
+your login name, or takes `--prefix`. `--team` fills in `DEVELOPMENT_TEAM`;
+without it, pick your Apple ID in Signing & Capabilities and Xcode writes it
+into the generated project, where it survives until the next `xcodegen
+generate`.
+
+It has to be the sample-data scheme. Stripping the entitlements takes Sign in
+with Apple with it, so the real scheme now stops at Welcome for a second
+reason. That build never constructs `SupabaseRepository` (see
+`ReclaimApp.init`) and is signed in before it draws a frame, so the four
+entitlements it loses are four it never asks for. Rule 7 is why this works at
+all: nothing gates the ritual on a sensor, a permission or a network call.
+
+**What stops working, none of it loudly:**
+
+- The tag by the door — reading it, writing it (screen 15), and the https
+  links that open the app while it's closed.
+- The Control Centre toggle's accuracy. `UserDefaults(suiteName:)` returns nil
+  for a group you don't hold, so `SessionFlag` reads false forever and writes
+  go nowhere. It degrades quietly on purpose; one tap fixes a wrong toggle.
+
+**What survives:** all 21 screens, the ceremony, the timer, face-down sensing
+(motion wants a usage string, not an entitlement) and the Live Activity
+(`NSSupportsLiveActivities` is an Info.plist key, not an entitlement).
+
+Then it expires, and the app refuses to launch until you build it again.
+Nothing is lost — sample data was never on the device.
+
+`scripts/shape.sh` fails while the entitlements are stripped, so the state
+cannot be committed and CI cannot go green on it. That is the point of the
+check, not a side effect: a stripped `Reclaim.entitlements` builds, installs
+and runs, and the failure would arrive on somebody else's clone at screen 1.
+
 ## Fonts
 
 Fraunces and Work Sans are both OFL. Until the `.ttf` files land in
