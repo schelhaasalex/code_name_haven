@@ -23,18 +23,15 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(t("settings.nudge.title"))
                             .font(Type.body(16, weight: .medium)).foregroundStyle(Palette.ink)
-                        Text(t("settings.nudge.body", "time", "7:00pm"))
+                        Text(t("settings.nudge.body", "time", Say.hour(state.profile?.nudgeHour ?? 19)))
                             .font(Type.note).foregroundStyle(Palette.muted)
                     }
                 }
                 .tint(Palette.ink)
                 .paperCard()
                 .onChange(of: nudge) { _, on in
-                    Task {
-                        try? await state.repo.updateProfile(nudgeEnabled: on,
-                                                            nudgeHour: state.profile?.nudgeHour ?? 19)
-                        await Notifications.reschedule(for: state.profile)
-                    }
+                    guard on != state.profile?.nudgeEnabled else { return }
+                    Task { await state.setNudge(on: on) }
                 }
 
                 LabelledSection(label: t("settings.how.label")) {

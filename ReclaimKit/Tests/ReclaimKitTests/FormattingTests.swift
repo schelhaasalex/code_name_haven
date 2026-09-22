@@ -113,4 +113,16 @@ final class FormattingTests: XCTestCase {
         XCTAssertTrue(t("end.rhythm", "count", Say.number(3)).contains("three evenings"))
         XCTAssertTrue(t("join.headline", "name", "maya", "place", "the porch").hasPrefix("maya"))
     }
+
+    /// The nudge hour, in the phone's own style — not a fixed "7:00pm".
+    func testAnHourIsSaidTheWayThePhoneSaysIt() {
+        var us = Calendar(identifier: .gregorian)
+        us.timeZone = TimeZone(identifier: "UTC")!
+        us.locale = Locale(identifier: "en_US")
+        // iOS puts a narrow no-break space before "PM", not a plain one.
+        XCTAssertEqual(Say.hour(19, calendar: us).replacingOccurrences(of: "\u{202F}", with: " "), "7 PM")
+        var nl = us
+        nl.locale = Locale(identifier: "nl_NL")
+        XCTAssertEqual(Say.hour(19, calendar: nl), "19")
+    }
 }

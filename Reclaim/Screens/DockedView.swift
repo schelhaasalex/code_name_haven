@@ -37,6 +37,11 @@ struct DockedView: View {
             VStack(alignment: .leading, spacing: 18) {
                 Text(t("docked.headline")).font(Type.display(46)).foregroundStyle(Palette.cream)
                 Text(t("docked.body")).font(Type.lede).foregroundStyle(Palette.dust).lineSpacing(4)
+                // The first time only: the gesture, taught at the moment it's
+                // done, instead of in a tour before it.
+                if state.evenings.isEmpty {
+                    Text(t("docked.first")).font(Type.lede).foregroundStyle(Palette.cream).lineSpacing(4)
+                }
             }
 
             Spacer(minLength: 24)

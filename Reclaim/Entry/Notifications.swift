@@ -12,13 +12,15 @@ enum Notifications {
 
     private static let id = "reclaim.evening"
 
+    /// Keeps the nudge scheduled, or not. It never asks for permission: that
+    /// used to happen here, so the system prompt appeared the moment a new
+    /// person signed in — before they had done anything it could be for.
     static func reschedule(for profile: Profile?) async {
         let centre = UNUserNotificationCenter.current()
         centre.removePendingNotificationRequests(withIdentifiers: [id])
 
         guard let profile, profile.nudgeEnabled else { return }
-        guard let granted = try? await centre.requestAuthorization(options: [.alert, .sound]),
-              granted else { return }
+        guard await centre.notificationSettings().authorizationStatus == .authorized else { return }
 
         let content = UNMutableNotificationContent()
         content.body = t("notification.nudge")
@@ -32,6 +34,16 @@ enum Notifications {
             identifier: id,
             content: content,
             trigger: UNCalendarNotificationTrigger(dateMatching: when, repeats: true)))
+    }
+
+    /// Whether the system has never been asked — the only time the app offers.
+    static func canOffer() async -> Bool {
+        await UNUserNotificationCenter.current().notificationSettings().authorizationStatus == .notDetermined
+    }
+
+    /// The system prompt, only ever after someone has said yes in the app.
+    static func ask() async {
+        _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
     }
 
     static func silenceForSession() {
