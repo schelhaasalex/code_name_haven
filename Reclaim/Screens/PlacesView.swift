@@ -84,18 +84,33 @@ struct PlacesView: View {
         }
     }
 
+    /// Tapping anywhere on it opens screen 21 — the card IS the button. It
+    /// used to be a card with the words "Name them" printed on it and nothing
+    /// behind them: the sheet was wired up and nothing ever opened it.
     private var somewhere: some View {
-        DashedCard { HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 5) {
-                Text(t("places.somewhere.title")).font(Type.display(21)).foregroundStyle(Palette.ink2)
-                Text(t("places.somewhere.body",
-                       "count", Say.number(state.evenings(at: nil).count)))
-                    .font(Type.body(14)).foregroundStyle(Palette.muted)
-            }
-            Spacer()
-            Text(t("places.somewhere.action"))
-                .font(Type.body(14, weight: .medium)).foregroundStyle(Palette.clayDeep)
-        } }
+        Button { naming = true } label: {
+            DashedCard { HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(t("places.somewhere.title")).font(Type.display(21)).foregroundStyle(Palette.ink2)
+                    Text(somewhereBody)
+                        .font(Type.body(14)).foregroundStyle(Palette.muted)
+                        .multilineTextAlignment(.leading)
+                }
+                Spacer()
+                Text(unnamed == 0 ? t("places.somewhere.empty.action") : t("places.somewhere.action"))
+                    .font(Type.body(14, weight: .medium)).foregroundStyle(Palette.clayDeep)
+            } }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var unnamed: Int { state.evenings(at: nil).count }
+
+    /// With none of them yet, "No evenings, somewhere. They count the same."
+    /// was a sentence about nothing, offering to name it.
+    private var somewhereBody: String {
+        unnamed == 0 ? t("places.somewhere.empty")
+                     : t("places.somewhere.body", "count", Say.number(unnamed))
     }
 }
 
