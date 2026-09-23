@@ -156,7 +156,7 @@ public final class SupabaseRepository: Repository, @unchecked Sendable {
 
     public func myEvenings() async throws -> EveningTotal {
         let rows: [EveningTotal] = try await client.rpc("my_evenings").execute().value
-        return rows.first ?? .none
+        return rows.first ?? .zero
     }
 
 }

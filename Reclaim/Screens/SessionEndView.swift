@@ -66,14 +66,19 @@ struct SessionEndView: View {
     /// the right move up by one as it does.
     private var evenings: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 18) {
-                EveningMark(layout: landed ? landing.after : landing.before)
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(t("end.evenings.label")).eyebrow(Palette.muted)
-                    Text(countLine)
-                        .font(Type.display(22)).foregroundStyle(Palette.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .contentTransition(.numericText())
+            // Only when the database has told us how many. Unasked, the line
+            // below is still true — tonight's is the newest, and they don't
+            // go away — and it claims no number.
+            if landing.known {
+                HStack(spacing: 18) {
+                    EveningMark(layout: landed ? landing.after : landing.before)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(t("end.evenings.label")).eyebrow(Palette.muted)
+                        Text(countLine)
+                            .font(Type.display(22)).foregroundStyle(Palette.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .contentTransition(.numericText())
+                    }
                 }
             }
             Text(bodyLine)
@@ -123,7 +128,7 @@ struct SessionEndView: View {
         guard !reduceMotion else { landed = true; return }
         guard (try? await Task.sleep(for: .seconds(EveningLanding.pause))) != nil else { return }
         withAnimation(.spring(response: 0.55, dampingFraction: 0.6)) { landed = true }
-        if landing.lands { Sensation.landed() }
+        if landing.known, landing.lands { Sensation.landed() }
     }
 
     /// Yes asks the system; no turns the nudge off, so it's never offered again.
@@ -166,13 +171,21 @@ struct SessionEndView: View {
         .environment(AppState(repo: PreviewRepository()))
 }
 
+/// The database never answered. The evening is still an evening; the app just
+/// doesn't say how many there have been.
+#Preview("Evenings unknown") {
+    SessionEndView(ended: .sample(minutes: 90, people: 1, place: nil, total: nil))
+        .environment(AppState(repo: PreviewRepository()))
+}
+
 private extension AppState.Ended {
-    static func sample(minutes: Int, people: Int, place: String?, placeId: UUID? = nil) -> Self {
+    static func sample(minutes: Int, people: Int, place: String?, placeId: UUID? = nil,
+                       total: EveningTotal? = EveningTotal(count: 26, first: "2026-06-03")) -> Self {
         let now = Date()
         return .init(startedAt: now.addingTimeInterval(-Double(minutes) * 60), endedAt: now,
                      minutes: minutes, people: people, place: place, placeId: placeId,
-                     landing: EveningLanding(total: EveningTotal(count: 26, first: "2026-06-03"),
-                                             known: [], localDate: PlainDate.string(from: now),
+                     landing: EveningLanding(total: total, known: [],
+                                             localDate: PlainDate.string(from: now),
                                              minutes: minutes))
     }
 }

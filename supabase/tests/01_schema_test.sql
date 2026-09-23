@@ -861,8 +861,6 @@ begin
   raise notice 'PASS 20  an evening of your own moves to the table rather than splitting it';
 end $$;
 
-do $$ begin raise notice '--- all assertions held ---'; end $$;
-
 -- ============================================================ 21
 -- Your evenings, all of them (0011). The end of an evening says "27 of them,
 -- since June" — distinct qualifying dates, your own only, and a number that
@@ -899,3 +897,5 @@ begin
   perform auth.logout();
   raise notice 'PASS 21  your evenings: distinct qualifying dates, your own, from the first';
 end $$;
+
+do $$ begin raise notice '--- all assertions held ---'; end $$;

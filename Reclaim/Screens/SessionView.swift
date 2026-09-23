@@ -67,18 +67,29 @@ struct SessionView: View {
     /// Your evenings, behind everything. Looked at once a minute, so tonight's
     /// dot fills within a minute of fifteen — nothing on this screen changes
     /// more often than that.
-    private var mark: some View {
-        TimelineView(.everyMinute) { context in
-            let layout = EveningMarkLayout.during(
-                total: state.eveningTotal.count,
-                alreadyCounted: alreadyCounted,
-                elapsed: context.date.timeIntervalSince(state.startedAt ?? context.date))
-            EveningMark(layout: layout, size: 340, dot: Palette.edge, tonight: Palette.ember,
-                        label: t("session.a11y.mark", "count", Say.number(layout.count)))
-                .animation(.spring(response: 0.6, dampingFraction: 0.65), value: layout)
+    @ViewBuilder private var mark: some View {
+        // Nothing, rather than one dot, when the database hasn't said how many
+        // evenings there are: a single dot behind the screen is a sentence,
+        // and it would be the wrong one.
+        if let total = state.eveningTotal {
+            TimelineView(.everyMinute) { context in
+                let layout = EveningMarkLayout.during(
+                    total: total.count,
+                    alreadyCounted: alreadyCounted,
+                    elapsed: context.date.timeIntervalSince(state.startedAt ?? context.date))
+                EveningMark(layout: layout, size: 340, dot: Palette.edge, tonight: Palette.ember,
+                            label: markLabel(layout.count))
+                    .animation(.spring(response: 0.6, dampingFraction: 0.65), value: layout)
+            }
+            .offset(x: 10, y: 70)
+            .allowsHitTesting(false)
         }
-        .offset(x: 10, y: 70)
-        .allowsHitTesting(false)
+    }
+
+    /// "One evenings" was what VoiceOver read on a first evening.
+    private func markLabel(_ count: Int) -> String {
+        count == 1 ? t("session.a11y.mark.one")
+                   : t("session.a11y.mark", "count", Say.number(count))
     }
 }
 

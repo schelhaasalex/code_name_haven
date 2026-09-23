@@ -19,5 +19,9 @@ public struct EveningTotal: Codable, Hashable, Sendable {
         self.first = first
     }
 
-    public static let none = EveningTotal(count: 0, first: nil)
+    /// Somebody with no evenings yet — NOT "we don't know". Named `zero`
+    /// rather than `none` because this type is passed as an Optional, and
+    /// `.none` there resolves to nil without a word of complaint: every call
+    /// site that meant "no evenings" would quietly start meaning "unknown".
+    public static let zero = EveningTotal(count: 0, first: nil)
 }

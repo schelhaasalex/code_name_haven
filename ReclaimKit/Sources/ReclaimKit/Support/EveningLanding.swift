@@ -19,15 +19,25 @@ public struct EveningLanding: Equatable, Sendable {
     /// an earlier session today already counted.
     public let total: Int
     public let first: String?
+    /// Whether the totals are KNOWN, as opposed to zero.
+    ///
+    /// `my_evenings` can fail — a flaky minute at launch, or a migration not
+    /// yet applied — and a failure that reads as "you have no evenings" turns
+    /// the one screen that rewards you into a confident lie: "Tonight was the
+    /// first." to somebody on their twenty-seventh. Zero is a fact about you;
+    /// this is a fact about what the app was told. Screen 8 says nothing about
+    /// totals when this is false (rule 6).
+    public let known: Bool
     public let localDate: String
     /// Today had already counted before this ended. An evening is a day, so
     /// nothing new lands, and nothing pretends to.
     public let alreadyCounted: Bool
     public let qualifies: Bool
 
-    public init(total: EveningTotal, known: Set<String>, localDate: String, minutes: Int) {
-        self.total = total.count
-        self.first = total.first
+    public init(total: EveningTotal?, known: Set<String>, localDate: String, minutes: Int) {
+        self.total = total?.count ?? 0
+        self.first = total?.first
+        self.known = total != nil
         self.localDate = localDate
         self.alreadyCounted = known.contains(localDate)
         self.qualifies = minutes >= Self.qualifyingMinutes

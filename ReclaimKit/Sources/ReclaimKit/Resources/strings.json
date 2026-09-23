@@ -121,6 +121,7 @@
   "session.line.solo": "Back when you're back.",
   "session.since": "Since {time}",
   "session.a11y.mark": "{count} evenings, tonight's among them.",
+  "session.a11y.mark.one": "One evening, tonight's.",
   "session.where": "Choose a place",
   "session.end": "End",
 

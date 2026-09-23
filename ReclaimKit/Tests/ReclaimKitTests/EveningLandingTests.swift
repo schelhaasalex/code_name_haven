@@ -41,7 +41,7 @@ final class EveningLandingTests: XCTestCase {
 
     /// The very first evening is its own "since".
     func testTheFirstEveningIsItsOwnSince() {
-        let l = EveningLanding(total: .none, known: [], localDate: "2026-09-23", minutes: 40)
+        let l = EveningLanding(total: .zero, known: [], localDate: "2026-09-23", minutes: 40)
         XCTAssertEqual(l.evenings, 1)
         XCTAssertEqual(l.since, "2026-09-23")
         XCTAssertEqual(l.after, .init(count: 1, tonight: .counted))
@@ -49,8 +49,25 @@ final class EveningLandingTests: XCTestCase {
 
     /// And a first that's too short has no since at all — there isn't one yet.
     func testAShortFirstHasNoSince() {
-        let l = EveningLanding(total: .none, known: [], localDate: "2026-09-23", minutes: 5)
+        let l = EveningLanding(total: .zero, known: [], localDate: "2026-09-23", minutes: 5)
         XCTAssertEqual(l.evenings, 0)
         XCTAssertNil(l.since)
+    }
+
+    // MARK: - Not knowing
+
+    /// The failure this guards: `my_evenings` doesn't answer, the app reads
+    /// the silence as zero, and the evening that should have been somebody's
+    /// twenty-seventh is announced as their first.
+    func testAnUnansweredTotalIsNotZeroEvenings() {
+        let landing = EveningLanding(total: nil, known: [], localDate: "2026-09-23", minutes: 90)
+        XCTAssertFalse(landing.known)
+        XCTAssertTrue(landing.lands, "the evening still counted — only the totals are unknown")
+    }
+
+    func testAnAnsweredTotalOfZeroIsKnown() {
+        let landing = EveningLanding(total: .zero, known: [], localDate: "2026-09-23", minutes: 90)
+        XCTAssertTrue(landing.known, "a real zero is a fact, and screen 8 may say it")
+        XCTAssertEqual(landing.evenings, 1)
     }
 }

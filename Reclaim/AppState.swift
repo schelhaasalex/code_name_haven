@@ -36,7 +36,12 @@ public final class AppState {
     public var evenings: Set<String> = []
     /// All of them, not just the last five weeks: the mark behind the session
     /// and the number on screen 8 (migration 0011).
-    public var eveningTotal: EveningTotal = .none
+    ///
+    /// Nil until the database has answered, and it stays nil if the answer
+    /// never comes. Not `.none`: "we haven't been told" and "you have had
+    /// none" are different things, and only one of them is safe to say out
+    /// loud on the screen that congratulates you.
+    public var eveningTotal: EveningTotal?
     public var pending: Interruption?
     public var banner: String?
     /// Screen 4. Someone set theirs down at a place you know — the only thing
