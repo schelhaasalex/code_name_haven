@@ -245,6 +245,8 @@
   "places.somewhere.title": "Somewhere",
   "places.somewhere.body": "{count} evenings, somewhere. They count the same.",
   "places.somewhere.action": "Name them",
+  "places.somewhere.empty": "Evenings you don't name land here. They count the same.",
+  "places.somewhere.empty.action": "Name a place",
   "places.merge": "Two of these really the same place? Merge them.",
   "places.scan": "Scan a card to join a new one",
   "places.scan.hold": "Hold the card to the top of your phone.",

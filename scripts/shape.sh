@@ -189,6 +189,21 @@ if grep -lq 'CBPeripheralManager' $ALL_SWIFT 2>/dev/null; then
     || bad "Bluetooth is used with no NSBluetoothAlwaysUsageDescription — the app crashes on first use"
 fi
 
+# 15. A sheet nothing opens. `@State private var naming = false` and
+#     `.sheet(isPresented: $naming)` were both there on screen 17, and nothing
+#     anywhere set it to true — so "Name them" was a word printed on a card,
+#     and tapping it did nothing at all. It builds, it previews, and the only
+#     way to find it is to tap it on a phone.
+note "Every sheet has something that opens it"
+for f in $(find Reclaim -name '*.swift'); do
+  for flag in $(grep -oE '(sheet|fullScreenCover)\(isPresented: \$[A-Za-z_][A-Za-z0-9_]*' "$f" \
+                | sed 's/.*\$//' | sort -u); do
+    grep -q "@State private var $flag" "$f" || continue   # a binding from elsewhere
+    grep -qE "(^|[^.A-Za-z0-9_])$flag = true" "$f" \
+      || bad "$f presents a sheet on \$$flag, and nothing ever sets $flag = true"
+  done
+done
+
 echo
 if [ "$FAIL" -eq 0 ]; then
   echo "Shape is fine."

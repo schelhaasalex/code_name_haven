@@ -216,6 +216,7 @@ scripts/shape.sh      # about a second, no toolchain, no network
 | Links use `LINK_DOMAIN` | There's no real domain yet; a host written into Swift is one the rename misses |
 | The App Group is the same everywhere | Two entitlements and `SessionFlag` name it; if they differ, Control Centre shows "off" forever |
 | A phone that is down keeps talking | Without `bluetooth-peripheral` the advertisement stops a second after the phone is set down, and nothing says so |
+| Every sheet has something that opens it | Screen 17's "Name them" was a word printed on a card: the sheet was wired, nothing set the flag, and it built and previewed fine |
 
 It runs in CI on every pull request, and from a `Stop` hook in
 `.claude/settings.json` — a session here cannot end on a repo that breaks it.
