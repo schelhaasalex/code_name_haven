@@ -26,10 +26,12 @@ struct DockedView: View {
             HStack {
                 Eyebrow(text: t("docked.eyebrow"), mark: Palette.ember, tint: Palette.dust)
                 Spacer()
-                Text(Say.clock(elapsed))
-                    .font(Type.display(20))
-                    .foregroundStyle(Palette.ember)
-                    .monospacedDigit()
+                // When it started, not how long it's been: a clock ticking in
+                // the corner of the screen you're about to turn over is the
+                // one thing it shouldn't be showing.
+                Text(t("docked.since", "time", Say.time(state.startedAt ?? .now)))
+                    .font(Type.body(14))
+                    .foregroundStyle(Palette.dust)
             }
 
             Spacer(minLength: 24)

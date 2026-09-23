@@ -2,47 +2,26 @@ import SwiftUI
 import ReclaimKit
 
 /// The week of dots on Home's footer, and the route to your rhythm — one of
-/// only three destinations in the app. Larger on screen 8, where tonight's dot
-/// fills in.
-///
-/// Every day is the same circle with a fill and a stroke, rather than a
-/// different shape per kind, so a day changing kind animates as a colour
-/// change instead of one view swapping for another.
+/// only three destinations in the app.
 struct DotWeek: View {
     let days: [EveningCalendar.Day]
-    var size: CGFloat = 10
 
     var body: some View {
-        HStack(spacing: size * 0.7) {
+        HStack(spacing: 7) {
             ForEach(Array(days.enumerated()), id: \.offset) { _, day in
-                Circle()
-                    .fill(fill(day))
-                    .overlay { Circle().strokeBorder(stroke(day), lineWidth: lineWidth(day)) }
-                    .frame(width: size, height: size)
+                dot(day).frame(width: 10, height: 10)
             }
         }
         .accessibilityHidden(true)
     }
 
-    private func fill(_ day: EveningCalendar.Day) -> Color {
+    @ViewBuilder private func dot(_ day: EveningCalendar.Day) -> some View {
         switch day {
-        case .docked: Palette.ink
-        case .missed: Palette.line
-        case .rest:   Palette.restFill
-        case .future, .before: .clear
+        case .docked: Circle().fill(Palette.ink)
+        case .missed: Circle().fill(Palette.line)
+        case .rest:   Circle().fill(Palette.restFill).overlay { Circle().stroke(Palette.restStroke, lineWidth: 1.5) }
+        case .future, .before: Circle().stroke(Palette.hairline, lineWidth: 1)
         }
-    }
-
-    private func stroke(_ day: EveningCalendar.Day) -> Color {
-        switch day {
-        case .rest:            Palette.restStroke
-        case .future, .before: Palette.hairline
-        case .docked, .missed: .clear
-        }
-    }
-
-    private func lineWidth(_ day: EveningCalendar.Day) -> CGFloat {
-        day == .rest ? 1.5 : 1
     }
 }
 

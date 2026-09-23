@@ -3,46 +3,54 @@ import XCTest
 
 final class EveningLandingTests: XCTestCase {
 
-    func testAQualifyingEveningLandsTonight() {
-        let l = EveningLanding(known: ["2026-09-21"], localDate: "2026-09-23", minutes: 40)
-        XCTAssertEqual(l.tonight, "2026-09-23")
-        XCTAssertEqual(l.after, ["2026-09-21", "2026-09-23"])
-        XCTAssertTrue(l.qualifies)
+    private let june = EveningTotal(count: 26, first: "2026-06-03")
+
+    func testAQualifyingEveningLands() {
+        let l = EveningLanding(total: june, known: ["2026-09-21"], localDate: "2026-09-23", minutes: 90)
+        XCTAssertTrue(l.lands)
+        XCTAssertEqual(l.evenings, 27)
+        XCTAssertEqual(l.before, .init(count: 27, tonight: .waiting))
+        XCTAssertEqual(l.after, .init(count: 27, tonight: .counted))
+        XCTAssertEqual(l.since, "2026-06-03")
     }
 
-    /// Under fifteen minutes it's kept, not counted — so no dot fills.
+    /// Under fifteen minutes it's kept, not counted: the dot stays an outline
+    /// and the number doesn't move.
     func testAShortOneLandsNothing() {
-        let l = EveningLanding(known: [], localDate: "2026-09-23", minutes: 14)
-        XCTAssertNil(l.tonight)
+        let l = EveningLanding(total: june, known: [], localDate: "2026-09-23", minutes: 14)
+        XCTAssertFalse(l.lands)
+        XCTAssertEqual(l.evenings, 26)
         XCTAssertEqual(l.after, l.before)
-        XCTAssertFalse(l.qualifies)
+        XCTAssertEqual(l.after.tonight, .waiting)
     }
 
     /// Fifteen exactly counts, matching `app.qualifying_minutes()`.
     func testFifteenIsEnough() {
-        XCTAssertEqual(EveningLanding(known: [], localDate: "2026-09-23", minutes: 15).tonight,
-                       "2026-09-23")
+        XCTAssertTrue(EveningLanding(total: june, known: [], localDate: "2026-09-23", minutes: 15).lands)
     }
 
-    /// A second evening the same day is one evening: nothing new lands, and
-    /// the screen mustn't animate a dot that was already filled.
+    /// A second evening the same day is one evening: no new dot, no outline,
+    /// nothing animates.
     func testTheSameDayTwiceLandsOnce() {
-        let l = EveningLanding(known: ["2026-09-23"], localDate: "2026-09-23", minutes: 90)
-        XCTAssertNil(l.tonight)
-        XCTAssertTrue(l.qualifies)
-        XCTAssertEqual(l.after, ["2026-09-23"])
+        let l = EveningLanding(total: june, known: ["2026-09-23"], localDate: "2026-09-23", minutes: 90)
+        XCTAssertFalse(l.lands)
+        XCTAssertEqual(l.evenings, 26)
+        XCTAssertEqual(l.before, .init(count: 26, tonight: .counted))
+        XCTAssertEqual(l.after, l.before)
     }
 
-    func testTheCountEndsOnWhatWasCredited() {
-        XCTAssertEqual(EveningLanding.counts(to: 134).last, 134)
-        XCTAssertEqual(EveningLanding.counts(to: 134).count, 24)
-        XCTAssertEqual(EveningLanding.counts(to: 5), [1, 2, 3, 4, 5])
-        XCTAssertEqual(EveningLanding.counts(to: 0), [0])
+    /// The very first evening is its own "since".
+    func testTheFirstEveningIsItsOwnSince() {
+        let l = EveningLanding(total: .none, known: [], localDate: "2026-09-23", minutes: 40)
+        XCTAssertEqual(l.evenings, 1)
+        XCTAssertEqual(l.since, "2026-09-23")
+        XCTAssertEqual(l.after, .init(count: 1, tonight: .counted))
     }
 
-    /// The count only goes up — here too.
-    func testTheCountNeverGoesDown() {
-        let c = EveningLanding.counts(to: 241)
-        XCTAssertEqual(c, c.sorted())
+    /// And a first that's too short has no since at all — there isn't one yet.
+    func testAShortFirstHasNoSince() {
+        let l = EveningLanding(total: .none, known: [], localDate: "2026-09-23", minutes: 5)
+        XCTAssertEqual(l.evenings, 0)
+        XCTAssertNil(l.since)
     }
 }

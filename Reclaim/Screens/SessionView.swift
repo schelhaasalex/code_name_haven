@@ -4,17 +4,27 @@ import ReclaimKit
 /// Screens 6 and 12. In session — with five people, or with one.
 ///
 /// Solo is deliberately the SAME view rather than a degraded variant: the
-/// parallel construction is the statement. Solo has to carry v1, because the
-/// network doesn't exist yet.
+/// parallel construction is the statement. Most evenings are alone, even for
+/// the most social person, so alone has to be whole on its own.
+///
+/// NOTHING HERE TICKS. It used to be a 92pt timer counting seconds, which made
+/// the one screen you're meant to put down reward checking, and framed the
+/// evening as a performance. Time is a receipt, not an instrument: this says
+/// when you started, a fact that doesn't change, and screen 8 says how long.
+/// The only thing that moves is tonight's dot, once, at fifteen minutes.
 struct SessionView: View {
     @Environment(AppState.self) private var state
     let onEnd: () -> Void
 
-    @State private var elapsed: TimeInterval = 0
     @State private var choosing = false
-    private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private var solo: Bool { state.members.count <= 1 }
+
+    /// Today already counted, earlier: tonight's dot is that one, filled from
+    /// the start.
+    private var alreadyCounted: Bool {
+        state.session.map { state.evenings.contains($0.localDate) } ?? false
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -23,22 +33,24 @@ struct SessionView: View {
 
             Spacer(minLength: 20)
 
-            VStack(alignment: .leading, spacing: 12) {
-                Text(Say.clock(elapsed))
-                    .font(Type.timer)
+            // Alone, the headline is what you did, never a count: "Just you."
+            // at hero size made being alone the news. Together, the count has
+            // earned it.
+            VStack(alignment: .leading, spacing: 20) {
+                Text(solo ? t("session.line.solo")
+                          : t("session.together", "count", Say.count(state.members.count)))
+                    .font(Type.display(52, weight: .light))
                     .foregroundStyle(Palette.cream)
-                    .monospacedDigit()
-                    .contentTransition(.numericText())
-                Text(solo ? t("session.count.solo")
-                          : t("session.count", "count", Say.count(state.members.count)))
-                    .font(Type.body(18)).foregroundStyle(Palette.dust)
+                    .lineSpacing(2)
+                    .contentTransition(.opacity)
+                Text(t("session.since", "time", Say.time(state.startedAt ?? .now)))
+                    .font(Type.body(16)).foregroundStyle(Palette.dim)
             }
+            .animation(.easeInOut(duration: 0.5), value: state.members.count)
 
-            Spacer(minLength: 20)
+            Spacer(minLength: 28)
 
             VStack(alignment: .leading, spacing: 22) {
-                Text(solo ? t("session.line.solo") : t("session.line"))
-                    .font(Type.display(20)).foregroundStyle(Palette.dust)
                 // For as long as it's Somewhere, saying where stays one tap
                 // away — the friend who arrives at nine can still find you.
                 if state.placeName == nil {
@@ -48,20 +60,24 @@ struct SessionView: View {
             }
         }
         .ground(night: true)
-        .background(alignment: .leading) { rings }
+        .background { mark }
         .sheet(isPresented: $choosing) { WhereSheet().environment(state) }
-        .onReceive(tick) { _ in
-            elapsed = Date().timeIntervalSince(state.startedAt ?? .now)
-        }
     }
 
-    private var rings: some View {
-        ZStack {
-            Circle().stroke(Palette.ember.opacity(0.16), lineWidth: 1)
-                .frame(width: 460, height: 460).offset(x: -35, y: 60)
-            Circle().stroke(Palette.ember.opacity(0.09), lineWidth: 1)
-                .frame(width: 620, height: 620).offset(x: -115, y: -20)
+    /// Your evenings, behind everything. Looked at once a minute, so tonight's
+    /// dot fills within a minute of fifteen — nothing on this screen changes
+    /// more often than that.
+    private var mark: some View {
+        TimelineView(.everyMinute) { context in
+            let layout = EveningMarkLayout.during(
+                total: state.eveningTotal.count,
+                alreadyCounted: alreadyCounted,
+                elapsed: context.date.timeIntervalSince(state.startedAt ?? context.date))
+            EveningMark(layout: layout, size: 340, dot: Palette.edge, tonight: Palette.ember,
+                        label: t("session.a11y.mark", "count", Say.number(layout.count)))
+                .animation(.spring(response: 0.6, dampingFraction: 0.65), value: layout)
         }
+        .offset(x: 10, y: 70)
         .allowsHitTesting(false)
     }
 }

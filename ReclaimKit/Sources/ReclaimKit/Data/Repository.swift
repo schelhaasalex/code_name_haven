@@ -42,6 +42,9 @@ public protocol Repository: Sendable {
     func members(of gathering: UUID) async throws -> [Member]
     func summary(of place: UUID) async throws -> PlaceSummary
     func myRhythm() async throws -> Rhythm
+    /// Every evening you've had, and the first (migration 0011). Your own
+    /// rows only, counted as days.
+    func myEvenings() async throws -> EveningTotal
     func resolvePlace(secret: String) async throws -> UUID?
     func createPlace(handle: String, secret: String, name: String?) async throws -> UUID
     func nameSomewhere(handle: String, secret: String, name: String) async throws -> UUID

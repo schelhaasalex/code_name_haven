@@ -34,6 +34,9 @@ public final class AppState {
     /// Distinct qualifying local_dates. A Set because a five-person dinner is
     /// ONE evening — counting sessions would scale every number with household size.
     public var evenings: Set<String> = []
+    /// All of them, not just the last five weeks: the mark behind the session
+    /// and the number on screen 8 (migration 0011).
+    public var eveningTotal: EveningTotal = .none
     public var pending: Interruption?
     public var banner: String?
     /// Screen 4. Someone set theirs down at a place you know — the only thing
@@ -53,11 +56,13 @@ public final class AppState {
 
     public struct Ended: Equatable {
         public let startedAt: Date
+        public let endedAt: Date
         public let minutes: Int
         public let people: Int
         public let place: String?
-        /// Your week as it was, and the evening this adds to it — so screen 8
-        /// can show tonight arriving instead of waiting on a reload.
+        public let placeId: UUID?
+        /// Your evenings as they were, and whether this one adds to them — so
+        /// screen 8 can show tonight's dot fill in without waiting on a reload.
         public let landing: EveningLanding
     }
     /// Your own recent sessions and the gatherings they belong to, kept so a
@@ -157,6 +162,7 @@ public final class AppState {
         let since = Calendar.current.date(byAdding: .day, value: -35, to: .now) ?? .now
         recent = (try? await repo.mySessions(since: since)) ?? recent
         evenings = Set(recent.filter(\.qualifying).map(\.localDate))
+        eveningTotal = (try? await repo.myEvenings()) ?? eveningTotal
 
         let ids = Array(Set(recent.map(\.gatheringId)))
         guard let found = try? await repo.gatherings(ids: ids) else { return }

@@ -19,6 +19,9 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
     public var summaryValue: PlaceSummary
     /// Your ended evenings, newest first.
     public var history: [Session] = []
+    /// Evenings older than `history`, so "your evenings" has a past in a
+    /// preview. Zero for a household on day one.
+    public var earlierEvenings = 24
     var gatheringsById: [UUID: Gathering] = [:]
     /// Gatherings opened by this run, as opposed to the canvas fixtures. Only
     /// you are in those — nobody else's phone is here to join.
@@ -60,6 +63,7 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
         self.live = live
         self.memberList = members
         self.rhythm = rhythm
+        self.earlierEvenings = places.isEmpty ? 0 : 24
         self.summaryValue = PlaceSummary(evenings: 31, wallClockMinutes: 4080,
                                          personMinutes: 12240, stage: "a reclaim house",
                                          since: "2026-03-04", liveNow: true)

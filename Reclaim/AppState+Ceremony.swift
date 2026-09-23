@@ -32,6 +32,7 @@ extension AppState {
         guard let s = session else { return }
         let people = max(1, members.count)
         let place = placeName
+        let placeId = gathering?.placeId
         let estimate = Int(Date().timeIntervalSince(startedAt ?? s.startedAt) / 60)
         if let me = profile?.id { await transport.send(.released(profile: me), from: me) }
         // What the database credited is what counted — capped, if it came to
@@ -40,10 +41,10 @@ extension AppState {
         Sensation.ended()
         // Set in the same turn as the teardown, so Home never flashes between.
         let minutes = max(0, credited ?? estimate)
-        justEnded = Ended(startedAt: startedAt ?? s.startedAt, minutes: minutes,
-                          people: people, place: place,
-                          landing: EveningLanding(known: evenings, localDate: s.localDate,
-                                                  minutes: minutes))
+        justEnded = Ended(startedAt: startedAt ?? s.startedAt, endedAt: .now, minutes: minutes,
+                          people: people, place: place, placeId: placeId,
+                          landing: EveningLanding(total: eveningTotal, known: evenings,
+                                                  localDate: s.localDate, minutes: minutes))
         await teardown()
         self.rhythm = (try? await repo.myRhythm()) ?? rhythm
         await loadEvenings()
