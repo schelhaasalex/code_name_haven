@@ -204,6 +204,17 @@ for f in $(find Reclaim -name '*.swift'); do
   done
 done
 
+# 16. The build number lives in an xcconfig, and a build setting written into
+#     project.yml would silently win over it — so every upload after the first
+#     would carry the same number, and App Store Connect would refuse it at
+#     the end of an archive rather than at the start.
+note "The build number is not written into the project"
+# The key itself, not the $(CURRENT_PROJECT_VERSION) the Info.plist reads.
+grep -qE '^[[:space:]]*CURRENT_PROJECT_VERSION:' project.yml \
+  && bad "project.yml sets CURRENT_PROJECT_VERSION — it belongs in Config/Base.xcconfig, from scripts/generate.sh"
+grep -q "CURRENT_PROJECT_VERSION" Config/Base.xcconfig \
+  || bad "Config/Base.xcconfig should carry CURRENT_PROJECT_VERSION"
+
 echo
 if [ "$FAIL" -eq 0 ]; then
   echo "Shape is fine."

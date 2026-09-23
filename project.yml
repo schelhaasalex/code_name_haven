@@ -24,12 +24,11 @@ settings:
     # address until there is a real domain; cards printed against it stop
     # working when it changes, invites expire anyway.
     LINK_DOMAIN: haven-links-lime.vercel.app
-    # The version people see, and the build number. App Store Connect refuses
-    # an upload whose build number it has already seen, and the widget's must
-    # match the app's — both targets read these, so bump CURRENT_PROJECT_VERSION
-    # once per TestFlight upload.
+    # The version people see. The BUILD number is deliberately not here: a
+    # setting in this file wins over an xcconfig, so it would override the
+    # generated one and every upload would carry the same stale number. It
+    # comes from Config/Base.xcconfig, written by scripts/generate.sh.
     MARKETING_VERSION: "0.1"
-    CURRENT_PROJECT_VERSION: "3"
     # iPhone only. It's a phone you set down; a portrait-only app that also
     # runs on iPad is refused at upload unless it demands full screen.
     TARGETED_DEVICE_FAMILY: "1"
@@ -40,8 +39,8 @@ settings:
       SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
 
 configFiles:
-  Debug: Config/Secrets.xcconfig
-  Release: Config/Secrets.xcconfig
+  Debug: Config/Base.xcconfig
+  Release: Config/Base.xcconfig
 
 packages:
   Supabase:

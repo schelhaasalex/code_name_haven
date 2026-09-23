@@ -1,0 +1,20 @@
+// What both targets read, in one place: the secrets that never reach git, and
+// the build number that nobody should have to remember.
+//
+// THE BUILD NUMBER IS NOT IN project.yml. A setting written there lands in the
+// project file itself, and a build setting in the project file WINS over an
+// xcconfig — so a number left there would quietly override the generated one
+// and every upload would carry the same stale value. `scripts/shape.sh` checks
+// that it stays out.
+
+// Only reached when Build.xcconfig hasn't been generated. Zero is not a
+// number App Store Connect will take after build 3, which is the point: it
+// fails at upload, loudly, instead of shipping the wrong version silently.
+CURRENT_PROJECT_VERSION = 0
+
+// Written by scripts/generate.sh from the number of commits: never the same
+// twice, never something to remember, and it goes up on its own. Optional
+// include, so a checkout that has never been generated still builds.
+#include? "Build.xcconfig"
+
+#include "Secrets.xcconfig"

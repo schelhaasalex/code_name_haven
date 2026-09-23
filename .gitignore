@@ -4,6 +4,7 @@
 
 # Local configuration, including the Supabase key
 Config/Secrets.xcconfig
+Config/Build.xcconfig
 
 .DS_Store
 .build/
