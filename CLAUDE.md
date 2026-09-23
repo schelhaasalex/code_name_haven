@@ -8,6 +8,9 @@ around you do the same, and the place you did it in slowly becomes something.
 > person sees the name through `APP_DISPLAY_NAME` (project.yml) and `app.name`
 > (copy); links go through `LINK_DOMAIN`, for now a Vercel testing address.
 > Module and target names (`ReclaimKit`, `Reclaim/`) stay — nobody sees them.
+> `docs/HOW-IT-WORKS.md` is written for the people using the app, so it does
+> say the name out loud, in the Siri phrases. It is the one file a rename has
+> to be read rather than searched.
 
 Read `VISION.md` for why, `BRIEF.md` for what, `docs/APP-SPEC.md` for how.
 `docs/SCHEMA-REVIEW.md` records fourteen bugs found before any of this shipped
@@ -80,7 +83,7 @@ Never compare people or households against each other.
 
 ```
 VISION.md  BRIEF.md  CLAUDE.md
-docs/          APP-SPEC.md, SCHEMA-REVIEW.md, STYLE.md
+docs/          APP-SPEC.md, SCHEMA-REVIEW.md, STYLE.md, HOW-IT-WORKS.md
 copy/          strings.json — every user-facing string
 supabase/      migrations/ (applied, tested) and tests/
 scripts/       shape.sh — the style rules, as a check rather than a hope
