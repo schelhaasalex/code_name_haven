@@ -418,7 +418,7 @@ begin
       'record_retroactive', 'gathering_members', 'place_summary', 'my_rhythm',
       'name_somewhere', 'merge_places', 'move_evening',
       'create_invite', 'accept_invite', 'has_company',
-      'open_nearby', 'nearby_offer', 'join_nearby']) as name
+      'open_nearby', 'nearby_offer', 'join_nearby', 'my_evenings']) as name
     where not exists (
       select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'public' and p.proname = name)
@@ -430,7 +430,7 @@ begin
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public'
      and has_function_privilege('authenticated', p.oid, 'execute');
-  assert v_wrapped = 17, format('expected 17 callable wrappers, found %s', v_wrapped);
+  assert v_wrapped = 18, format('expected 18 callable wrappers, found %s', v_wrapped);
 
   -- The scheduler's job is not a client's to call: nine hours of
   -- phone-on-the-side becoming 180 minutes has to happen TO you, not by you.
@@ -443,7 +443,7 @@ begin
    where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute');
   assert v_anon = 0, format('anon can execute %s functions in public', v_anon);
 
-  raise notice 'PASS 12  fourteen wrappers callable by authenticated, none by anon';
+  raise notice 'PASS 12  eighteen wrappers callable by authenticated, none by anon';
 end $$;
 
 -- ============================================================ FINDING 15
@@ -859,6 +859,43 @@ begin
 
   perform auth.logout();
   raise notice 'PASS 20  an evening of your own moves to the table rather than splitting it';
+end $$;
+
+-- ============================================================ 21
+-- Your evenings, all of them (0011). The end of an evening says "27 of them,
+-- since June" — distinct qualifying dates, your own only, and a number that
+-- only goes up.
+
+do $$
+declare
+  v_me    uuid := 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee1';
+  v_other uuid := 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee2';
+  r record;
+begin
+  insert into auth.users (id, email) values (v_me, 'counted@example.test'), (v_other, 'elsewhere@example.test');
+  insert into profiles (id, display_name) values (v_me, 'Counted'), (v_other, 'Elsewhere');
+
+  perform auth.login(v_me);
+  select * into r from app.my_evenings();
+  assert r.evenings = 0 and r.first_evening is null, 'nothing yet is zero, with no first evening';
+
+  -- Two on the same day are one evening; a short one is kept, not counted.
+  perform app.record_retroactive('2026-06-03 19:00+00', '2026-06-03 20:00+00', 'UTC');
+  perform app.record_retroactive('2026-06-03 21:00+00', '2026-06-03 22:30+00', 'UTC');
+  perform app.record_retroactive('2026-06-10 19:00+00', '2026-06-10 19:10+00', 'UTC');
+  perform app.record_retroactive('2026-07-01 19:00+00', '2026-07-01 19:40+00', 'UTC');
+
+  -- Someone else's evenings are theirs.
+  perform auth.login(v_other);
+  perform app.record_retroactive('2026-05-01 19:00+00', '2026-05-01 21:00+00', 'UTC');
+
+  perform auth.login(v_me);
+  select * into r from public.my_evenings();
+  assert r.evenings = 2, format('expected 2 evenings, found %s', r.evenings);
+  assert r.first_evening = '2026-06-03', format('first evening should be 2026-06-03, was %s', r.first_evening);
+
+  perform auth.logout();
+  raise notice 'PASS 21  your evenings: distinct qualifying dates, your own, from the first';
 end $$;
 
 do $$ begin raise notice '--- all assertions held ---'; end $$;

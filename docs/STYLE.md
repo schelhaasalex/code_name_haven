@@ -48,6 +48,7 @@ The current set:
 | `LabelledSection` | Eyebrow + a stack, used throughout settings and places |
 | `StatRow` | Label on the left, a display-face number on the right |
 | `DotWeek` | The week of dots on Home's footer |
+| `EveningMark` | One dot per evening you've had, tonight's among them — behind the session, and on screen 8 |
 | `Ground` | The paper or night ground, gutters, safe area |
 
 **A component takes data, not `AppState`.** `PhoneSlab(name:isMe:isDown:)`, not

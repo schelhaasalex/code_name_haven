@@ -31,6 +31,12 @@ public enum Sensation {
         UINotificationFeedbackGenerator().notificationOccurred(.success)
     }
 
+    /// Tonight's dot filling in on screen 8. Softer than anything before it:
+    /// the evening is over, and this is it settling, not starting.
+    public static func landed() {
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+    }
+
     /// G4 then D5 — a fifth, which reads as settled rather than alerting.
     /// Generated rather than shipped as an asset, so it's tunable in one line.
     private static func chime() {

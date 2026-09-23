@@ -253,10 +253,21 @@ struct ReclaimActivityAttributes: ActivityAttributes {
 }
 ```
 
-Lock screen: place name, *"Five of you"*, a `Text(timerInterval:)` counting up,
-and an **End** button wired to `EndSessionIntent` — the iOS 17 feature the whole
-deployment target exists for. Dynamic Island: compact shows the timer, expanded
-mirrors the lock screen.
+Lock screen: the ring-and-dot mark, the same headline as the session screen
+(*"Back when you're back."* alone, *"Three of you so far."* together), *"The
+Kitchen Table · since 7:27"*, and an **End** button wired to `EndSessionIntent`
+— the iOS 17 feature the whole deployment target exists for. **No ticking
+digits**: a face-down phone gets picked up and read here. The only thing that
+moves is the mark's ring, filling once over the first fifteen minutes — a
+`ProgressView(timerInterval:)`, because a Live Activity can't change at a set
+moment without the app running. Dynamic Island: the mark, and the count when
+there's company; expanded mirrors the lock screen.
+
+In the app the same rule holds. Screens 3, 6 and 12 say *"Since 7:27"*, never
+elapsed time, and screen 6 draws your evenings behind the headline, tonight's
+dot an outline that fills at fifteen minutes. The length of the evening
+appears once, on screen 8, as a receipt: *"7:27 to 9:02. An hour and a half,
+all yours."*, then your evenings with tonight's landing among them.
 
 ---
 

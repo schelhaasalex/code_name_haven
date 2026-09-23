@@ -64,6 +64,22 @@ final class FormattingTests: XCTestCase {
         XCTAssertEqual(Say.spokenDuration(minutes: 134), "two hours and 14")
     }
 
+    /// Half past is said the way people say it, not "an hour and 30".
+    func testHalfAnHourIsSaidAsAHalf() {
+        XCTAssertEqual(Say.spokenDuration(minutes: 90), "an hour and a half")
+        XCTAssertEqual(Say.spokenDuration(minutes: 150), "two and a half hours")
+        XCTAssertEqual(Say.spokenDuration(minutes: 30), "30 minutes")
+    }
+
+    /// The end of an evening opens with its length, capitalised like any
+    /// other sentence the app starts with its own words.
+    func testAReceiptOpeningWithADurationStartsWithACapital() {
+        XCTAssertEqual(t("end.receipt.solo", "duration", Say.spokenDuration(minutes: 90)),
+                       "An hour and a half, all yours.")
+        XCTAssertEqual(t("end.receipt", "duration", Say.spokenDuration(minutes: 40), "count", Say.number(3)),
+                       "40 minutes, the three of you.")
+    }
+
     /// Who is here. There is deliberately no form of this that says how many
     /// people haven't arrived.
     func testNamesReadAsASentence() {
@@ -110,7 +126,7 @@ final class FormattingTests: XCTestCase {
 
     /// Mid-sentence it stays lowercase, and a name stays how its owner wrote it.
     func testOnlyAnOpeningCountIsCapitalised() {
-        XCTAssertTrue(t("end.rhythm", "count", Say.number(3)).contains("three evenings"))
+        XCTAssertTrue(t("end.receipt", "duration", "an hour", "count", Say.number(3)).contains("the three of you"))
         XCTAssertTrue(t("join.headline", "name", "maya", "place", "the porch").hasPrefix("maya"))
     }
 
@@ -124,5 +140,17 @@ final class FormattingTests: XCTestCase {
         var nl = us
         nl.locale = Locale(identifier: "nl_NL")
         XCTAssertEqual(Say.hour(19, calendar: nl), "19")
+    }
+
+    /// "Since 7:27 PM" or "Since 19:27" — when you started, never a count.
+    func testATimeIsSaidTheWayThePhoneSaysIt() {
+        var us = Calendar(identifier: .gregorian)
+        us.timeZone = TimeZone(identifier: "UTC")!
+        us.locale = Locale(identifier: "en_US")
+        let at = us.date(from: DateComponents(year: 2026, month: 9, day: 23, hour: 19, minute: 27))!
+        XCTAssertEqual(Say.time(at, calendar: us).replacingOccurrences(of: "\u{202F}", with: " "), "7:27 PM")
+        var nl = us
+        nl.locale = Locale(identifier: "nl_NL")
+        XCTAssertEqual(Say.time(at, calendar: nl), "19:27")
     }
 }

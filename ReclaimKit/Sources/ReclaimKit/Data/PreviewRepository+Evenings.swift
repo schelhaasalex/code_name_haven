@@ -15,6 +15,15 @@ extension PreviewRepository {
 
     public func liveSession() async throws -> Session? { live }
 
+    /// The canvas household's earlier evenings, before anything in `history`,
+    /// plus whatever this run has added — counted as days, like the database.
+    public func myEvenings() async throws -> EveningTotal {
+        let days = Set(history.filter(\.qualifying).map(\.localDate))
+        let first = Calendar.current.date(byAdding: .day, value: -112, to: .now) ?? .now
+        return EveningTotal(count: earlierEvenings + days.count,
+                            first: earlierEvenings > 0 ? Self.localDate(first) : days.min())
+    }
+
     public func gathering(_ id: UUID) async throws -> Gathering? {
         gatheringsById[id] ?? gatheringNow
     }

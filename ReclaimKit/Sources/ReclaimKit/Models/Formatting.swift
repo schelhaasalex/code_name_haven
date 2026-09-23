@@ -51,8 +51,10 @@ public enum Say {
         case (0, 1):         return t("say.spoken.minute")
         case (0, let m):     return t("say.spoken.minutes", "m", number(m))
         case (1, 0):         return t("say.spoken.hour")
+        case (1, 30):        return t("say.spoken.hour.half")
         case (1, let m):     return t("say.spoken.hour.minutes", "m", number(m))
         case (let h, 0):     return t("say.spoken.hours", "h", number(h))
+        case (let h, 30):    return t("say.spoken.hours.half", "h", number(h))
         case (let h, let m): return t("say.spoken.hours.minutes", "h", number(h), "m", number(m))
         }
     }
@@ -90,6 +92,18 @@ public enum Say {
         f.locale = calendar.locale ?? .current
         f.setLocalizedDateFormatFromTemplate("j")
         let date = calendar.date(from: DateComponents(year: 2026, month: 1, day: 1, hour: hour)) ?? .now
+        return f.string(from: date)
+    }
+
+    /// "7:27 PM", "19:27" — a moment, in the phone's own style. The session
+    /// screen says when you started rather than how long it has been: a
+    /// start time is a fact that doesn't tick.
+    public static func time(_ date: Date, calendar: Calendar = .current) -> String {
+        let f = DateFormatter()
+        f.calendar = calendar
+        f.timeZone = calendar.timeZone
+        f.locale = calendar.locale ?? .current
+        f.setLocalizedDateFormatFromTemplate("jmm")
         return f.string(from: date)
     }
 

@@ -18,8 +18,7 @@ struct RootView: View {
                 WelcomeView()
             case .ready:
                 if let ended = state.justEnded {
-                    SessionEndView(startedAt: ended.startedAt, minutes: ended.minutes,
-                                   people: ended.people, place: ended.place)
+                    SessionEndView(ended: ended)
                 } else if state.isLive {
                     SessionFlowView()
                 } else {
