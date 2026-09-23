@@ -39,11 +39,10 @@ enum LiveActivityController {
     /// Every activity, not just the one this launch remembers. The End button
     /// relaunches the app in the background with no memory of the activity it
     /// is ending — ending only `current` left it on the lock screen, counting
-    /// up for an evening that was over.
+    /// up for an evening that was over. Shared with the intent, which does
+    /// this for itself rather than waiting for the app to get here.
     static func end() async {
-        for activity in Activity<ReclaimActivityAttributes>.activities {
-            await activity.end(nil, dismissalPolicy: .immediate)
-        }
+        await ReclaimActivity.endAll()
         current = nil
     }
 }

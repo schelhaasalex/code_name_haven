@@ -104,7 +104,17 @@ extension AppState {
         case .end:
             await teardown()
             await rescheduleNudges()
-        case .idle:          watchPlaces()
+        case .idle:
+            // Nothing is running, so nothing may be SHOWING. An evening ended
+            // from the lock screen, from Siri or at the cap leaves this phone
+            // with an activity and a flag nobody cleared — and the next launch
+            // is where that gets noticed. The guard is for the tap that starts
+            // an evening in the same breath as a refresh.
+            if session == nil {
+                await LiveActivityController.end()
+                SessionFlag.isLive = false
+            }
+            watchPlaces()
         }
     }
 

@@ -22,3 +22,23 @@ public struct ReclaimActivityAttributes: ActivityAttributes {
     public var gatheringId: UUID
     public init(gatheringId: UUID) { self.gatheringId = gatheringId }
 }
+
+/// Ending every Live Activity there is, from either process.
+///
+/// THE END BUTTON RELAUNCHES THE APP COLD. It is tapped from a lock screen on
+/// a phone that has been face down for an hour, by which point the app has
+/// usually been terminated — so the process that services the intent has no
+/// memory of the evening, no `AppState` with a session in it, and nothing to
+/// tear down. It ended the row in the database and left the activity sitting
+/// on the lock screen, counting up for an evening that was over, which from
+/// the lock screen is indistinguishable from a button that does nothing.
+///
+/// So the teardown lives here, where both the intent and the app can reach it,
+/// and the intent does it itself rather than hoping the app gets there.
+public enum ReclaimActivity {
+    public static func endAll() async {
+        for activity in Activity<ReclaimActivityAttributes>.activities {
+            await activity.end(nil, dismissalPolicy: .immediate)
+        }
+    }
+}
