@@ -47,7 +47,7 @@ The current set:
 | `NightCard` | Its dark counterpart |
 | `LabelledSection` | Eyebrow + a stack, used throughout settings and places |
 | `StatRow` | Label on the left, a display-face number on the right |
-| `DotWeek` | The week of dots on Home's footer |
+| `DotWeek` | The week of dots on Home's footer, and tonight's landing on screen 8 |
 | `Ground` | The paper or night ground, gutters, safe area |
 
 **A component takes data, not `AppState`.** `PhoneSlab(name:isMe:isDown:)`, not

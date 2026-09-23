@@ -39,8 +39,11 @@ extension AppState {
         let credited = try? await repo.endSession(s.id)
         Sensation.ended()
         // Set in the same turn as the teardown, so Home never flashes between.
-        justEnded = Ended(startedAt: startedAt ?? s.startedAt, minutes: max(0, credited ?? estimate),
-                          people: people, place: place)
+        let minutes = max(0, credited ?? estimate)
+        justEnded = Ended(startedAt: startedAt ?? s.startedAt, minutes: minutes,
+                          people: people, place: place,
+                          landing: EveningLanding(known: evenings, localDate: s.localDate,
+                                                  minutes: minutes))
         await teardown()
         self.rhythm = (try? await repo.myRhythm()) ?? rhythm
         await loadEvenings()

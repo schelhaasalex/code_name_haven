@@ -56,6 +56,9 @@ public final class AppState {
         public let minutes: Int
         public let people: Int
         public let place: String?
+        /// Your week as it was, and the evening this adds to it — so screen 8
+        /// can show tonight arriving instead of waiting on a reload.
+        public let landing: EveningLanding
     }
     /// Your own recent sessions and the gatherings they belong to, kept so a
     /// screen can ask where your evenings happened without a round trip each.
