@@ -84,6 +84,7 @@ docs/          APP-SPEC.md, SCHEMA-REVIEW.md, STYLE.md
 copy/          strings.json — every user-facing string
 supabase/      migrations/ (applied, tested) and tests/
 scripts/       shape.sh — the style rules, as a check rather than a hope
+               generate.sh — the project, with a build number nobody has to remember
 prototype/     ceremony.html — the web rehearsal of the five-phone moment
 ReclaimKit/    shared Swift package: models, data, ceremony, copy, design
                — and Tests/, which is where anything testable belongs
@@ -131,11 +132,19 @@ The Xcode project is **generated**. `Reclaim.xcodeproj` is not in the repo.
 
 ```sh
 brew install xcodegen      # once
-xcodegen generate          # after any change to project.yml or a new file
+scripts/generate.sh        # after pulling, changing project.yml, or adding a file
 open Reclaim.xcodeproj
 ```
 
 Adding a Swift file needs no project edit — XcodeGen globs the directories.
+
+`scripts/generate.sh` is `xcodegen generate` with the build number written
+first, as the number of commits behind `HEAD`, into `Config/Build.xcconfig`
+(gitignored). App Store Connect refuses an upload whose build number it has
+already seen, and bumping it by hand is a step only ever noticed by being
+forgotten — at the end of an archive, after the wait. **The number must not go
+back into `project.yml`**: a build setting there wins over an xcconfig, so it
+would override the generated one silently. `scripts/shape.sh` checks that.
 
 Two schemes: **Reclaim** is the real app against Supabase. **Reclaim (Sample
 data)** runs the whole app against the canvas household (`PreviewRepository`),
@@ -144,8 +153,9 @@ the app before Sign in with Apple can work.
 Adding a target, capability or dependency means editing `project.yml` and
 regenerating.
 
-**Configuration** lives in `Config/Secrets.xcconfig`, which is gitignored.
-Copy `Config/Secrets.example.xcconfig` and fill it in. The Supabase
+**Configuration** lives in `Config/Base.xcconfig`, which both targets read. It
+includes `Secrets.xcconfig` — gitignored, copy `Config/Secrets.example.xcconfig`
+and fill it in — and `Build.xcconfig`, which `scripts/generate.sh` writes. The Supabase
 publishable key is designed to sit in client code and is protected by RLS, but
 it still doesn't belong in git.
 
@@ -217,6 +227,7 @@ scripts/shape.sh      # about a second, no toolchain, no network
 | The App Group is the same everywhere | Two entitlements and `SessionFlag` name it; if they differ, Control Centre shows "off" forever |
 | A phone that is down keeps talking | Without `bluetooth-peripheral` the advertisement stops a second after the phone is set down, and nothing says so |
 | Every sheet has something that opens it | Screen 17's "Name them" was a word printed on a card: the sheet was wired, nothing set the flag, and it built and previewed fine |
+| The build number is not written into the project | A setting in `project.yml` beats the xcconfig it comes from, so every upload after the first would carry the same number — refused at the end of an archive, not the start |
 
 It runs in CI on every pull request, and from a `Stop` hook in
 `.claude/settings.json` — a session here cannot end on a repo that breaks it.
