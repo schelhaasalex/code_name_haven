@@ -14,6 +14,8 @@ struct CardView: View {
 
     @State private var writing = false
     @State private var wrote: String?
+    /// The card as a file on disk, made once. See `write(card:)`.
+    @State private var file: URL?
 
     private var place: Place? { state.places.first { $0.id == placeId } }
     private var secret: String? { PlaceSecrets.secret(for: placeId) }
@@ -33,18 +35,25 @@ struct CardView: View {
         }
         .background(Palette.bone.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
+        .task(id: placeId) {
+            guard let place, let secret else { return }
+            file = write(card: face(place, url: Handle.cardURL(secret: secret)),
+                         named: place.name ?? place.handle)
+        }
+    }
+
+    private func face(_ place: Place, url: URL) -> CardFace {
+        CardFace(name: place.name ?? Handle.pretty(place.handle),
+                 handle: place.handle,
+                 url: url)
     }
 
     @MainActor @ViewBuilder private func card(_ place: Place, url: URL) -> some View {
-        let face = CardFace(name: place.name ?? Handle.pretty(place.handle),
-                            handle: place.handle,
-                            url: url)
-        face
+        face(place, url: url)
 
-        if let image = rendered(face) {
-            ShareLink(item: image,
-                      preview: SharePreview(place.name ?? Handle.pretty(place.handle),
-                                            image: image)) {
+        if let file {
+            ShareLink(item: file,
+                      preview: SharePreview(place.name ?? Handle.pretty(place.handle))) {
                 Text(t("card.share"))
                     .font(Type.body(16, weight: .medium))
                     .frame(maxWidth: .infinity, minHeight: 56)
@@ -76,12 +85,39 @@ struct CardView: View {
         }
     }
 
-    /// Rendered at print scale, so what lands in the share sheet is worth
-    /// putting through a printer rather than a screenshot of a phone.
-    @MainActor private func rendered(_ face: CardFace) -> Image? {
-        let renderer = ImageRenderer(content: face.frame(width: 320))
-        renderer.scale = 3
-        return renderer.uiImage.map(Image.init(uiImage:))
+    /// The card, written to a file once, and shared as a file.
+    ///
+    /// It used to hand `ShareLink` a SwiftUI `Image` straight out of
+    /// `ImageRenderer` — remade on every pass of `body`, so the thing the
+    /// share sheet was holding could be replaced underneath it while it was
+    /// open, and the tap appeared to do nothing at all.
+    ///
+    /// A PDF rather than an image, because this is a thing whose entire
+    /// purpose is to go through a printer: it prints at whatever the printer
+    /// can do instead of at the pixels a phone happened to render, and it
+    /// lands in Files as a card rather than as a screenshot. Four inches by
+    /// however tall it comes out, at 72 points to the inch — a postcard, which
+    /// is what this is.
+    @MainActor private func write(card: CardFace, named name: String) -> URL? {
+        let renderer = ImageRenderer(content: card.frame(width: 288))
+        let safe = name.components(separatedBy: CharacterSet(charactersIn: "/:")).joined(separator: "-")
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent(safe.isEmpty ? "card" : safe)
+            .appendingPathExtension("pdf")
+
+        var wrote = false
+        renderer.render { size, draw in
+            var box = CGRect(origin: .zero, size: size)
+            guard let consumer = CGDataConsumer(url: url as CFURL),
+                  let context = CGContext(consumer: consumer, mediaBox: &box, nil)
+            else { return }
+            context.beginPDFPage(nil)
+            draw(context)
+            context.endPDFPage()
+            context.closePDF()
+            wrote = true
+        }
+        return wrote ? url : nil
     }
 
     private func write(_ url: URL) {
