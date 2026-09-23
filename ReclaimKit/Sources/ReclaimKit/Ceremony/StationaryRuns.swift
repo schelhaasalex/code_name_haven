@@ -70,10 +70,16 @@ public enum StationaryRuns {
     ///
     /// - Parameter evenings: when your own evenings ENDED — qualifying ones
     ///   you have already had, not sessions still running.
+    /// - Parameter declined: where runs you have already said no to began.
+    ///   No means no: the card came back on the next launch, offering the same
+    ///   stretch again, which is the app arguing with someone who has answered.
+    ///   Keyed on the START, because a stretch that is still open grows its own
+    ///   end every time it is looked at.
     public static func candidate(
         runs: [Run],
         existing: [(start: Date, end: Date)],
         evenings: [Date],
+        declined: [Date] = [],
         minimum: TimeInterval = qualifying,
         maximum: TimeInterval = longest,
         tolerance: TimeInterval = recognisable,
@@ -86,6 +92,12 @@ public enum StationaryRuns {
             .filter { $0.duration >= minimum && $0.duration <= maximum }
             .filter { run in
                 !existing.contains { $0.start < run.end && $0.end > run.start }
+            }
+            .filter { run in
+                // A second's tolerance: the timestamp goes out to a store and
+                // comes back as a Double, and exact equality on a Date is a
+                // promise not worth making.
+                !declined.contains { abs($0.timeIntervalSince(run.start)) < 1 }
             }
             .filter { run in
                 let ending = secondsOfDay(run.end, calendar: calendar)

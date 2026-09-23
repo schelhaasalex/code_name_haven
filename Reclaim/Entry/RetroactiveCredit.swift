@@ -32,7 +32,8 @@ enum RetroactiveCredit {
         return StationaryRuns.candidate(
             runs: StationaryRuns.runs(from: samples, until: end),
             existing: known.map { (start: $0.startedAt, end: $0.endedAt ?? end) },
-            evenings: mine.filter(\.qualifying).compactMap(\.endedAt))
+            evenings: mine.filter(\.qualifying).compactMap(\.endedAt),
+            declined: DeclinedRuns.since(start))
     }
 
     private static func samples(from start: Date, to end: Date) async -> [StationaryRuns.Sample] {
@@ -45,6 +46,35 @@ enum RetroactiveCredit {
                 })
             }
         }
+    }
+}
+
+/// The stretches you have already said no to.
+///
+/// "No, I was on my laptop" used to dismiss the card and nothing else, so the
+/// same stretch was offered again on the next launch — the app asking a
+/// question that had been answered, which is the behaviour this product
+/// exists to replace.
+///
+/// Kept on the phone, not the database: it is about one device's motion
+/// history, which is on this phone and nowhere else, and it is worth nothing
+/// tomorrow. Starts only, pruned to the window the sensor can even see.
+enum DeclinedRuns {
+    private static let key = "reclaim.countthat.declined"
+
+    static func remember(_ start: Date) {
+        let kept = starts().filter { $0 > Date().addingTimeInterval(-60 * 60 * 48) }
+        UserDefaults.standard.set((kept + [start]).map(\.timeIntervalSince1970), forKey: key)
+    }
+
+    /// The ones worth comparing against: anything older than the query window
+    /// can never match a run again.
+    static func since(_ moment: Date) -> [Date] {
+        starts().filter { $0 >= moment.addingTimeInterval(-60) }
+    }
+
+    private static func starts() -> [Date] {
+        (UserDefaults.standard.array(forKey: key) as? [Double] ?? []).map(Date.init(timeIntervalSince1970:))
     }
 }
 

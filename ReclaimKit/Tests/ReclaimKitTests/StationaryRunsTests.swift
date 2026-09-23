@@ -184,4 +184,48 @@ final class StationaryRunsTests: XCTestCase {
         XCTAssertNil(StationaryRuns.candidate(runs: [desk], existing: [], evenings: usual,
                                               calendar: calendar))
     }
+
+    // MARK: - No means no
+
+    /// It used to dismiss the card and nothing else, so the same stretch came
+    /// back on the next launch.
+    func testAStretchYouSaidNoToIsNotOfferedAgain() {
+        let run = StationaryRuns.Run(start: clock(22, 19, 30), end: clock(22, 21, 15))
+        let usual = [clock(20, 21, 30)]
+        XCTAssertEqual(StationaryRuns.candidate(runs: [run], existing: [], evenings: usual,
+                                                calendar: calendar), run)
+        XCTAssertNil(StationaryRuns.candidate(runs: [run], existing: [], evenings: usual,
+                                              declined: [run.start], calendar: calendar))
+    }
+
+    /// The phone is still sitting there, so the stretch keeps growing. It is
+    /// the same stretch, and the answer to it is still no.
+    func testTheSameStretchIsStillTheSameOnceItHasGrown() {
+        let start = clock(22, 19, 30)
+        let longer = StationaryRuns.Run(start: start, end: clock(22, 21, 40))
+        let usual = [clock(20, 21, 30)]
+        XCTAssertNil(StationaryRuns.candidate(runs: [longer], existing: [], evenings: usual,
+                                              declined: [start], calendar: calendar))
+    }
+
+    /// Saying no to Monday says nothing about Tuesday.
+    func testAnotherEveningIsStillOffered() {
+        let declined = StationaryRuns.Run(start: clock(21, 19, 30), end: clock(21, 21, 15))
+        let tonight = StationaryRuns.Run(start: clock(22, 19, 45), end: clock(22, 21, 20))
+        let usual = [clock(20, 21, 30)]
+        XCTAssertEqual(StationaryRuns.candidate(runs: [declined, tonight], existing: [],
+                                                evenings: usual, declined: [declined.start],
+                                                calendar: calendar),
+                       tonight)
+    }
+
+    /// A timestamp that has been through a store and back is not the same
+    /// Double it started as.
+    func testASecondOfDriftIsTheSameStretch() {
+        let run = StationaryRuns.Run(start: clock(22, 19, 30), end: clock(22, 21, 15))
+        let usual = [clock(20, 21, 30)]
+        XCTAssertNil(StationaryRuns.candidate(runs: [run], existing: [], evenings: usual,
+                                              declined: [run.start.addingTimeInterval(0.4)],
+                                              calendar: calendar))
+    }
 }
