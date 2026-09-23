@@ -59,9 +59,9 @@ final class FormattingTests: XCTestCase {
         XCTAssertEqual(Say.spokenDuration(minutes: 1), "a minute")
         XCTAssertEqual(Say.spokenDuration(minutes: 9), "nine minutes")
         XCTAssertEqual(Say.spokenDuration(minutes: 60), "an hour")
-        XCTAssertEqual(Say.spokenDuration(minutes: 70), "an hour and ten")
+        XCTAssertEqual(Say.spokenDuration(minutes: 70), "an hour and ten minutes")
         XCTAssertEqual(Say.spokenDuration(minutes: 120), "two hours")
-        XCTAssertEqual(Say.spokenDuration(minutes: 134), "two hours and 14")
+        XCTAssertEqual(Say.spokenDuration(minutes: 134), "two hours and 14 minutes")
     }
 
     /// Half past is said the way people say it, not "an hour and 30".

@@ -17,10 +17,10 @@
   "say.spoken.minute": "a minute",
   "say.spoken.minutes": "{m} minutes",
   "say.spoken.hour": "an hour",
-  "say.spoken.hour.minutes": "an hour and {m}",
+  "say.spoken.hour.minutes": "an hour and {m} minutes",
   "say.spoken.hour.half": "an hour and a half",
   "say.spoken.hours": "{h} hours",
-  "say.spoken.hours.minutes": "{h} hours and {m}",
+  "say.spoken.hours.minutes": "{h} hours and {m} minutes",
   "say.spoken.hours.half": "{h} and a half hours",
 
   "time.morning": "{day} morning",

@@ -18,7 +18,11 @@ enum RetroactiveCredit {
 
     private static let activity = CMMotionActivityManager()
 
-    static func candidate(excluding known: [Session]) async -> StationaryRuns.Run? {
+    /// `known` is what must not be offered twice; `mine` is what an evening of
+    /// yours looks like — the ended, qualifying ones, which is how the run
+    /// that was really sleep is told apart from the one that was really
+    /// dinner. With none of them, nothing is offered at all.
+    static func candidate(excluding known: [Session], mine: [Session]) async -> StationaryRuns.Run? {
         guard CMMotionActivityManager.isActivityAvailable() else { return nil }
 
         let end = Date()
@@ -27,7 +31,8 @@ enum RetroactiveCredit {
 
         return StationaryRuns.candidate(
             runs: StationaryRuns.runs(from: samples, until: end),
-            existing: known.map { (start: $0.startedAt, end: $0.endedAt ?? end) })
+            existing: known.map { (start: $0.startedAt, end: $0.endedAt ?? end) },
+            evenings: mine.filter(\.qualifying).compactMap(\.endedAt))
     }
 
     private static func samples(from start: Date, to end: Date) async -> [StationaryRuns.Sample] {

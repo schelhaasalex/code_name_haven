@@ -32,6 +32,7 @@ psql -v ON_ERROR_STOP=1 -q -d "$DB" \
   -f "$ROOT/supabase/migrations/0008_invites.sql" \
   -f "$ROOT/supabase/migrations/0009_has_company.sql" \
   -f "$ROOT/supabase/migrations/0010_nearby.sql" \
-  -f "$ROOT/supabase/migrations/0011_my_evenings.sql"
+  -f "$ROOT/supabase/migrations/0011_my_evenings.sql" \
+  -f "$ROOT/supabase/migrations/0012_retroactive_cap.sql"
 
 psql -v ON_ERROR_STOP=1 -q -d "$DB" -f "$ROOT/supabase/tests/01_schema_test.sql"

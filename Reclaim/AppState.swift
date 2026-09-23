@@ -181,6 +181,7 @@ public final class AppState {
     public func computeInterruption() async {
         guard pending == nil, phase == .ready else { return }
         let lately = (try? await repo.mySessions(since: .now.addingTimeInterval(-60 * 60 * 36))) ?? []
+        let mine = recent
         pending = await Interruption.first(
             recent: lately,
             rhythm: rhythm,
@@ -188,7 +189,10 @@ public final class AppState {
             // day and a half: screen 20 arrives after five EVENINGS.
             evenings: evenings.count,
             oneTapOffered: OneTapOffer.hasBeenOffered,
-            stationary: { await RetroactiveCredit.candidate(excluding: lately) })
+            // Five weeks of your own evenings, not the day and a half above:
+            // the sensor needs to know what an evening of yours looks like
+            // before it offers to invent one.
+            stationary: { await RetroactiveCredit.candidate(excluding: lately, mine: mine) })
     }
 
     public func dismissInterruption() { pending = nil }
