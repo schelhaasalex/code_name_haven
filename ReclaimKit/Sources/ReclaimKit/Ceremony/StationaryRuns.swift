@@ -40,20 +40,81 @@ public enum StationaryRuns {
         return found
     }
 
-    /// The longest run worth offering: past the qualifying minimum, and not
-    /// overlapping something already counted. Returns nil rather than a
-    /// near-miss — this becomes a card on Home, and a wrong one is worse than
-    /// none, because the sensor may only ever OFFER.
+    /// Mirrors `app.qualifying_minutes()`: fifteen minutes is an evening.
+    public static let qualifying: TimeInterval = 15 * 60
+    /// Mirrors `app.auto_close_minutes()`. An evening the app offers to invent
+    /// may not be longer than one it would have closed FOR you.
+    public static let longest: TimeInterval = 180 * 60
+    /// The same window `NudgePlan` uses to decide that two evenings happened
+    /// at the same time of day.
+    public static let recognisable: TimeInterval = 45 * 60
+
+    /// The longest run worth offering — or nothing, which is usually the right
+    /// answer.
+    ///
+    /// A PHONE THAT HASN'T MOVED FOR NINE HOURS IS ASLEEP, and the sensor
+    /// cannot tell that from a long dinner: stillness is stillness. Picking
+    /// the longest run in a day therefore picks the night, every day, forever.
+    /// That was this function, and it offered somebody nine hours of sleep as
+    /// an evening the first time the app was opened.
+    ///
+    /// What separates a night from an evening is not how it starts — both
+    /// start in the evening — but how it ENDS. So the question this asks is
+    /// not "was the phone still?" but "did this end the way YOUR evenings
+    /// end?", and the evenings it compares against are the person's own. With
+    /// none to compare against it offers nothing at all, which is the correct
+    /// thing to say on a day the app knows nothing about you.
+    ///
+    /// Every bound here is a rule that already exists somewhere else. None of
+    /// them is a number chosen to make this work.
+    ///
+    /// - Parameter evenings: when your own evenings ENDED — qualifying ones
+    ///   you have already had, not sessions still running.
+    /// - Parameter declined: where runs you have already said no to began.
+    ///   No means no: the card came back on the next launch, offering the same
+    ///   stretch again, which is the app arguing with someone who has answered.
+    ///   Keyed on the START, because a stretch that is still open grows its own
+    ///   end every time it is looked at.
     public static func candidate(
         runs: [Run],
         existing: [(start: Date, end: Date)],
-        minimum: TimeInterval = 15 * 60
+        evenings: [Date],
+        declined: [Date] = [],
+        minimum: TimeInterval = qualifying,
+        maximum: TimeInterval = longest,
+        tolerance: TimeInterval = recognisable,
+        calendar: Calendar = .current
     ) -> Run? {
-        runs
-            .filter { $0.duration >= minimum }
+        let ends = evenings.map { secondsOfDay($0, calendar: calendar) }
+        guard !ends.isEmpty else { return nil }
+
+        return runs
+            .filter { $0.duration >= minimum && $0.duration <= maximum }
             .filter { run in
                 !existing.contains { $0.start < run.end && $0.end > run.start }
             }
+            .filter { run in
+                // A second's tolerance: the timestamp goes out to a store and
+                // comes back as a Double, and exact equality on a Date is a
+                // promise not worth making.
+                !declined.contains { abs($0.timeIntervalSince(run.start)) < 1 }
+            }
+            .filter { run in
+                let ending = secondsOfDay(run.end, calendar: calendar)
+                return ends.contains { gap(ending, $0) <= tolerance }
+            }
             .max { $0.duration < $1.duration }
+    }
+
+    private static func secondsOfDay(_ date: Date, calendar: Calendar) -> TimeInterval {
+        let parts = calendar.dateComponents([.hour, .minute, .second], from: date)
+        return TimeInterval((parts.hour ?? 0) * 3600 + (parts.minute ?? 0) * 60 + (parts.second ?? 0))
+    }
+
+    /// Clock time is a circle: 23:50 and 00:10 are twenty minutes apart, not
+    /// twenty-three hours and forty (`TimeOfDay` makes the same point).
+    private static func gap(_ a: TimeInterval, _ b: TimeInterval) -> TimeInterval {
+        let raw = abs(a - b)
+        return min(raw, 86_400 - raw)
     }
 }

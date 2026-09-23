@@ -43,7 +43,13 @@ struct CountThatView: View {
                         dismiss()
                     }
                 }
-                TextAction(title: t("countthat.decline")) { dismiss() }
+                TextAction(title: t("countthat.decline")) {
+                    // Remembered, so the card doesn't come back tomorrow
+                    // asking about the same stretch.
+                    DeclinedRuns.remember(from)
+                    state.dismissInterruption()
+                    dismiss()
+                }
                 Text(t("countthat.footer"))
                     .font(Type.note).foregroundStyle(Palette.muted)
                     .multilineTextAlignment(.center).frame(maxWidth: .infinity)

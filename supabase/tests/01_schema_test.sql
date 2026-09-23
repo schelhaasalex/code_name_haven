@@ -898,4 +898,46 @@ begin
   raise notice 'PASS 21  your evenings: distinct qualifying dates, your own, from the first';
 end $$;
 
+
+-- ============================================================ 22
+-- An evening you didn't start is still only an evening (0012). Retroactive
+-- credit was capped by nothing, and screen 18 offered nine hours of sleep.
+
+do $$
+declare
+  v_me uuid := 'ffffffff-ffff-ffff-ffff-fffffffffff1';
+  r record; v_cap integer;
+begin
+  insert into auth.users (id, email) values (v_me, 'slept@example.test');
+  insert into profiles (id, display_name) values (v_me, 'Slept');
+  perform auth.login(v_me);
+  v_cap := app.auto_close_minutes();
+
+  -- The night from the TestFlight screenshot: 9:42pm to 6:46am.
+  perform app.record_retroactive('2026-09-22 21:42+00', '2026-09-23 06:46+00', 'UTC');
+  select duration_minutes, started_at, ended_at, qualifying into r
+    from sessions where profile_id = v_me;
+
+  assert r.duration_minutes = v_cap,
+    format('nine hours should be credited at the cap of %s, got %s', v_cap, r.duration_minutes);
+  assert r.ended_at = r.started_at + make_interval(mins => v_cap),
+    'the timestamps must agree with the minutes — one evening, one answer';
+  assert r.qualifying, 'it still counts';
+
+  -- The gathering it sits in says the same thing.
+  assert (select g.ended_at from gatherings g
+           join sessions s on s.gathering_id = g.id
+          where s.profile_id = v_me) = r.ended_at,
+    'the gathering and the session must end at the same moment';
+
+  -- An ordinary forgotten evening is untouched.
+  perform app.record_retroactive('2026-09-20 19:30+00', '2026-09-20 21:15+00', 'UTC');
+  assert (select duration_minutes from sessions
+           where profile_id = v_me and local_date = '2026-09-20') = 105,
+    'a real evening is credited exactly as it happened';
+
+  perform auth.logout();
+  raise notice 'PASS 22  retroactive credit is capped like auto-close, and agrees with its own clock';
+end $$;
+
 do $$ begin raise notice '--- all assertions held ---'; end $$;
