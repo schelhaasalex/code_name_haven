@@ -40,17 +40,18 @@ the phones go, and of what would make it worth $200–500.
 
 | Shape | What it is |
 |---|---|
-| **Household** | A six-phone cigar box. Box-jointed corners, grain that wraps the corners and runs over the lid, a brass inlay, quadrant hinges that stop at 95° and close slowly, a leather pull, stitched pads. Phones lie screen up and snap into line over their coils. |
-| **Bedside** | The same box for one phone. Twelve pinholes in the front fill over three hours. |
+| **Household** | Six phones. One solid piece, machined wood or bead-blasted aluminium, with a single hairline seam all the way round. The hinge is hidden inside the back: push the front edge and the lid lifts, and it closes slowly on its own. A pressed-leather insert holds each phone screen up in its own well. Optional leather panel set flush into the lid; fine-bevel or soft edges. |
+| **Bedside** | The same object for one phone. Twelve pinholes in the front fill over three hours. |
 | **Tray** | Kept for comparison only: phones face down can't charge. |
 
 Wireless charging is through the back of the phone, so phones lie screen up
-and the solid lid is what hides the screens. Light comes through pinholes in
-the wood, invisible until lit, and from the seam under the lid.
+and the solid lid is what hides the screens. Light comes through pinholes,
+invisible until lit, and as a hairline at the seam. No hardware shows on the
+outside.
 
 **See inside** separates the box into its layers with callouts: plinth, driver
-board, shell, coils over ferrite, magnet rings, pads, phones, lid, plus the
-vents and the single USB-C cable. It is a proposal, not an engineered design.
+board, body, coils over ferrite, magnet rings, the leather insert, phones,
+lid, plus the hidden hinge, the vents and the single USB-C cable. It is a proposal, not an engineered design.
 
 **Try it** lets you set phones down, pick them up (the lock screen shows the
 Live Activity), open and close the lid, and end the evening. **An evening**

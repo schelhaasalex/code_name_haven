@@ -163,6 +163,18 @@
     <div class="chips" id="finishChips"></div>
   </div>
   <div class="group">
+    <p class="eyebrow">Leather</p>
+    <div class="chips" id="leatherChips"></div>
+    <div class="row"><button type="button" class="ghost" id="leatherLidBtn" aria-pressed="false">Leather lid</button></div>
+  </div>
+  <div class="group">
+    <p class="eyebrow">Edge</p>
+    <div class="seg" id="edgeSeg" role="group" aria-label="Edge">
+      <button type="button" data-edge="bevel" aria-pressed="true">Fine bevel</button>
+      <button type="button" data-edge="soft" aria-pressed="false">Soft</button>
+    </div>
+  </div>
+  <div class="group">
     <p class="eyebrow">Light</p>
     <div class="chips" id="glowChips"></div>
   </div>
@@ -348,6 +360,11 @@ function speckleTex(base, dots, seed, repeat, blotch) {
   }, repeat);
 }
 
+// bead-blasted aluminium: an even, fine tooth, nothing that reads as a pattern
+function blastTex(base, seed) {
+  return canvasTex(512, (ctx, s) => { ctx.fillStyle = base; ctx.fillRect(0, 0, s, s); grain(ctx, s, rng(seed), 14); }, 1 / 6);
+}
+
 function radialTex() {
   return canvasTex(256, (ctx, s) => {
     const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
@@ -363,12 +380,19 @@ const POOL_TEX = radialTex();
 /* ───────────────────────── finishes and light colours ───────────────────────── */
 
 const FINISHES = {
-  oak:    { label: 'Oak',    swatch: '#C9A274', felt: '#CDBFA8', make: () => ({ map: woodTex('#C29B6C', '#6E4A2A', 11, 1 / 40), roughness: 0.62, clearcoat: 0.15 }) },
-  walnut: { label: 'Walnut', swatch: '#6A4630', felt: '#2E2A26', make: () => ({ map: woodTex('#5E3C27', '#2A170C', 23, 1 / 40), roughness: 0.5,  clearcoat: 0.3 }) },
-  clay:   { label: 'Clay',   swatch: '#B4643E', felt: '#E2D6C4', make: () => ({ map: speckleTex('#B2623C', ['#7A3A1F', '#D99A73', '#5A2A16'], 31, 1 / 30, '#8A4528'), roughness: 0.88 }) },
-  stone:  { label: 'Stone',  swatch: '#CFCAC0', felt: '#3A3733', make: () => ({ map: speckleTex('#CBC5BA', ['#8E877C', '#EFEAE0', '#6F695F'], 47, 1 / 30, '#B3AC9F'), roughness: 0.78 }) },
-  ink:    { label: 'Ink',    swatch: '#25221F', felt: '#8A6A52', make: () => ({ map: speckleTex('#211E1B', ['#2E2A26', '#151311'], 59, 1 / 30, '#2A2622'), roughness: 0.4, clearcoat: 0.5 }) },
+  walnut:   { label: 'Walnut',   swatch: '#6A4630', felt: '#2E2A26', make: () => ({ map: woodTex('#5E3C27', '#2A170C', 23, 1 / 40), roughness: 0.5, clearcoat: 0.3 }) },
+  oak:      { label: 'Oak',      swatch: '#C9A274', felt: '#CDBFA8', make: () => ({ map: woodTex('#C29B6C', '#6E4A2A', 11, 1 / 40), roughness: 0.62, clearcoat: 0.15 }) },
+  silver:   { label: 'Silver',   swatch: '#C9CCCF', felt: '#3A3836', metal: true, make: () => ({ map: blastTex('#C6C9CC', 83), roughness: 0.36 }) },
+  graphite: { label: 'Graphite', swatch: '#4A4C50', felt: '#3A3836', metal: true, make: () => ({ map: blastTex('#4C4E52', 89), roughness: 0.42 }) },
 };
+const LEATHERS = {
+  tan:     { label: 'Tan',     hex: '#9C6237' },
+  black:   { label: 'Black',   hex: '#201D1B' },
+  oxblood: { label: 'Oxblood', hex: '#5C2121' },
+  stone:   { label: 'Stone',   hex: '#B5A996' },
+};
+const EDGES = { bevel: { r: 0.3, b: 0.14, seg: 1 }, soft: { r: 1.6, b: 0.55, seg: 7 } };
+let edgeKey = 'bevel', leatherLid = false, leatherKey = 'tan';
 const GLOWS = {
   ember:  { label: 'Ember',  hex: '#FF7A2E' },
   candle: { label: 'Candle', hex: '#FFB45C' },
@@ -377,18 +401,21 @@ const GLOWS = {
 
 const mats = {
   body: null, felt: null, end: null, thread: null,
-  leather: new THREE.MeshPhysicalMaterial({ color: '#4A2C1C', roughness: 0.62, sheen: 0.4, sheenRoughness: 0.6, sheenColor: new THREE.Color('#8A5A3C') }),
+  leather: null, deboss: new THREE.MeshStandardMaterial({ roughness: 0.75 }),
   brass: new THREE.MeshStandardMaterial({ color: '#C29A5B', metalness: 1, roughness: 0.28 }),
   plinth: new THREE.MeshStandardMaterial({ color: '#1B1612', roughness: 0.7 }),
 };
-let finishKey = 'oak', glowKey = 'ember';
+let finishKey = 'walnut', glowKey = 'ember';
 const glowColor = new THREE.Color(GLOWS[glowKey].hex);
 
 function makeFinish(key) {
   const f = FINISHES[key], p = f.make();
   [mats.body, mats.felt, mats.end, mats.thread].forEach(m => { m?.map?.dispose(); m?.dispose(); });
   // a hand-oiled finish: a soft sheen over the grain, never a lacquer gloss
-  mats.body = new THREE.MeshPhysicalMaterial({ map: p.map, roughness: p.roughness, clearcoat: Math.max(0.3, p.clearcoat || 0), clearcoatRoughness: 0.42, bumpMap: p.map, bumpScale: 0.6 });
+  mats.body = f.metal
+    // bead-blasted and anodised: a fine, even satin with no grain to it
+    ? new THREE.MeshPhysicalMaterial({ map: p.map, metalness: 1, roughness: p.roughness, bumpMap: p.map, bumpScale: 0.12 })
+    : new THREE.MeshPhysicalMaterial({ map: p.map, roughness: p.roughness, clearcoat: Math.max(0.3, p.clearcoat || 0), clearcoatRoughness: 0.42, bumpMap: p.map, bumpScale: 0.6 });
   const endMap = p.map.clone(); endMap.rotation = Math.PI / 2; endMap.repeat.multiplyScalar(2.2); endMap.needsUpdate = true;
   mats.end = new THREE.MeshPhysicalMaterial({ map: endMap, color: '#B9A896', roughness: Math.min(1, p.roughness + 0.12), clearcoat: 0.25, clearcoatRoughness: 0.5, bumpMap: endMap, bumpScale: 0.8 });
   mats.thread = new THREE.MeshStandardMaterial({ color: new THREE.Color(f.felt).multiplyScalar(0.62), roughness: 0.9 });
@@ -396,6 +423,21 @@ function makeFinish(key) {
   mats.felt = new THREE.MeshPhysicalMaterial({ map: feltMap, roughness: 1, sheen: 1, sheenRoughness: 0.8, sheenColor: new THREE.Color(f.felt).multiplyScalar(1.2) });
 }
 makeFinish(finishKey);
+
+// pressed leather: a fine pebble grain, a little sheen, never shiny
+const pebble = canvasTex(512, (x, s) => {
+  x.fillStyle = '#808080'; x.fillRect(0, 0, s, s);
+  const r = rng(17);
+  for (let i = 0; i < 6000; i++) { const v = 95 + r() * 100 | 0; x.fillStyle = `rgb(${v},${v},${v})`; x.beginPath(); x.arc(r() * s, r() * s, 0.8 + r() * 2.6, 0, 7); x.fill(); }
+}, 1 / 3);
+pebble.colorSpace = THREE.NoColorSpace;
+mats.leather = new THREE.MeshPhysicalMaterial({ roughness: 0.58, bumpMap: pebble, bumpScale: 0.3, sheen: 0.5, sheenRoughness: 0.5, clearcoat: 0.12, clearcoatRoughness: 0.6 });
+function makeLeather(key) {
+  const c = new THREE.Color(LEATHERS[key].hex);
+  mats.leather.color.copy(c); mats.leather.sheenColor.copy(c).multiplyScalar(1.6);
+  mats.deboss.color.copy(c).multiplyScalar(0.55);
+}
+makeLeather(leatherKey);
 
 /* ───────────────────────── the room ───────────────────────── */
 
@@ -446,6 +488,16 @@ function setDaylight(d) {          // 1 = afternoon, 0 = evening
 
 function roundedRect(w, h, r) {
   const s = new THREE.Shape(), x = -w / 2, y = -h / 2;
+  s.moveTo(x + r, y);
+  s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r);
+  s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
+  s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
+  return s;
+}
+
+function roundedRectAt(w, h, r, cx, cy) {
+  const s = new THREE.Path(), x = cx - w / 2, y = cy - h / 2;
   s.moveTo(x + r, y);
   s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r);
   s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
@@ -595,12 +647,12 @@ function tag(mesh, role) { mesh.userData.role = role; mesh.material = mats[role]
 const FORMS = {
   box: {
     capacity: 6, frame: 1.4, width: 44, lift: 5, lid: true, explode: true,
-    note: '<b>Household · six phones.</b> A cigar box, box-jointed, the grain running unbroken around the corners and over the lid. Each phone lies screen up on a stitched pad and snaps into line over its own coil. The lid stops at 95°, closes slowly, and has no latch. Light comes through the wood only when there is something to show.',
+    note: '<b>Household · six phones.</b> One solid piece with a single hairline seam all the way round. The hinge is inside the back: push the front edge and the lid lifts, and it closes slowly on its own. Inside, a pressed-leather insert holds each phone screen up over its own coil. Light shows only when there is something to show.',
     build: g => makeBox(g, 3, 2),
   },
   bedside: {
     capacity: 1, frame: 0.62, width: 24, lift: 3, lid: true, explode: true, clock: true,
-    note: '<b>Bedside · one phone.</b> The same box, made for one. Twelve pinholes in the front fill over three hours, one for each quarter hour the phone is down, and are invisible when nothing is counting.',
+    note: '<b>Bedside · one phone.</b> The same object, made for one. Twelve pinholes in the front fill over three hours, one per quarter hour the phone is down, invisible when nothing is counting.',
     build: g => makeBox(g, 1, 1),
   },
   tray: {
@@ -657,20 +709,29 @@ const braidTex = canvasTex(128, (x, s) => {
 braidTex.repeat.set(60, 1);
 
 function makeBox(g, cols, rows) {
-  const T = 1.2, H = 5.6, P = 0.5, IW = cols * BAY.w, ID = rows * BAY.d, W = IW + 2 * T, D = ID + 2 * T;
+  const E = EDGES[edgeKey];
+  const T = 1.2, H = 5.6, P = 0.5, GAP = 0.06, IW = cols * BAY.w, ID = rows * BAY.d, W = IW + 2 * T, D = ID + 2 * T;
   const parts = [], labels = [];
   const explode = (obj, dy) => { obj.userData.base = obj.position.clone(); obj.userData.dy = dy; parts.push(obj); return obj; };
   const label = (obj, at, title, text, side) => labels.push({ obj, at: new THREE.Vector3(...at), title, text, side });
+  // a slab whose outline, bevel included, lands exactly on w × d
+  const slab = (w, d, depth, opts = {}) => {
+    const b = opts.b ?? E.b, r = Math.max(0.05, (opts.r ?? E.r) - b);
+    const shape = roundedRect(w - 2 * b, d - 2 * b, r);
+    (opts.holes || []).forEach(h => shape.holes.push(h));
+    const geo = new THREE.ExtrudeGeometry(shape, { depth: Math.max(0.01, depth - 2 * b), bevelEnabled: b > 0, bevelThickness: b, bevelSize: b, bevelSegments: opts.seg ?? E.seg, curveSegments: 12, UVGenerator: opts.uv });
+    geo.rotateX(-Math.PI / 2); geo.translate(0, b, 0);
+    return geo;
+  };
 
-  // a recessed plinth, so the box sits on a line of shadow
-  const plinth = new THREE.Mesh(new THREE.ExtrudeGeometry(roundedRect(W - 1.4, D - 1.4, 0.3), { depth: P, bevelEnabled: false }).rotateX(-Math.PI / 2), mats.plinth);
+  // a recessed plinth, so it sits on a line of shadow
+  const plinth = new THREE.Mesh(new THREE.ExtrudeGeometry(roundedRect(W - 1.4, D - 1.4, Math.max(0.3, E.r - 0.7)), { depth: P, bevelEnabled: false, curveSegments: 12 }).rotateX(-Math.PI / 2), mats.plinth);
   plinth.castShadow = plinth.receiveShadow = true; g.add(explode(plinth, 0));
 
   // the driver board lives in the plinth and slides out of the back
   const board = new THREE.Group(); board.position.y = 0.2; g.add(explode(board, 3.5));
   const bw = Math.max(7, IW - 3), bd = Math.min(9, ID - 5);
-  const pcb = new THREE.Mesh(new THREE.BoxGeometry(bw, 0.16, bd), new THREE.MeshStandardMaterial({ map: pcbTex, roughness: 0.5, metalness: 0.2 }));
-  board.add(pcb);
+  board.add(new THREE.Mesh(new THREE.BoxGeometry(bw, 0.16, bd), new THREE.MeshStandardMaterial({ map: pcbTex, roughness: 0.5, metalness: 0.2 })));
   [[-2, 1, 1.8], [1.5, -1.5, 1.1], [2.5, 2, 1.1], [-2.8, -2, 1.1]].forEach(([cx, cz, size]) => {
     if (Math.abs(cx) > bw / 2 - 1) return;
     const chip = new THREE.Mesh(new THREE.BoxGeometry(size, 0.14, size), new THREE.MeshStandardMaterial({ color: '#141414', roughness: 0.4 }));
@@ -679,64 +740,44 @@ function makeBox(g, cols, rows) {
   const port = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.32, 0.8), metal.nickel); port.position.set(0, 0.2, -bd / 2 + 0.3); board.add(port);
   label(board, [bw / 2, 0, 0], 'Driver board', 'Slides out of the back as one module, so the box outlives the charging standard.', 'right');
 
+  // the body: cut from solid, one piece, no joints
   const b = new THREE.Group(); b.position.y = P; g.add(explode(b, 8));
-  const wallDepth = H - 0.16;
-  const outer = roundedRect(W, D, 0.22); outer.holes.push(roundedRect(IW, ID, 0.12));
-  const wall = new THREE.ExtrudeGeometry(outer, { depth: wallDepth, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.06, bevelSegments: 3, curveSegments: 8, UVGenerator: grainUV(W, D, wallDepth) });
-  wall.rotateX(-Math.PI / 2); wall.translate(0, 0.08, 0);
+  const wall = slab(W, D, H, { holes: [roundedRect(IW, ID, 0.4)], uv: grainUV(W, D, H) });
   b.add(tag(new THREE.Mesh(wall), 'body'));
-  const floor = new THREE.ExtrudeGeometry(roundedRect(IW + 0.1, ID + 0.1, 0.12), { depth: 1, bevelEnabled: false });
-  floor.rotateX(-Math.PI / 2);
-  b.add(tag(new THREE.Mesh(floor), 'felt'));
-  label(b, [-W / 2, H, D / 2], 'Box-jointed, hand-oiled', 'Solid hardwood, the grain wrapping all four sides like one board.', 'left');
+  const floor = new THREE.ExtrudeGeometry(roundedRect(IW + 0.1, ID + 0.1, 0.4), { depth: 1, bevelEnabled: false }); floor.rotateX(-Math.PI / 2);
+  b.add(tag(new THREE.Mesh(floor), 'body'));
+  label(b, [-W / 2, H * 0.6, D / 2], 'Machined, not joined', 'Cut from solid. No joints, no fasteners, no hardware anywhere on the outside.', 'left');
+  label(b, [0, H, -D / 2], 'Hidden hinge', 'Inside the back wall. Damped so it can’t slam, and it stops at 95°.', 'left');
 
-  // box joints: seven fingers a corner, end grain alternating between the faces
-  const n = 7, fh = H / n, ox = W / 2 + 0.065, oz = D / 2 + 0.065;
-  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
-    for (let k = 0; k < n; k++) {
-      const onFront = k % 2 === 0;
-      const m = new THREE.Mesh(onFront ? new THREE.BoxGeometry(T - 0.12, fh - 0.04, 0.02) : new THREE.BoxGeometry(0.02, fh - 0.04, T - 0.12));
-      m.position.set(onFront ? sx * (W / 2 - T / 2 - 0.02) : sx * ox, (k + 0.5) * fh, onFront ? sz * oz : sz * (D / 2 - T / 2 - 0.02));
-      b.add(tag(m, 'end'));
-    }
-  });
-
-  // vents: a row of slots low on the back, where nobody looks
+  // vents: hairline slots low on the back, where nobody looks
   const ventMat = new THREE.MeshStandardMaterial({ color: '#0B0907', roughness: 1 });
   const vents = Math.max(3, Math.floor(IW / 2.6));
   for (let k = 0; k < vents; k++) {
-    const v = new THREE.Mesh(new THREE.ExtrudeGeometry(roundedRect(1.6, 0.26, 0.13), { depth: 0.02, bevelEnabled: false }), ventMat);
-    v.rotation.y = Math.PI; v.position.set((k - (vents - 1) / 2) * 2.2, 0.75, -D / 2 - 0.075); b.add(v);
+    const v = new THREE.Mesh(new THREE.ExtrudeGeometry(roundedRect(1.8, 0.16, 0.08), { depth: 0.02, bevelEnabled: false }), ventMat);
+    v.rotation.y = Math.PI; v.position.set((k - (vents - 1) / 2) * 2.2, 0.75, -D / 2 - 0.005); b.add(v);
   }
-  label(b, [W / 2, 0.75, -D / 2], 'Vents', 'Low on the back. With the lid shut the coils slow to a trickle, so nothing comes out warm.', 'right');
+  label(b, [W / 2 - 1, 0.75, -D / 2], 'Vents', 'Hairline slots low on the back. With the lid shut the coils slow to a trickle, so nothing comes out warm.', 'right');
 
-  // dividers with rounded tops
-  const divH = 2.3, cw = BAY.w;
-  const divGeo = len => { const gg = new THREE.ExtrudeGeometry(roundedRect(0.5, divH, 0.24), { depth: len, bevelEnabled: false, curveSegments: 8 }); gg.translate(0, 0, -len / 2); return gg; };
-  for (let r = 1; r < rows; r++) { const d = new THREE.Mesh(divGeo(IW)); d.rotation.y = Math.PI / 2; d.position.set(0, 1 + divH / 2, -ID / 2 + r * BAY.d); b.add(tag(d, 'body')); }
-  for (let c = 1; c < cols; c++) { const d = new THREE.Mesh(divGeo(ID)); d.position.set(-IW / 2 + c * cw, 1 + divH / 2, 0); b.add(tag(d, 'body')); }
-
-  // per bay: a coil over a ferrite shield, a ring of magnets, a stitched pad
+  // per bay: a coil over a ferrite shield, then a ring of magnets
   const coils = new THREE.Group(); coils.position.y = P + 0.45; g.add(explode(coils, 17));
   const magnets = new THREE.Group(); magnets.position.y = P + 1.2; g.add(explode(magnets, 21));
-  const pads = new THREE.Group(); pads.position.y = P; g.add(explode(pads, 25));
+  const insert = new THREE.Group(); insert.position.y = P; g.add(explode(insert, 25));
   const bays = [];
-  for (let r = rows - 1; r >= 0; r--) for (let c = 0; c < cols; c++) bays.push([-IW / 2 + (c + 0.5) * cw, -ID / 2 + (r + 0.5) * BAY.d]);
-  const padGeo = new THREE.ExtrudeGeometry(roundedRect(cw - 1.4, BAY.d - 1.4, 0.5), { depth: 0.2, bevelEnabled: true, bevelThickness: 0.25, bevelSize: 0.25, bevelSegments: 5, curveSegments: 10 });
-  padGeo.rotateX(-Math.PI / 2); padGeo.translate(0, 1.25, 0); cmUV(padGeo, 1);
-  const padTop = 1.7, STITCHES = 44, MAGS = 18;
-  const stitches = new THREE.InstancedMesh(new THREE.BoxGeometry(0.34, 0.04, 0.07), mats.thread, STITCHES * bays.length);
-  stitches.userData.role = 'thread';
-  const mags = new THREE.InstancedMesh(new THREE.BoxGeometry(0.62, 0.16, 0.34), metal.nickel, MAGS * bays.length);
+  for (let r = rows - 1; r >= 0; r--) for (let c = 0; c < cols; c++) bays.push([-IW / 2 + (c + 0.5) * BAY.w, -ID / 2 + (r + 0.5) * BAY.d]);
+  const MAGS = 18, mags = new THREE.InstancedMesh(new THREE.BoxGeometry(0.62, 0.16, 0.34), metal.nickel, MAGS * bays.length);
   const mtx = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(1, 1, 1), at = new THREE.Vector3();
+
+  // the pressed-leather insert: one piece, a well moulded for each phone
+  const wellTop = 1.7, lip = 2.55;
+  const base = new THREE.ExtrudeGeometry(roundedRect(IW, ID, 0.4), { depth: wellTop - 1, bevelEnabled: false }); base.rotateX(-Math.PI / 2); base.translate(0, 1, 0);
+  insert.add(tag(new THREE.Mesh(base), 'leather'));
+  const wells = bays.map(([x, z]) => roundedRectAt(PHONE.w + 0.75, PHONE.l + 0.75, 1.15, x, -z));
+  const ridge = new THREE.Mesh(slab(IW, ID, lip - wellTop + 0.12, { b: 0.12, r: 0.4, seg: 4, holes: wells }));
+  ridge.position.y = wellTop - 0.12; insert.add(tag(ridge, 'leather'));
+  const ringGeo = new THREE.RingGeometry(2.55, 2.72, 72); ringGeo.rotateX(-Math.PI / 2);
+
   const slots = [], leds = [], pools = [];
   bays.forEach(([x, z], i) => {
-    const pad = new THREE.Mesh(padGeo); pad.position.set(x, 0, z); pads.add(tag(pad, 'felt'));
-    for (let k = 0; k < STITCHES; k++) {
-      const a = (k / STITCHES) * Math.PI * 2;
-      q.setFromAxisAngle(Y_AXIS, -a + Math.PI / 2);
-      stitches.setMatrixAt(i * STITCHES + k, mtx.compose(at.set(x + Math.cos(a) * 2.7, padTop + 0.01, z + Math.sin(a) * 2.7), q, sc));
-    }
     for (let k = 0; k < MAGS; k++) {
       const a = (k / MAGS) * Math.PI * 2;
       q.setFromAxisAngle(Y_AXIS, -a + Math.PI / 2);
@@ -747,55 +788,39 @@ function makeBox(g, cols, rows) {
       const turn = new THREE.Mesh(new THREE.TorusGeometry(1.0 + k * 0.27, 0.07, 8, 64), metal.copper);
       turn.rotation.x = Math.PI / 2; turn.position.set(x, 0.02, z); coils.add(turn);
     }
-    slots.push({ pos: new THREE.Vector3(x, P + padTop + PHONE.t / 2 + 0.01, z), yaw: Math.PI, flip: true, snap: true });
-    const pl = pool(1); pl.scale.set(9, 17, 1); pl.position.set(x, padTop + 0.02, z); pads.add(pl); pools.push(pl);
+    const ring = new THREE.Mesh(ringGeo); ring.position.set(x, wellTop + 0.004, z); insert.add(tag(ring, 'deboss'));
+    slots.push({ pos: new THREE.Vector3(x, P + wellTop + PHONE.t / 2 + 0.01, z), yaw: Math.PI, flip: true, snap: true });
+    const pl = pool(1); pl.scale.set(9, 17, 1); pl.position.set(x, wellTop + 0.02, z); insert.add(pl); pools.push(pl);
   });
-  pads.add(stitches); magnets.add(mags);
+  magnets.add(mags);
   const [lx, lz] = bays[cols - 1];
   label(coils, [lx + 3.1, 0, lz], 'Charging coil, one per bay', 'Qi2, 15 W, over a ferrite shield. One cable feeds them all.', 'left');
   label(magnets, [lx + 2.75, 0, lz], 'Magnet ring', 'Pulls each phone into line over its coil as it’s set down.', 'left');
-  label(pads, [lx + (cw - 1.4) / 2, padTop, lz], 'Wool felt over suede', 'The stitched ring marks the coil underneath.', 'right');
+  label(insert, [lx + (PHONE.w + 0.75) / 2, lip, lz], 'Pressed leather insert', 'One piece, moulded into a well for each phone, with a ring pressed in over each coil. Wipes clean.', 'right');
 
   // the front: pinholes, invisible until lit
   const front = new THREE.Group(); b.add(front);
   if (cols * rows === 1) {
     const dots = [];
-    for (let k = 0; k < 12; k++) { const d = pinhole((k - 5.5) * 0.72, 2.3, D / 2 + 0.07); front.add(d, d.userData.halo); dots.push(d); }
+    for (let k = 0; k < 12; k++) { const d = pinhole((k - 5.5) * 0.72, 2.3, D / 2 + 0.01); front.add(d, d.userData.halo); dots.push(d); }
     leds.push(dots);
   } else {
-    bays.forEach((_, i) => { const d = pinhole((i - (bays.length - 1) / 2) * 1.3, 2.3, D / 2 + 0.07); front.add(d, d.userData.halo); leds.push([d]); });
+    bays.forEach((_, i) => { const d = pinhole((i - (bays.length - 1) / 2) * 1.3, 2.3, D / 2 + 0.01); front.add(d, d.userData.halo); leds.push([d]); });
   }
   const frontPool = pool(Math.min(34, W + 6)); frontPool.position.set(0, 0.05, D / 2 + 6); g.add(frontPool);
 
-  // the lid: one board, felt underneath, a brass line let into the top, a leather pull at the front
-  const hinge = new THREE.Group(); hinge.position.set(0, P + H + 0.14, -D / 2); g.add(explode(hinge, 37));
-  const lidDepth = 1.04;
-  const lidGeo = new THREE.ExtrudeGeometry(roundedRect(W, D, 0.22), { depth: lidDepth, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.06, bevelSegments: 3, curveSegments: 8, UVGenerator: grainUV(W, D, lidDepth) });
-  lidGeo.rotateX(-Math.PI / 2); lidGeo.translate(0, 0.08, D / 2);
+  // the lid: the same solid, one hairline seam all round, hinged invisibly along the back
+  const Ld = 1.3;
+  const hinge = new THREE.Group(); hinge.position.set(0, P + H + GAP, -D / 2); g.add(explode(hinge, 37));
+  const lidGeo = slab(W, D, Ld, { uv: grainUV(W, D, Ld) }); lidGeo.translate(0, 0, D / 2);
   const lidTop = tag(new THREE.Mesh(lidGeo), 'body'); lidTop.userData.lid = true; hinge.add(lidTop);
-  const inset = Math.min(1.5, W / 8);
-  const inlay = roundedRect(W - 2 * inset, D - 2 * inset, 0.1); inlay.holes.push(roundedRect(W - 2 * inset - 0.16, D - 2 * inset - 0.16, 0.06));
-  const inlayGeo = new THREE.ExtrudeGeometry(inlay, { depth: 0.02, bevelEnabled: false }); inlayGeo.rotateX(-Math.PI / 2);
-  const line = new THREE.Mesh(inlayGeo, mats.brass); line.position.set(0, 1.2, D / 2); line.userData.lid = true; hinge.add(line);
-  const lining = new THREE.Mesh(cmUV(new THREE.ShapeGeometry(roundedRect(IW, ID, 0.12)), 1)); lining.rotation.x = Math.PI / 2; lining.position.set(0, -0.01, D / 2);
-  tag(lining, 'felt').userData.lid = true; hinge.add(lining);
-  const tab = new THREE.Mesh(new THREE.ExtrudeGeometry(roundedRect(2.2, 2.4, 0.9), { depth: 0.12, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 2, curveSegments: 10 }).rotateX(-Math.PI / 2), mats.leather);
-  tab.position.set(0, -0.06, D + 0.15); tab.castShadow = true; tab.userData.lid = true; hinge.add(tab);
-  label(hinge, [W / 2, 1.2, D * 0.75], 'The lid', 'One board, the grain carried over the front edge. A brass line set into the top; a leather pull.', 'right');
-
-  // brass quadrant hinges: they stop the lid at 95° and let it down slowly
-  const hx = Math.min(8, W / 2 - 2.4);
-  [-1, 1].forEach(k => {
-    const knuckle = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 3.4, 24), mats.brass);
-    knuckle.rotation.z = Math.PI / 2; knuckle.position.set(k * hx, H + 0.1, -D / 2 - 0.2); knuckle.castShadow = true; b.add(knuckle);
-    const leaf = new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.4, 0.05), mats.brass); leaf.position.set(k * hx, H - 0.62, -D / 2 - 0.09); b.add(leaf);
-    const lidLeaf = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.9, 0.05), mats.brass); lidLeaf.position.set(k * hx, 0.55, -0.09); lidLeaf.userData.lid = true; hinge.add(lidLeaf);
-    [-1.1, 0, 1.1].forEach(dx => {
-      const screw = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.04, 16), mats.brass); screw.rotation.x = Math.PI / 2;
-      screw.position.set(k * hx + dx, H - 0.75, -D / 2 - 0.12); b.add(screw);
-    });
-  });
-  label(b, [-hx, H + 0.1, -D / 2 - 0.2], 'Brass quadrant hinges', 'The lid stops at 95° and lets itself down slowly. No latch.', 'left');
+  if (leatherLid) {
+    const panel = new THREE.Mesh(slab(W - 2.2, D - 2.2, 0.16, { b: 0.05, r: Math.max(0.4, E.r - 0.9), seg: 3 }));
+    panel.position.set(0, Ld - 0.1, D / 2); panel.userData.lid = true; hinge.add(tag(panel, 'leather'));
+  }
+  const lining = new THREE.Mesh(cmUV(new THREE.ShapeGeometry(roundedRect(IW, ID, 0.4)), 1)); lining.rotation.x = Math.PI / 2; lining.position.set(0, -0.01, D / 2);
+  tag(lining, 'leather').userData.lid = true; hinge.add(lining);
+  label(hinge, [W / 2, Ld, D * 0.7], 'The lid', leatherLid ? 'A pressed-leather panel set flush into the top. Push the front edge and it lifts; it closes slowly on its own.' : 'One hairline seam all the way round. Push the front edge and it lifts; it closes slowly on its own.', 'right');
 
   // one braided cable out of the back, and no brick on the table
   const curve = new THREE.CatmullRomCurve3([
@@ -806,11 +831,13 @@ function makeBox(g, cols, rows) {
   cable.castShadow = cable.receiveShadow = true; g.add(cable);
   label(cable, [-4, 0.4, -D / 2 - 12], 'One braided USB-C cable', 'Into the wall. There is no power brick on the table.', 'right');
 
-  // the seam: when the lid is shut, the evening leaks out around its edge
-  const seamShape = roundedRect(W - 0.1, D - 0.1, 0.2); seamShape.holes.push(roundedRect(W - 0.8, D - 0.8, 0.15));
-  const seamGeo = new THREE.ExtrudeGeometry(seamShape, { depth: 0.12, bevelEnabled: false }); seamGeo.rotateX(-Math.PI / 2);
+  // the seam: when the lid is shut, the evening shows as one line, in the groove between the two bevels
+  const inset = E.b * 0.7;
+  const seamShape = roundedRect(W - 2 * inset, D - 2 * inset, Math.max(0.05, E.r - inset));
+  seamShape.holes.push(roundedRect(W - 2 * inset - 0.16, D - 2 * inset - 0.16, Math.max(0.05, E.r - inset - 0.08)));
+  const seamGeo = new THREE.ExtrudeGeometry(seamShape, { depth: GAP + 0.04, bevelEnabled: false, curveSegments: 12 }); seamGeo.rotateX(-Math.PI / 2);
   const seam = new THREE.Mesh(seamGeo, new THREE.MeshBasicMaterial({ color: '#000', toneMapped: false, transparent: true, opacity: 0, depthWrite: false }));
-  seam.position.y = P + H + 0.02; g.add(seam);
+  seam.position.y = P + H - 0.02; g.add(seam);
   const light = new THREE.PointLight('#fff', 0, 45, 0); light.position.set(0, P + 4, 0); g.add(light);
   return { slots, leds, pools, light, hinge, front: frontPool, seam, parts, labels, phoneDy: 30 };
 }
@@ -1096,7 +1123,7 @@ function updateGlow(now) {
   if (device.sharedPool) device.pools[0].material.color.copy(glowColor).multiplyScalar(sum * 0.55);
   const outside = 1 - inside.k;
   if (device.front) device.front.material.color.copy(glowColor).multiplyScalar(sum * 0.3 * outside);
-  if (device.seam) { const k = Math.min(1, sum * 2.2) * (1 - lid.open) * outside; device.seam.material.color.copy(glowColor).multiplyScalar(2.8); device.seam.material.opacity = k; }
+  if (device.seam) { const k = Math.min(1, sum * 2.2) * (1 - lid.open) * outside; device.seam.material.color.copy(glowColor).multiplyScalar(1.7); device.seam.material.opacity = k * 0.9; }
   device.light.color.copy(glowColor);
   device.light.intensity = sum * (formKey === 'box' ? 1.6 : formKey === 'tray' ? 1.4 : 0.9);
 }
@@ -1300,6 +1327,28 @@ chips($('finishChips'), FINISHES, finishKey, k => {
   device.group.traverse(o => { if (o.userData.role) o.material = mats[o.userData.role]; });
 });
 chips($('glowChips'), GLOWS, glowKey, k => { glowKey = k; glowColor.set(GLOWS[k].hex); });
+chips($('leatherChips'), Object.fromEntries(Object.entries(LEATHERS).map(([k, v]) => [k, { label: v.label, swatch: v.hex }])), leatherKey, k => { leatherKey = k; makeLeather(k); });
+
+// a change of shape rebuilds the object; keep the phones that were on it
+function rebuild() {
+  const n = phones.filter((p, i) => i < form.capacity && p.target !== 'away').length, lidT = lid.target, wasInside = inside.target;
+  buildForm(formKey);
+  for (let k = 0; k < n; k++) addPhone();
+  phones.forEach(p => { if (p.target === 'down') { p.p = 1; p.landed = true; p.lit = 1; p.glow = 0.9; } });
+  lid.target = lid.open = lidT;
+  if (wasInside) setInside(true);
+}
+document.querySelectorAll('#edgeSeg button').forEach(b => b.onclick = () => {
+  if (b.dataset.edge === edgeKey) return;
+  edgeKey = b.dataset.edge;
+  document.querySelectorAll('#edgeSeg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  if (form.lid) rebuild();
+});
+$('leatherLidBtn').onclick = e => {
+  leatherLid = !leatherLid;
+  e.currentTarget.setAttribute('aria-pressed', String(leatherLid));
+  if (form.lid) rebuild();
+};
 
 document.querySelectorAll('#formSeg button').forEach(b => b.onclick = () => { if (b.dataset.form !== formKey) { if (inside.target) setInside(false); buildForm(b.dataset.form); if (mode === 'evening') eveningState(eveningM); } });
 document.querySelectorAll('#views button').forEach(b => b.onclick = () => goView(b.dataset.view));
