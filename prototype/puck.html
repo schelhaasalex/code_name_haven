@@ -102,6 +102,23 @@
     background: rgba(243, 237, 225, 0.07); border: 1px solid var(--line); border-radius: 10px; padding: 9px 14px;
   }
   .secondary:disabled { opacity: .4; cursor: default; }
+  .secondary[aria-pressed="true"] { background: rgba(243, 237, 225, 0.16); border-color: rgba(243, 237, 225, 0.45); }
+
+  /* the inside view's callouts */
+  #labels { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
+  #labels svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  #labels line { stroke: rgba(243, 237, 225, 0.35); stroke-width: 1; }
+  #labels circle { fill: var(--ember); }
+  .tag { position: absolute; left: 0; top: 0; width: min(230px, 36vw); opacity: 0; transition: opacity .4s ease; }
+  .tag.left { text-align: right; }
+  .tag span {
+    display: block; font-size: 12px; line-height: 1.4; color: var(--cream);
+    background: var(--glass); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px;
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  }
+  .tag b { display: block; font-weight: 600; }
+  #about, #finish { transition: opacity .5s ease; }
+  body.inside #about, body.inside #finish { opacity: 0; pointer-events: none; }
 
   #eveningBar { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
   #playBtn { width: 42px; height: 42px; padding: 0; display: grid; place-items: center; }
@@ -133,9 +150,9 @@
   <p class="eyebrow">Hardware study · rendered, not photographed</p>
   <h1>Where the phones go</h1>
   <div class="seg" id="formSeg" role="group" aria-label="Shape">
-    <button type="button" data-form="tray" aria-pressed="true">Tray</button>
-    <button type="button" data-form="box" aria-pressed="false">Box</button>
-    <button type="button" data-form="puck" aria-pressed="false">Puck</button>
+    <button type="button" data-form="box" aria-pressed="true">Household</button>
+    <button type="button" data-form="bedside" aria-pressed="false">Bedside</button>
+    <button type="button" data-form="tray" aria-pressed="false">Tray</button>
   </div>
   <p id="formNote"></p>
 </section>
@@ -165,6 +182,7 @@
   <button type="button" class="ghost" id="finishClose">Done</button>
 </section>
 
+<div id="labels" aria-hidden="true"></div>
 <div id="dock">
 <div id="voice" aria-live="polite">
   <h2 id="status">Nothing here yet.</h2>
@@ -183,6 +201,7 @@
   <div class="bar" id="manualBar">
     <button type="button" class="primary" id="addBtn">Set a phone down</button>
     <button type="button" class="secondary" id="lidBtn" hidden>Close the lid</button>
+    <button type="button" class="secondary" id="insideBtn" aria-pressed="false" hidden>See inside</button>
     <button type="button" class="secondary" id="endBtn" disabled>Evening ends</button>
     <button type="button" class="secondary" id="clearBtn">Clear the table</button>
   </div>
@@ -537,12 +556,56 @@ function cmUV(geo, su, sv = su) {
   for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * su, uv.getY(i) * sv);
   return geo;
 }
+// Grain that runs unbroken around the corners and over the front edge onto the top,
+// as if the box were cut from one board. u follows the perimeter, starting at the back-left corner.
+function grainUV(W, D, depth) {
+  const P = 2 * (W + D);
+  const per = (x, y) => {
+    const dx = W / 2 - Math.abs(x), dy = D / 2 - Math.abs(y);
+    if (dx <= dy) return x < 0 ? D / 2 - y : D + W + (y + D / 2);
+    return y < 0 ? D + (x + W / 2) : 2 * D + W + (W / 2 - x);
+  };
+  return {
+    generateTopUV(g, v, a, b, c) { return [a, b, c].map(i => new THREE.Vector2(D + v[i * 3] + W / 2, depth + v[i * 3 + 1] + D / 2)); },
+    generateSideWallUV(g, v, a, b, c, d) {
+      const us = [a, b, c, d].map(i => per(v[i * 3], v[i * 3 + 1]));
+      if (Math.max(...us) - Math.min(...us) > P / 2) us.forEach((u, k) => { if (u < P / 2) us[k] = u + P; });
+      return [a, b, c, d].map((i, k) => new THREE.Vector2(us[k], v[i * 3 + 2]));
+    },
+  };
+}
+
+// A light that isn't there until it's lit: laser-drilled pinholes through the wood, too fine to see.
+function pinhole(x, y, z) {
+  const dot = new THREE.Mesh(new THREE.CircleGeometry(0.09, 16), new THREE.MeshBasicMaterial({ color: '#000', toneMapped: false, transparent: true, opacity: 0, depthWrite: false }));
+  dot.position.set(x, y, z);
+  const halo = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), new THREE.MeshBasicMaterial({ map: POOL_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, color: '#000', toneMapped: false }));
+  halo.position.set(x, y, z - 0.005);
+  dot.userData.halo = halo; dot.userData.hidden = true;
+  return dot;
+}
+function setLight(d, v, k) {
+  d.material.color.copy(OFF).lerp(cTmp.copy(glowColor).multiplyScalar(k), v);
+  d.material.opacity = d.userData.hidden ? Math.min(1, v * 2.5) : 0.2 + 0.8 * Math.min(1, v * 3);
+  if (d.userData.halo) d.userData.halo.material.color.copy(glowColor).multiplyScalar(v * 0.45);
+}
+
 function tag(mesh, role) { mesh.userData.role = role; mesh.material = mats[role]; mesh.castShadow = mesh.receiveShadow = true; return mesh; }
 
 const FORMS = {
+  box: {
+    capacity: 6, frame: 1.4, width: 44, lift: 5, lid: true, explode: true,
+    note: '<b>Household · six phones.</b> A cigar box, box-jointed, the grain running unbroken around the corners and over the lid. Each phone lies screen up on a stitched pad and snaps into line over its own coil. The lid stops at 95°, closes slowly, and has no latch. Light comes through the wood only when there is something to show.',
+    build: g => makeBox(g, 3, 2),
+  },
+  bedside: {
+    capacity: 1, frame: 0.62, width: 24, lift: 3, lid: true, explode: true, clock: true,
+    note: '<b>Bedside · one phone.</b> The same box, made for one. Twelve pinholes in the front fill over three hours, one for each quarter hour the phone is down, and are invisible when nothing is counting.',
+    build: g => makeBox(g, 1, 1),
+  },
   tray: {
     capacity: 6, frame: 1, width: 60,
-    note: '<b>Shows people.</b> Sits on the table. Up to six phones lie face down in a felt bed, and a point of light wakes under each one. Lifting a phone never dims it.',
+    note: '<b>For comparison.</b> An open tray, phones face down. It looks calm, but a phone face down can’t charge, and nothing hides a screen that’s face up.',
     build(g) {
       const W = 58, D = 20, H = 2.4;
       const outer = roundedRect(W, D, 4.5);
@@ -565,123 +628,192 @@ const FORMS = {
       return { slots, leds, pools, light };
     },
   },
-  box: {
-    capacity: 6, frame: 1.4, width: 44, lift: 5, lid: true,
-    note: '<b>Shows people, put away.</b> A cigar box for phones, box-jointed at the corners. Each phone lies screen up on its own stitched suede pad, back down on a charging coil, and the solid lid keeps every screen out of sight. Light leaks from the seam. There is no latch.',
-    build(g) {
-      const W = 29, D = 35.5, H = 5.6, T = 1.2, IW = W - 2 * T, ID = D - 2 * T, P = 0.5;
-      // a recessed plinth, so the box sits on a line of shadow
-      const plinth = new THREE.Mesh(new THREE.ExtrudeGeometry(roundedRect(W - 1.4, D - 1.4, 0.3), { depth: P, bevelEnabled: false }).rotateX(-Math.PI / 2), mats.plinth);
-      plinth.castShadow = plinth.receiveShadow = true; g.add(plinth);
-      const b = new THREE.Group(); b.position.y = P; g.add(b);
-
-      const outer = roundedRect(W, D, 0.22); outer.holes.push(roundedRect(IW, ID, 0.12));
-      const wall = new THREE.ExtrudeGeometry(outer, { depth: H - 0.16, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.06, bevelSegments: 3, curveSegments: 8 });
-      wall.rotateX(-Math.PI / 2); wall.translate(0, 0.08, 0);
-      b.add(tag(new THREE.Mesh(wall), 'body'));
-      const floor = new THREE.ExtrudeGeometry(roundedRect(IW + 0.1, ID + 0.1, 0.12), { depth: 1, bevelEnabled: false });
-      floor.rotateX(-Math.PI / 2);
-      b.add(tag(new THREE.Mesh(floor), 'felt'));
-
-      // box joints: seven fingers a corner, end grain alternating between the faces
-      const n = 7, fh = H / n, ox = W / 2 + 0.065, oz = D / 2 + 0.065;
-      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
-        for (let k = 0; k < n; k++) {
-          const onFront = k % 2 === 0;
-          const m = new THREE.Mesh(onFront ? new THREE.BoxGeometry(T - 0.12, fh - 0.04, 0.02) : new THREE.BoxGeometry(0.02, fh - 0.04, T - 0.12));
-          m.position.set(onFront ? sx * (W / 2 - T / 2 - 0.02) : sx * ox, (k + 0.5) * fh, onFront ? sz * oz : sz * (D / 2 - T / 2 - 0.02));
-          b.add(tag(m, 'end'));
-        }
-      });
-
-      // dividers with rounded tops
-      const divH = 2.3, cw = IW / 3;
-      const divGeo = len => { const gg = new THREE.ExtrudeGeometry(roundedRect(0.5, divH, 0.24), { depth: len, bevelEnabled: false, curveSegments: 8 }); gg.translate(0, 0, -len / 2); return gg; };
-      const across = new THREE.Mesh(divGeo(IW)); across.rotation.y = Math.PI / 2; across.position.set(0, 1 + divH / 2, 0); b.add(tag(across, 'body'));
-      [-1, 1].forEach(k => { const d = new THREE.Mesh(divGeo(ID)); d.position.set(k * cw / 2, 1 + divH / 2, 0); b.add(tag(d, 'body')); });
-
-      // upholstered pads, each with a stitched ring over its coil
-      const padW = cw - 0.9, padD = ID / 2 - 0.9;
-      const padGeo = new THREE.ExtrudeGeometry(roundedRect(padW - 0.5, padD - 0.5, 0.5), { depth: 0.2, bevelEnabled: true, bevelThickness: 0.25, bevelSize: 0.25, bevelSegments: 5, curveSegments: 10 });
-      padGeo.rotateX(-Math.PI / 2); padGeo.translate(0, 1.25, 0); cmUV(padGeo, 1);
-      const padTop = 1.7;
-      const stitchGeo = new THREE.BoxGeometry(0.34, 0.04, 0.07);
-      const STITCHES = 44, stitches = new THREE.InstancedMesh(stitchGeo, mats.thread, STITCHES * 6);
-      stitches.userData.role = 'thread';
-      const mtx = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(1, 1, 1), at = new THREE.Vector3();
-      const slots = [], leds = [], pools = [];
-      [[-1, 1], [0, 1], [1, 1], [-1, -1], [0, -1], [1, -1]].forEach(([cx, row], i) => {
-        const x = cx * cw, z = row * ID / 4;
-        const pad = new THREE.Mesh(padGeo); pad.position.set(x, 0, z); b.add(tag(pad, 'felt'));
-        for (let k = 0; k < STITCHES; k++) {
-          const a = (k / STITCHES) * Math.PI * 2;
-          q.setFromAxisAngle(Y_AXIS, -a + Math.PI / 2);
-          at.set(x + Math.cos(a) * 2.7, padTop + 0.01, z + Math.sin(a) * 2.7);
-          stitches.setMatrixAt(i * STITCHES + k, mtx.compose(at, q, sc));
-        }
-        slots.push({ pos: new THREE.Vector3(x, P + padTop + PHONE.t / 2 + 0.01, z), yaw: Math.PI, flip: true });
-        const pl = pool(1); pl.scale.set(9, 17, 1); pl.position.set(x, padTop + 0.02, z); b.add(pl); pools.push(pl);
-        const l = led(0.001); l.scale.setScalar(0.9); l.rotation.x = Math.PI / 2; l.position.set((i - 2.5) * 1.3, 2.3, D / 2 + 0.07); b.add(l); leds.push([l]);
-      });
-      b.add(stitches);
-      const front = pool(34); front.position.set(0, 0.05, D / 2 + 6); g.add(front);
-
-      // the lid: solid, felt underneath, a brass line let into the top, a leather pull at the front
-      const hinge = new THREE.Group(); hinge.position.set(0, P + H + 0.14, -D / 2); g.add(hinge);
-      const lidGeo = new THREE.ExtrudeGeometry(roundedRect(W, D, 0.22), { depth: 1.04, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.06, bevelSegments: 3, curveSegments: 8 });
-      lidGeo.rotateX(-Math.PI / 2); lidGeo.translate(0, 0.08, D / 2);
-      const lidTop = tag(new THREE.Mesh(lidGeo), 'body'); lidTop.userData.lid = true; hinge.add(lidTop);
-      const inlay = roundedRect(W - 3, D - 3, 0.1); inlay.holes.push(roundedRect(W - 3.16, D - 3.16, 0.06));
-      const inlayGeo = new THREE.ExtrudeGeometry(inlay, { depth: 0.02, bevelEnabled: false }); inlayGeo.rotateX(-Math.PI / 2);
-      const line = new THREE.Mesh(inlayGeo, mats.brass); line.position.set(0, 1.2, D / 2); line.userData.lid = true; hinge.add(line);
-      const lining = new THREE.Mesh(cmUV(new THREE.ShapeGeometry(roundedRect(IW, ID, 0.12)), 1)); lining.rotation.x = Math.PI / 2; lining.position.set(0, -0.01, D / 2);
-      tag(lining, 'felt').userData.lid = true; hinge.add(lining);
-      const tab = new THREE.Mesh(new THREE.ExtrudeGeometry(roundedRect(2.2, 2.4, 0.9), { depth: 0.12, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 2, curveSegments: 10 }).rotateX(-Math.PI / 2), mats.leather);
-      tab.position.set(0, -0.06, D + 0.15); tab.castShadow = true; tab.userData.lid = true; hinge.add(tab);
-
-      // brass butt hinges: a leaf on the box, a leaf on the lid, a pinned knuckle between
-      [-1, 1].forEach(k => {
-        const knuckle = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 3.4, 24), mats.brass);
-        knuckle.rotation.z = Math.PI / 2; knuckle.position.set(k * 8, P + H + 0.1, -D / 2 - 0.2); knuckle.castShadow = true; g.add(knuckle);
-        const leaf = new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.4, 0.05), mats.brass); leaf.position.set(k * 8, P + H - 0.62, -D / 2 - 0.09); g.add(leaf);
-        const lidLeaf = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.9, 0.05), mats.brass); lidLeaf.position.set(k * 8, 0.55, -0.09); lidLeaf.userData.lid = true; hinge.add(lidLeaf);
-        [-1.1, 0, 1.1].forEach(dx => {
-          const screw = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.04, 16), mats.brass); screw.rotation.x = Math.PI / 2;
-          screw.position.set(k * 8 + dx, P + H - 0.75, -D / 2 - 0.12); g.add(screw);
-        });
-      });
-
-      // the seam: when the lid is shut, the evening leaks out around its edge
-      const seamShape = roundedRect(W - 0.1, D - 0.1, 0.2); seamShape.holes.push(roundedRect(W - 0.8, D - 0.8, 0.15));
-      const seamGeo = new THREE.ExtrudeGeometry(seamShape, { depth: 0.12, bevelEnabled: false }); seamGeo.rotateX(-Math.PI / 2);
-      const seam = new THREE.Mesh(seamGeo, new THREE.MeshBasicMaterial({ color: '#000', toneMapped: false, transparent: true, opacity: 0, depthWrite: false }));
-      seam.position.y = P + H + 0.02; g.add(seam);
-      const light = new THREE.PointLight('#fff', 0, 45, 0); light.position.set(0, P + 4, 0); g.add(light);
-      return { slots, leds, pools, light, hinge, front, seam };
-    },
-  },
-  puck: {
-    capacity: 1, frame: 0.5, width: 18, clock: true,
-    note: '<b>Shows time.</b> One phone, one disc, by the door or the bed. The ring around its base fills over three hours of the phone being down.',
-    build(g) {
-      const pts = [[0, 0], [5.5, 0], [5.9, 0.12], [6.05, 0.45], [6.05, 1.35], [5.9, 1.68], [5.55, 1.82], [5.3, 1.84], [0, 1.84]].map(([x, y]) => new THREE.Vector2(x, y));
-      g.add(tag(new THREE.Mesh(cmUV(new THREE.LatheGeometry(pts, 96), Math.PI * 2 * 6, 14)), 'body'));
-      const top = new THREE.Mesh(cmUV(new THREE.CircleGeometry(5.1, 64), 10.2), null); top.rotation.x = -Math.PI / 2; top.position.y = 1.86;
-      g.add(tag(top, 'felt'));
-      const slots = [{ pos: new THREE.Vector3(0, 1.86 + PHONE.t / 2 + 0.01, 0), yaw: 0.18 }];
-      const dots = [], N = 72;
-      for (let k = 0; k < N; k++) {
-        const a = Math.PI / 2 - (k / N) * Math.PI * 2;    // starts at the front, runs clockwise seen from above
-        const d = led(0.16); d.rotation.z = Math.PI / 2; d.rotation.y = -a + Math.PI / 2;
-        d.position.set(Math.cos(a) * 6.09, 0.62, Math.sin(a) * 6.09);
-        g.add(d); dots.push(d);
-      }
-      const p = pool(40); g.add(p);
-      const light = new THREE.PointLight('#fff', 0, 30, 0); light.position.set(0, 0.8, 9); g.add(light);
-      return { slots, leds: [dots], pools: [p], light, sharedPool: true };
-    },
-  },
 };
+
+/* ───────────────────────── the box ───────────────────────── */
+
+const BAY = { w: 8.87, d: 16.55 };
+const metal = {
+  copper: new THREE.MeshStandardMaterial({ color: '#C47A45', metalness: 1, roughness: 0.33 }),
+  nickel: new THREE.MeshStandardMaterial({ color: '#C3C6CA', metalness: 1, roughness: 0.25 }),
+  ferrite: new THREE.MeshStandardMaterial({ color: '#1C1B1D', roughness: 0.85 }),
+};
+const pcbTex = canvasTex(512, (x, s) => {
+  x.fillStyle = '#10201A'; x.fillRect(0, 0, s, s);
+  const r = rng(91); x.strokeStyle = '#B8924A'; x.lineCap = 'round';
+  for (let i = 0; i < 70; i++) {
+    x.globalAlpha = 0.35 + r() * 0.4; x.lineWidth = 1 + r() * 2;
+    let px = r() * s, py = r() * s; x.beginPath(); x.moveTo(px, py);
+    for (let k = 0; k < 4; k++) { r() > 0.5 ? (px += (r() - 0.5) * 200) : (py += (r() - 0.5) * 200); x.lineTo(px, py); }
+    x.stroke();
+  }
+  x.globalAlpha = 1;
+});
+const braidTex = canvasTex(128, (x, s) => {
+  x.fillStyle = '#2A2724'; x.fillRect(0, 0, s, s);
+  x.strokeStyle = '#4A4540'; x.lineWidth = 6;
+  for (let k = -s; k < s * 2; k += 16) { x.beginPath(); x.moveTo(k, 0); x.lineTo(k + s, s); x.stroke(); x.beginPath(); x.moveTo(k + s, 0); x.lineTo(k, s); x.stroke(); }
+});
+braidTex.repeat.set(60, 1);
+
+function makeBox(g, cols, rows) {
+  const T = 1.2, H = 5.6, P = 0.5, IW = cols * BAY.w, ID = rows * BAY.d, W = IW + 2 * T, D = ID + 2 * T;
+  const parts = [], labels = [];
+  const explode = (obj, dy) => { obj.userData.base = obj.position.clone(); obj.userData.dy = dy; parts.push(obj); return obj; };
+  const label = (obj, at, title, text, side) => labels.push({ obj, at: new THREE.Vector3(...at), title, text, side });
+
+  // a recessed plinth, so the box sits on a line of shadow
+  const plinth = new THREE.Mesh(new THREE.ExtrudeGeometry(roundedRect(W - 1.4, D - 1.4, 0.3), { depth: P, bevelEnabled: false }).rotateX(-Math.PI / 2), mats.plinth);
+  plinth.castShadow = plinth.receiveShadow = true; g.add(explode(plinth, 0));
+
+  // the driver board lives in the plinth and slides out of the back
+  const board = new THREE.Group(); board.position.y = 0.2; g.add(explode(board, 3.5));
+  const bw = Math.max(7, IW - 3), bd = Math.min(9, ID - 5);
+  const pcb = new THREE.Mesh(new THREE.BoxGeometry(bw, 0.16, bd), new THREE.MeshStandardMaterial({ map: pcbTex, roughness: 0.5, metalness: 0.2 }));
+  board.add(pcb);
+  [[-2, 1, 1.8], [1.5, -1.5, 1.1], [2.5, 2, 1.1], [-2.8, -2, 1.1]].forEach(([cx, cz, size]) => {
+    if (Math.abs(cx) > bw / 2 - 1) return;
+    const chip = new THREE.Mesh(new THREE.BoxGeometry(size, 0.14, size), new THREE.MeshStandardMaterial({ color: '#141414', roughness: 0.4 }));
+    chip.position.set(cx, 0.15, cz); board.add(chip);
+  });
+  const port = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.32, 0.8), metal.nickel); port.position.set(0, 0.2, -bd / 2 + 0.3); board.add(port);
+  label(board, [bw / 2, 0, 0], 'Driver board', 'Slides out of the back as one module, so the box outlives the charging standard.', 'right');
+
+  const b = new THREE.Group(); b.position.y = P; g.add(explode(b, 8));
+  const wallDepth = H - 0.16;
+  const outer = roundedRect(W, D, 0.22); outer.holes.push(roundedRect(IW, ID, 0.12));
+  const wall = new THREE.ExtrudeGeometry(outer, { depth: wallDepth, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.06, bevelSegments: 3, curveSegments: 8, UVGenerator: grainUV(W, D, wallDepth) });
+  wall.rotateX(-Math.PI / 2); wall.translate(0, 0.08, 0);
+  b.add(tag(new THREE.Mesh(wall), 'body'));
+  const floor = new THREE.ExtrudeGeometry(roundedRect(IW + 0.1, ID + 0.1, 0.12), { depth: 1, bevelEnabled: false });
+  floor.rotateX(-Math.PI / 2);
+  b.add(tag(new THREE.Mesh(floor), 'felt'));
+  label(b, [-W / 2, H, D / 2], 'Box-jointed, hand-oiled', 'Solid hardwood, the grain wrapping all four sides like one board.', 'left');
+
+  // box joints: seven fingers a corner, end grain alternating between the faces
+  const n = 7, fh = H / n, ox = W / 2 + 0.065, oz = D / 2 + 0.065;
+  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
+    for (let k = 0; k < n; k++) {
+      const onFront = k % 2 === 0;
+      const m = new THREE.Mesh(onFront ? new THREE.BoxGeometry(T - 0.12, fh - 0.04, 0.02) : new THREE.BoxGeometry(0.02, fh - 0.04, T - 0.12));
+      m.position.set(onFront ? sx * (W / 2 - T / 2 - 0.02) : sx * ox, (k + 0.5) * fh, onFront ? sz * oz : sz * (D / 2 - T / 2 - 0.02));
+      b.add(tag(m, 'end'));
+    }
+  });
+
+  // vents: a row of slots low on the back, where nobody looks
+  const ventMat = new THREE.MeshStandardMaterial({ color: '#0B0907', roughness: 1 });
+  const vents = Math.max(3, Math.floor(IW / 2.6));
+  for (let k = 0; k < vents; k++) {
+    const v = new THREE.Mesh(new THREE.ExtrudeGeometry(roundedRect(1.6, 0.26, 0.13), { depth: 0.02, bevelEnabled: false }), ventMat);
+    v.rotation.y = Math.PI; v.position.set((k - (vents - 1) / 2) * 2.2, 0.75, -D / 2 - 0.075); b.add(v);
+  }
+  label(b, [W / 2, 0.75, -D / 2], 'Vents', 'Low on the back. With the lid shut the coils slow to a trickle, so nothing comes out warm.', 'right');
+
+  // dividers with rounded tops
+  const divH = 2.3, cw = BAY.w;
+  const divGeo = len => { const gg = new THREE.ExtrudeGeometry(roundedRect(0.5, divH, 0.24), { depth: len, bevelEnabled: false, curveSegments: 8 }); gg.translate(0, 0, -len / 2); return gg; };
+  for (let r = 1; r < rows; r++) { const d = new THREE.Mesh(divGeo(IW)); d.rotation.y = Math.PI / 2; d.position.set(0, 1 + divH / 2, -ID / 2 + r * BAY.d); b.add(tag(d, 'body')); }
+  for (let c = 1; c < cols; c++) { const d = new THREE.Mesh(divGeo(ID)); d.position.set(-IW / 2 + c * cw, 1 + divH / 2, 0); b.add(tag(d, 'body')); }
+
+  // per bay: a coil over a ferrite shield, a ring of magnets, a stitched pad
+  const coils = new THREE.Group(); coils.position.y = P + 0.45; g.add(explode(coils, 17));
+  const magnets = new THREE.Group(); magnets.position.y = P + 1.2; g.add(explode(magnets, 21));
+  const pads = new THREE.Group(); pads.position.y = P; g.add(explode(pads, 25));
+  const bays = [];
+  for (let r = rows - 1; r >= 0; r--) for (let c = 0; c < cols; c++) bays.push([-IW / 2 + (c + 0.5) * cw, -ID / 2 + (r + 0.5) * BAY.d]);
+  const padGeo = new THREE.ExtrudeGeometry(roundedRect(cw - 1.4, BAY.d - 1.4, 0.5), { depth: 0.2, bevelEnabled: true, bevelThickness: 0.25, bevelSize: 0.25, bevelSegments: 5, curveSegments: 10 });
+  padGeo.rotateX(-Math.PI / 2); padGeo.translate(0, 1.25, 0); cmUV(padGeo, 1);
+  const padTop = 1.7, STITCHES = 44, MAGS = 18;
+  const stitches = new THREE.InstancedMesh(new THREE.BoxGeometry(0.34, 0.04, 0.07), mats.thread, STITCHES * bays.length);
+  stitches.userData.role = 'thread';
+  const mags = new THREE.InstancedMesh(new THREE.BoxGeometry(0.62, 0.16, 0.34), metal.nickel, MAGS * bays.length);
+  const mtx = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(1, 1, 1), at = new THREE.Vector3();
+  const slots = [], leds = [], pools = [];
+  bays.forEach(([x, z], i) => {
+    const pad = new THREE.Mesh(padGeo); pad.position.set(x, 0, z); pads.add(tag(pad, 'felt'));
+    for (let k = 0; k < STITCHES; k++) {
+      const a = (k / STITCHES) * Math.PI * 2;
+      q.setFromAxisAngle(Y_AXIS, -a + Math.PI / 2);
+      stitches.setMatrixAt(i * STITCHES + k, mtx.compose(at.set(x + Math.cos(a) * 2.7, padTop + 0.01, z + Math.sin(a) * 2.7), q, sc));
+    }
+    for (let k = 0; k < MAGS; k++) {
+      const a = (k / MAGS) * Math.PI * 2;
+      q.setFromAxisAngle(Y_AXIS, -a + Math.PI / 2);
+      mags.setMatrixAt(i * MAGS + k, mtx.compose(at.set(x + Math.cos(a) * 2.75, 0, z + Math.sin(a) * 2.75), q, sc));
+    }
+    const ferrite = new THREE.Mesh(new THREE.CylinderGeometry(3.1, 3.1, 0.1, 48), metal.ferrite); ferrite.position.set(x, -0.1, z); coils.add(ferrite);
+    for (let k = 0; k < 7; k++) {
+      const turn = new THREE.Mesh(new THREE.TorusGeometry(1.0 + k * 0.27, 0.07, 8, 64), metal.copper);
+      turn.rotation.x = Math.PI / 2; turn.position.set(x, 0.02, z); coils.add(turn);
+    }
+    slots.push({ pos: new THREE.Vector3(x, P + padTop + PHONE.t / 2 + 0.01, z), yaw: Math.PI, flip: true, snap: true });
+    const pl = pool(1); pl.scale.set(9, 17, 1); pl.position.set(x, padTop + 0.02, z); pads.add(pl); pools.push(pl);
+  });
+  pads.add(stitches); magnets.add(mags);
+  const [lx, lz] = bays[cols - 1];
+  label(coils, [lx + 3.1, 0, lz], 'Charging coil, one per bay', 'Qi2, 15 W, over a ferrite shield. One cable feeds them all.', 'left');
+  label(magnets, [lx + 2.75, 0, lz], 'Magnet ring', 'Pulls each phone into line over its coil as it’s set down.', 'left');
+  label(pads, [lx + (cw - 1.4) / 2, padTop, lz], 'Wool felt over suede', 'The stitched ring marks the coil underneath.', 'right');
+
+  // the front: pinholes, invisible until lit
+  const front = new THREE.Group(); b.add(front);
+  if (cols * rows === 1) {
+    const dots = [];
+    for (let k = 0; k < 12; k++) { const d = pinhole((k - 5.5) * 0.72, 2.3, D / 2 + 0.07); front.add(d, d.userData.halo); dots.push(d); }
+    leds.push(dots);
+  } else {
+    bays.forEach((_, i) => { const d = pinhole((i - (bays.length - 1) / 2) * 1.3, 2.3, D / 2 + 0.07); front.add(d, d.userData.halo); leds.push([d]); });
+  }
+  const frontPool = pool(Math.min(34, W + 6)); frontPool.position.set(0, 0.05, D / 2 + 6); g.add(frontPool);
+
+  // the lid: one board, felt underneath, a brass line let into the top, a leather pull at the front
+  const hinge = new THREE.Group(); hinge.position.set(0, P + H + 0.14, -D / 2); g.add(explode(hinge, 37));
+  const lidDepth = 1.04;
+  const lidGeo = new THREE.ExtrudeGeometry(roundedRect(W, D, 0.22), { depth: lidDepth, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.06, bevelSegments: 3, curveSegments: 8, UVGenerator: grainUV(W, D, lidDepth) });
+  lidGeo.rotateX(-Math.PI / 2); lidGeo.translate(0, 0.08, D / 2);
+  const lidTop = tag(new THREE.Mesh(lidGeo), 'body'); lidTop.userData.lid = true; hinge.add(lidTop);
+  const inset = Math.min(1.5, W / 8);
+  const inlay = roundedRect(W - 2 * inset, D - 2 * inset, 0.1); inlay.holes.push(roundedRect(W - 2 * inset - 0.16, D - 2 * inset - 0.16, 0.06));
+  const inlayGeo = new THREE.ExtrudeGeometry(inlay, { depth: 0.02, bevelEnabled: false }); inlayGeo.rotateX(-Math.PI / 2);
+  const line = new THREE.Mesh(inlayGeo, mats.brass); line.position.set(0, 1.2, D / 2); line.userData.lid = true; hinge.add(line);
+  const lining = new THREE.Mesh(cmUV(new THREE.ShapeGeometry(roundedRect(IW, ID, 0.12)), 1)); lining.rotation.x = Math.PI / 2; lining.position.set(0, -0.01, D / 2);
+  tag(lining, 'felt').userData.lid = true; hinge.add(lining);
+  const tab = new THREE.Mesh(new THREE.ExtrudeGeometry(roundedRect(2.2, 2.4, 0.9), { depth: 0.12, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 2, curveSegments: 10 }).rotateX(-Math.PI / 2), mats.leather);
+  tab.position.set(0, -0.06, D + 0.15); tab.castShadow = true; tab.userData.lid = true; hinge.add(tab);
+  label(hinge, [W / 2, 1.2, D * 0.75], 'The lid', 'One board, the grain carried over the front edge. A brass line set into the top; a leather pull.', 'right');
+
+  // brass quadrant hinges: they stop the lid at 95° and let it down slowly
+  const hx = Math.min(8, W / 2 - 2.4);
+  [-1, 1].forEach(k => {
+    const knuckle = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 3.4, 24), mats.brass);
+    knuckle.rotation.z = Math.PI / 2; knuckle.position.set(k * hx, H + 0.1, -D / 2 - 0.2); knuckle.castShadow = true; b.add(knuckle);
+    const leaf = new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.4, 0.05), mats.brass); leaf.position.set(k * hx, H - 0.62, -D / 2 - 0.09); b.add(leaf);
+    const lidLeaf = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.9, 0.05), mats.brass); lidLeaf.position.set(k * hx, 0.55, -0.09); lidLeaf.userData.lid = true; hinge.add(lidLeaf);
+    [-1.1, 0, 1.1].forEach(dx => {
+      const screw = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.04, 16), mats.brass); screw.rotation.x = Math.PI / 2;
+      screw.position.set(k * hx + dx, H - 0.75, -D / 2 - 0.12); b.add(screw);
+    });
+  });
+  label(b, [-hx, H + 0.1, -D / 2 - 0.2], 'Brass quadrant hinges', 'The lid stops at 95° and lets itself down slowly. No latch.', 'left');
+
+  // one braided cable out of the back, and no brick on the table
+  const curve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, P + 0.25, -D / 2 - 0.2), new THREE.Vector3(0, 0.6, -D / 2 - 3),
+    new THREE.Vector3(-4, 0.32, -D / 2 - 12), new THREE.Vector3(-14, 0.32, -D / 2 - 30), new THREE.Vector3(-30, 0.32, -D / 2 - 60),
+  ]);
+  const cable = new THREE.Mesh(new THREE.TubeGeometry(curve, 80, 0.3, 12), new THREE.MeshStandardMaterial({ map: braidTex, roughness: 0.75 }));
+  cable.castShadow = cable.receiveShadow = true; g.add(cable);
+  label(cable, [-4, 0.4, -D / 2 - 12], 'One braided USB-C cable', 'Into the wall. There is no power brick on the table.', 'right');
+
+  // the seam: when the lid is shut, the evening leaks out around its edge
+  const seamShape = roundedRect(W - 0.1, D - 0.1, 0.2); seamShape.holes.push(roundedRect(W - 0.8, D - 0.8, 0.15));
+  const seamGeo = new THREE.ExtrudeGeometry(seamShape, { depth: 0.12, bevelEnabled: false }); seamGeo.rotateX(-Math.PI / 2);
+  const seam = new THREE.Mesh(seamGeo, new THREE.MeshBasicMaterial({ color: '#000', toneMapped: false, transparent: true, opacity: 0, depthWrite: false }));
+  seam.position.y = P + H + 0.02; g.add(seam);
+  const light = new THREE.PointLight('#fff', 0, 45, 0); light.position.set(0, P + 4, 0); g.add(light);
+  return { slots, leds, pools, light, hinge, front: frontPool, seam, parts, labels, phoneDy: 30 };
+}
 
 /* ───────────────────────── state ───────────────────────── */
 
@@ -692,13 +824,15 @@ const phones = Array.from({ length: MAX }, (_, i) => ({
   lit: 0, glow: 0, downAt: 0, landed: false, liftQ: new THREE.Quaternion(),
 }));
 
-let formKey = 'tray', form = null, device = null;
+let formKey = 'box', form = null, device = null;
+const inside = { k: 0, target: 0 };
 let mode = 'manual';
 const manual = { minutes: 0, firstAt: null, count: 0, over: false, overAt: 0, lastEvent: '' };
 let eveningM = 0, playing = false;
 const lid = { open: 1, target: 1 };   // 0 closed · 1 open
 // In the scripted evening, someone closes the lid once everyone's in, and opens it when a phone is wanted.
 const LID_CLOSED = [[64, 127], [136, 167], [174, 219]];
+const LID_STOP = THREE.MathUtils.degToRad(95);
 
 function buildForm(key) {
   if (device) { scene.remove(device.group); device.group.traverse(o => { if (o.isMesh && !o.userData.role) { o.geometry.dispose(); o.material.dispose?.(); } }); }
@@ -709,7 +843,8 @@ function buildForm(key) {
   resetEvening();
   document.getElementById('formNote').innerHTML = form.note;
   document.querySelectorAll('#formSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.form === key)));
-  goView(currentView, true);
+  inside.target = 0; inside.k = 0; renderLabels();
+  goView('hero', true);
 }
 
 function resetEvening() {
@@ -720,7 +855,8 @@ function resetEvening() {
 
 /* ───────────────────────── poses ───────────────────────── */
 
-const qA = new THREE.Quaternion(), qB = new THREE.Quaternion(), e3 = new THREE.Euler();
+const qA = new THREE.Quaternion(), qB = new THREE.Quaternion(), qC = new THREE.Quaternion(), e3 = new THREE.Euler();
+function backOut(t) { const c1 = 1.2, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
 const X_AXIS = new THREE.Vector3(1, 0, 0), Y_AXIS = new THREE.Vector3(0, 1, 0);
 const vA = new THREE.Vector3(), vB = new THREE.Vector3(), vC = new THREE.Vector3();
 const ease = { io: t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2, out: t => 1 - Math.pow(1 - t, 3), sine: t => -(Math.cos(Math.PI * t) - 1) / 2 };
@@ -745,12 +881,19 @@ function applyPose(i) {
   const pos = ph.mesh.position, quat = ph.mesh.quaternion;
   pos.set(THREE.MathUtils.lerp(vB.x, vA.x, h), THREE.MathUtils.lerp(vB.y, vA.y, v), THREE.MathUtils.lerp(vB.z, vA.z, h));
   quat.copy(qB).slerp(qA, r);
+  if (device.slots[i].snap && p < 1) {
+    // the last centimetre: the magnet ring takes over and pulls it square
+    const k = backOut(THREE.MathUtils.smoothstep(p, 0.84, 0.95)), off = 1 - k;
+    pos.x += 0.9 * side * off; pos.z += 0.5 * off;
+    quat.multiply(qC.setFromAxisAngle(Y_AXIS, 0.14 * side * off));
+  }
   if (ph.l > 0) {
     const l = ease.io(ph.l);
     vC.copy(vA).add({ x: 0, y: 13, z: 5 });
     pos.lerp(vC, l);
     quat.slerp(ph.liftQ, l);
   }
+  if (device.phoneDy) pos.y += device.phoneDy * ease.io(inside.k);
   const fade = THREE.MathUtils.smoothstep(p, 0, 0.25);
   ph.mesh.userData.mats.forEach(m => { m.opacity = fade; m.transparent = fade < 0.999; m.depthWrite = fade > 0.5; });
   const shadow = fade > 0.7;
@@ -805,6 +948,15 @@ function thock() {
   s.connect(f).connect(g).connect(master); s.start();
 }
 
+function click() {
+  if (!soundOn || !audio()) return;
+  const len = 0.025, b = ac.createBuffer(1, ac.sampleRate * len, ac.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 6);
+  const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+  s.buffer = b; f.type = 'bandpass'; f.frequency.value = 3200; f.Q.value = 2; g.gain.value = 0.35;
+  s.connect(f).connect(g).connect(master); s.start();
+}
+
 /* ───────────────────────── the charging pulse ───────────────────────── */
 
 const pulses = [];
@@ -831,7 +983,7 @@ const NARRATION = [
   [35, 'The first phone goes down.'],
   [42, 'Then the rest, more or less together.'],
   [61, 'Someone arrives late, and joins.'],
-  [64, 'Someone closes the lid.', 'box'],
+  [64, 'Someone closes the lid.', 'lid'],
   [80, 'Dinner. Nobody is watching the tray.'],
   [130, 'Someone checks on the babysitter. The light stays.'],
   [134, 'Back down. Nothing dimmed.'],
@@ -840,7 +992,7 @@ const NARRATION = [
   [233, 'Everyone’s gone. The tray keeps a little of the evening.'],
 ];
 
-function people() { return formKey === 'puck' ? PEOPLE.slice(0, 1) : PEOPLE; }
+function people() { return form.capacity === 1 ? PEOPLE.slice(0, 1) : PEOPLE; }
 
 function eveningState(m) {
   const ps = people();
@@ -872,6 +1024,7 @@ function clockShort(min) { const h = Math.floor(min / 60) % 12 || 12, m = Math.f
 function clock(min) { return clockShort(min) + (Math.floor(min / 60) >= 12 ? ' pm' : ' am'); }
 
 function voice() {
+  if (inside.target) return ['What’s inside', 'Proposed, not built: what it would take to make this properly.'];
   const ps = mode === 'evening' ? people() : null;
   const n = mode === 'evening' ? ps.filter(p => eveningM >= p.in).length : manual.count;
   const present = phones.slice(0, form.capacity).some(p => p.target !== 'away');
@@ -927,22 +1080,23 @@ function updateGlow(now) {
       const lit = THREE.MathUtils.clamp(frac * N - k, 0, 1);
       const head = ph.lit && overFor < 0 && Math.abs(frac * N - k - 0.5) < 1 ? 0.6 + 0.4 * Math.sin(t * 3) : 0;
       const v = Math.max(lit * ph.glow, head * ph.glow);
-      d.material.color.copy(OFF).lerp(cTmp.copy(glowColor).multiplyScalar(5), v); d.material.opacity = 0.2 + 0.8 * Math.min(1, v * 3);
+      setLight(d, v, 5);
     });
     sum = ph.glow * (0.4 + 0.6 * Math.min(1, frac * 4));
   } else {
     device.leds.forEach((ls, i) => {
       const ph = phones[i];
       ph.glow += (level(i, ph.lit) - ph.glow) * 0.06;
-      ls.forEach(l => { l.material.color.copy(OFF).lerp(cTmp.copy(glowColor).multiplyScalar(6), ph.glow); l.material.opacity = 0.2 + 0.8 * Math.min(1, ph.glow * 3); });
+      ls.forEach(l => setLight(l, ph.glow, 6));
       if (!device.sharedPool) device.pools[i].material.color.copy(glowColor).multiplyScalar(ph.glow * (form.lid ? 0.9 : 0.42));
       sum += ph.glow;
     });
     sum /= form.capacity;
   }
   if (device.sharedPool) device.pools[0].material.color.copy(glowColor).multiplyScalar(sum * 0.55);
-  if (device.front) device.front.material.color.copy(glowColor).multiplyScalar(sum * 0.3);
-  if (device.seam) { const k = Math.min(1, sum * 2.2) * (1 - lid.open); device.seam.material.color.copy(glowColor).multiplyScalar(4); device.seam.material.opacity = k; }
+  const outside = 1 - inside.k;
+  if (device.front) device.front.material.color.copy(glowColor).multiplyScalar(sum * 0.3 * outside);
+  if (device.seam) { const k = Math.min(1, sum * 2.2) * (1 - lid.open) * outside; device.seam.material.color.copy(glowColor).multiplyScalar(2.8); device.seam.material.opacity = k; }
   device.light.color.copy(glowColor);
   device.light.intensity = sum * (formKey === 'box' ? 1.6 : formKey === 'tray' ? 1.4 : 0.9);
 }
@@ -951,7 +1105,7 @@ function updateGlow(now) {
 
 let last = performance.now(), dayTarget = 0, day = 0, prevM = 0;
 function frame(now) {
-  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const dt = THREE.MathUtils.clamp((now - last) / 1000, 0, 0.05); last = now;
 
   if (mode === 'evening') {
     if (playing) {
@@ -974,11 +1128,20 @@ function frame(now) {
   const speed = scrubbing ? 6 : 1;
   prevM = eveningM;
 
+  if (form.explode) {
+    inside.k += Math.sign(inside.target - inside.k) * Math.min(Math.abs(inside.target - inside.k), dt * (reduceMotion ? 10 : 1 / 1.6));
+    const e = ease.io(inside.k);
+    device.parts.forEach(o => { o.position.y = o.userData.base.y + o.userData.dy * e; });
+    renderLabels();
+  }
   if (form.lid) {
-    const was = lid.open;
-    lid.open += Math.sign(lid.target - lid.open) * Math.min(Math.abs(lid.target - lid.open), dt * speed / 0.9);
-    if (was > 0.02 && lid.open <= 0.02 && !scrubbing) thock();
-    device.hinge.rotation.x = -1.85 * ease.io(lid.open);
+    const was = lid.open, rate = dt * speed / 0.9;
+    // a quadrant hinge with a damper: quick to open, and the last few degrees of closing take their time
+    if (lid.target < lid.open) lid.open = Math.max(0, lid.open - rate * (0.16 + 0.84 * THREE.MathUtils.smoothstep(lid.open, 0, 0.4)));
+    else lid.open = Math.min(1, lid.open + rate);
+    lid.open = THREE.MathUtils.clamp(lid.open, 0, 1);
+    if (was > 0.01 && lid.open <= 0.01 && !scrubbing) thock();
+    device.hinge.rotation.x = -LID_STOP * ease.io(lid.open) * (1 - ease.io(inside.k));
     if (mode === 'manual' && lid.target === 0 && phones.some(p => p.target !== 'away' && p.p < 0.999)) lid.target = 1;
   }
   const lidReady = !form.lid || lid.open > 0.85 || scrubbing;
@@ -989,6 +1152,7 @@ function frame(now) {
     if (!lidReady && moving && ph.l < 0.01) { applyPose(i); return; }
     const pT = ph.target === 'away' ? 0 : 1, lT = ph.target === 'lifted' ? 1 : 0;
     const before = ph.p;
+    if (device.slots[i].snap && before < 0.9 && ph.p + dt * speed / 1.25 >= 0.9 && pT === 1 && !scrubbing) setTimeout(click, 30);
     ph.p += Math.sign(pT - ph.p) * Math.min(Math.abs(pT - ph.p), dt * speed / 1.25);
     ph.l += Math.sign(lT - ph.l) * Math.min(Math.abs(lT - ph.l), dt * speed / 0.6);
     if (before < 0.985 && ph.p >= 0.985 && pT === 1) {
@@ -1024,6 +1188,7 @@ function pick(e) {
   const r = renderer.domElement.getBoundingClientRect();
   ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(ndc, camera);
+  if (inside.k > 0.05) return null;
   const targets = [];
   phones.forEach((p, i) => { if (i < form.capacity && p.mesh.visible && p.p > 0.9) targets.push(p.mesh); });
   device.group.traverse(o => { if (o.isMesh && (o.userData.role || o.userData.lid)) targets.push(o); });
@@ -1080,6 +1245,7 @@ function syncButtons() {
   addBtn.disabled = !free && !manual.over;
   endBtn.disabled = manual.over || !phones.some(p => p.target !== 'away');
   lidBtn.hidden = !form.lid;
+  insideBtn.hidden = !form.explode;
   const lidLabel = lid.target ? 'Close the lid' : 'Open the lid';
   if (lidBtn.textContent !== lidLabel) lidBtn.textContent = lidLabel;
 }
@@ -1090,15 +1256,16 @@ let currentView = 'hero', tween = null;
 const VIEWS = {
   hero:  { dir: [0.3, 0.52, 1], dist: 98, y: 2, fit: 1.25 },
   close: { dir: [0.75, 0.3, 0.7], dist: 52, y: 3, fit: 0.75 },
+  inside: { dir: [0.9, 0.42, 1], dist: 140, y: 19, fit: 2.6, absolute: true },
   top:   { dir: [0, 1, 0.08], dist: 96, y: 0, fit: 1.25 },
 };
 function goView(name, instant) {
   currentView = name;
   const v = VIEWS[name];
   const hTan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect;
-  const d = Math.max(v.dist * form.frame, (form.width * v.fit / 2) / hTan);
+  const d = Math.max(v.dist * (v.absolute ? Math.max(0.75, form.frame) : form.frame), (form.width * v.fit / 2) / hTan);
   const to = new THREE.Vector3(...v.dir).normalize().multiplyScalar(d);
-  const target = new THREE.Vector3(0, v.y + (form.lift || 0), 0);
+  const target = new THREE.Vector3(0, v.y + (v.absolute ? 0 : form.lift || 0), 0);
   if (instant || reduceMotion) { camera.position.copy(to); controls.target.copy(target); tween = null; return; }
   tween = { from: camera.position.clone(), fromT: controls.target.clone(), to, target, t: 0 };
 }
@@ -1115,7 +1282,7 @@ function stopTween() { tween = null; }
 /* ───────────────────────── panels ───────────────────────── */
 
 const $ = id => document.getElementById(id);
-const addBtn = $('addBtn'), endBtn = $('endBtn'), lidBtn = $('lidBtn'), scrub = $('scrub'), playBtn = $('playBtn');
+const addBtn = $('addBtn'), endBtn = $('endBtn'), lidBtn = $('lidBtn'), insideBtn = $('insideBtn'), scrub = $('scrub'), playBtn = $('playBtn');
 
 function chips(el, items, current, onPick) {
   el.innerHTML = '';
@@ -1134,7 +1301,7 @@ chips($('finishChips'), FINISHES, finishKey, k => {
 });
 chips($('glowChips'), GLOWS, glowKey, k => { glowKey = k; glowColor.set(GLOWS[k].hex); });
 
-document.querySelectorAll('#formSeg button').forEach(b => b.onclick = () => { if (b.dataset.form !== formKey) { buildForm(b.dataset.form); if (mode === 'evening') eveningState(eveningM); } });
+document.querySelectorAll('#formSeg button').forEach(b => b.onclick = () => { if (b.dataset.form !== formKey) { if (inside.target) setInside(false); buildForm(b.dataset.form); if (mode === 'evening') eveningState(eveningM); } });
 document.querySelectorAll('#views button').forEach(b => b.onclick = () => goView(b.dataset.view));
 $('turntable').onclick = e => { controls.autoRotate = !controls.autoRotate; e.currentTarget.setAttribute('aria-pressed', String(controls.autoRotate)); };
 $('soundBtn').onclick = e => { soundOn = !soundOn; e.currentTarget.setAttribute('aria-pressed', String(soundOn)); e.currentTarget.textContent = soundOn ? 'Sound on' : 'Sound off'; };
@@ -1151,6 +1318,66 @@ $('finishClose').onclick = () => openFinish(false);
 addBtn.onclick = () => { audio(); addPhone(); };
 endBtn.onclick = endEvening;
 lidBtn.onclick = toggleLid;
+insideBtn.onclick = () => setInside(!inside.target);
+function setInside(on) {
+  inside.target = on ? 1 : 0;
+  insideBtn.setAttribute('aria-pressed', String(on));
+  insideBtn.textContent = on ? 'Put it back together' : 'See inside';
+  [addBtn, endBtn, lidBtn, $('clearBtn')].forEach(b => b.style.visibility = on ? 'hidden' : '');
+  goView(on ? 'inside' : 'hero');
+}
+
+// callouts in two columns, each tied to its part by a leader line
+const labelsEl = $('labels'), vL = new THREE.Vector3(), SVGNS = 'http://www.w3.org/2000/svg';
+function renderLabels() {
+  const list = device?.labels || [];
+  document.body.classList.toggle('inside', inside.target === 1);
+  if (labelsEl.dataset.form !== formKey) {
+    labelsEl.dataset.form = formKey;
+    labelsEl.innerHTML = `<svg>${list.map(() => '<line></line><circle r="3.5"></circle>').join('')}</svg>` +
+      list.map(l => `<div class="tag ${l.side === 'left' ? 'left' : ''}"><span><b>${l.title}</b>${l.text}</span></div>`).join('');
+  }
+  const show = THREE.MathUtils.smoothstep(inside.k, 0.7, 1);
+  const tags = labelsEl.querySelectorAll('.tag'), lines = labelsEl.querySelectorAll('line'), dots = labelsEl.querySelectorAll('circle');
+  labelsEl.style.opacity = show;
+  if (show <= 0) return;
+  const w = innerWidth, top = 16, bottom = innerHeight - (innerWidth < 760 ? 260 : 230), gutter = 16;
+  const placed = list.map((l, k) => {
+    l.obj.localToWorld(vL.copy(l.at)).project(camera);
+    return { k, side: l.side, x: (vL.x + 1) / 2 * w, y: (1 - vL.y) / 2 * innerHeight, h: tags[k].offsetHeight || 60, tw: tags[k].offsetWidth || 220 };
+  });
+  if (w < 760) {          // a phone: one callout at a time, in turn
+    const active = Math.floor(performance.now() / 3800) % placed.length;
+    placed.forEach(p => {
+      const on = p.k === active, el = tags[p.k];
+      el.style.width = (w - 2 * gutter) + 'px'; el.classList.remove('left');
+      el.style.transform = `translate(${gutter}px, ${top + 64}px)`;
+      el.style.opacity = on ? 1 : 0;
+      lines[p.k].style.opacity = dots[p.k].style.opacity = on ? 1 : 0.35;
+      lines[p.k].setAttribute('x1', p.x); lines[p.k].setAttribute('y1', p.y);
+      lines[p.k].setAttribute('x2', on ? p.x : p.x); lines[p.k].setAttribute('y2', on ? top + 64 + (el.offsetHeight || 60) : p.y);
+      dots[p.k].setAttribute('cx', p.x); dots[p.k].setAttribute('cy', p.y);
+    });
+    return;
+  }
+  ['left', 'right'].forEach(side => {
+    const col = placed.filter(p => p.side === side).sort((a, b) => a.y - b.y);
+    let y = top;
+    col.forEach(p => { p.ty = Math.max(y, p.y - p.h / 2); y = p.ty + p.h + 8; });
+    const over = y - 8 - bottom;                          // too tall: slide the whole column up
+    if (over > 0) col.forEach(p => { p.ty = Math.max(top, p.ty - over); });
+    col.forEach(p => {
+      p.tx = side === 'left' ? gutter : w - gutter - p.tw;
+      const edge = side === 'left' ? p.tx + p.tw + 6 : p.tx - 6;
+      tags[p.k].style.transform = `translate(${p.tx}px, ${p.ty}px)`; tags[p.k].style.width = '';
+      lines[p.k].style.opacity = dots[p.k].style.opacity = 1;
+      tags[p.k].style.opacity = 1;
+      const L = lines[p.k], C = dots[p.k];
+      L.setAttribute('x1', p.x); L.setAttribute('y1', p.y); L.setAttribute('x2', edge); L.setAttribute('y2', p.ty + p.h / 2);
+      C.setAttribute('cx', p.x); C.setAttribute('cy', p.y);
+    });
+  });
+}
 $('clearBtn').onclick = () => { resetEvening(); };
 
 function setMode(m, keepPhones) {
@@ -1191,15 +1418,14 @@ let lastNarr = '';
 function renderEveningText() {
   $('clock').textContent = clock(START + eveningM);
   let line = '';
-  NARRATION.forEach(([m, s, only]) => { if (eveningM >= m && (!only || only === formKey)) line = s; });
-  if (formKey === 'puck') line = line.replace('the tray', 'the puck').replace('The tray', 'The puck');
-  if (formKey === 'box') line = line.replace('the tray', 'the box').replace('The tray', 'The box');
+  NARRATION.forEach(([m, s, only]) => { if (eveningM >= m && (!only || form[only])) line = s; });
+  if (form.lid) line = line.replace('the tray', 'the box').replace('The tray', 'The box');
   if (line !== lastNarr) { $('narr').textContent = line; lastNarr = line; }
 }
 
 /* ───────────────────────── go ───────────────────────── */
 
-buildForm('tray');
+buildForm('box');
 drawTicks();
 document.querySelectorAll('#formSeg button').forEach(b => b.addEventListener('click', drawTicks));
 setDaylight(0);
@@ -1210,5 +1436,5 @@ phones.forEach(p => { if (p.target === 'down') { p.p = 1; p.landed = true; p.lit
 
 if (location.hash === '#evening') setMode('evening');
 requestAnimationFrame(frame);
-window.__puck = { lid, snap() { phones.forEach(p => { p.p = p.target === 'away' ? 0 : 1; p.l = p.target === 'lifted' ? 1 : 0; if (p.p) { p.landed = true; p.lit = 1; } }); }, phones, setMode, goView, buildForm, get eveningM() { return eveningM; }, set eveningM(v) { eveningM = v; scrub.value = v; } };
+window.__puck = { lid, inside, setInside, snap() { phones.forEach(p => { p.p = p.target === 'away' ? 0 : 1; p.l = p.target === 'lifted' ? 1 : 0; if (p.p) { p.landed = true; p.lit = 1; } }); }, phones, setMode, goView, buildForm, get eveningM() { return eveningM; }, set eveningM(v) { eveningM = v; scrub.value = v; } };
 </script>
