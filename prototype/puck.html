@@ -285,7 +285,7 @@ function grain(ctx, s, r, amount) {
 }
 
 function woodTex(base, line, seed, repeat) {
-  return canvasTex(1024, (ctx, s) => {
+  return canvasTex(2048, (ctx, s) => {
     const r = rng(seed);
     ctx.fillStyle = base; ctx.fillRect(0, 0, s, s);
     for (let b = 0; b < 14; b++) {               // broad figure
@@ -293,7 +293,7 @@ function woodTex(base, line, seed, repeat) {
       ctx.fillStyle = line; ctx.globalAlpha = 0.05 + r() * 0.08;
       ctx.fillRect(0, y, s, h);
     }
-    for (let i = 0; i < 260; i++) {              // grain lines
+    for (let i = 0; i < 620; i++) {              // grain lines
       const y0 = r() * s, amp = 2 + r() * 10, f = 1 + Math.floor(r() * 3), ph = r() * 6.28;
       ctx.strokeStyle = line; ctx.globalAlpha = 0.06 + r() * 0.22; ctx.lineWidth = 0.4 + r() * 2.2;
       ctx.beginPath();
@@ -356,14 +356,23 @@ const GLOWS = {
   linen:  { label: 'Linen',  hex: '#FFE3BE' },
 };
 
-const mats = { body: null, felt: null };
+const mats = {
+  body: null, felt: null, end: null, thread: null,
+  leather: new THREE.MeshPhysicalMaterial({ color: '#4A2C1C', roughness: 0.62, sheen: 0.4, sheenRoughness: 0.6, sheenColor: new THREE.Color('#8A5A3C') }),
+  brass: new THREE.MeshStandardMaterial({ color: '#C29A5B', metalness: 1, roughness: 0.28 }),
+  plinth: new THREE.MeshStandardMaterial({ color: '#1B1612', roughness: 0.7 }),
+};
 let finishKey = 'oak', glowKey = 'ember';
 const glowColor = new THREE.Color(GLOWS[glowKey].hex);
 
 function makeFinish(key) {
   const f = FINISHES[key], p = f.make();
-  mats.body?.map?.dispose(); mats.body?.dispose(); mats.felt?.map?.dispose(); mats.felt?.dispose();
-  mats.body = new THREE.MeshPhysicalMaterial({ map: p.map, roughness: p.roughness, clearcoat: p.clearcoat || 0, clearcoatRoughness: 0.4, bumpMap: p.map, bumpScale: 0.6 });
+  [mats.body, mats.felt, mats.end, mats.thread].forEach(m => { m?.map?.dispose(); m?.dispose(); });
+  // a hand-oiled finish: a soft sheen over the grain, never a lacquer gloss
+  mats.body = new THREE.MeshPhysicalMaterial({ map: p.map, roughness: p.roughness, clearcoat: Math.max(0.3, p.clearcoat || 0), clearcoatRoughness: 0.42, bumpMap: p.map, bumpScale: 0.6 });
+  const endMap = p.map.clone(); endMap.rotation = Math.PI / 2; endMap.repeat.multiplyScalar(2.2); endMap.needsUpdate = true;
+  mats.end = new THREE.MeshPhysicalMaterial({ map: endMap, color: '#B9A896', roughness: Math.min(1, p.roughness + 0.12), clearcoat: 0.25, clearcoatRoughness: 0.5, bumpMap: endMap, bumpScale: 0.8 });
+  mats.thread = new THREE.MeshStandardMaterial({ color: new THREE.Color(f.felt).multiplyScalar(0.62), roughness: 0.9 });
   const feltMap = speckleTex(f.felt, ['#00000022', '#ffffff18'], 71, 1 / 6, 'rgba(0,0,0,0.05)');
   mats.felt = new THREE.MeshPhysicalMaterial({ map: feltMap, roughness: 1, sheen: 1, sheenRoughness: 0.8, sheenColor: new THREE.Color(f.felt).multiplyScalar(1.2) });
 }
@@ -558,39 +567,97 @@ const FORMS = {
   },
   box: {
     capacity: 6, frame: 1.4, width: 44, lift: 5, lid: true,
-    note: '<b>Shows people, put away.</b> A lidded box, like a watch case. Six felt bays, each over its own charging coil. Close the lid and the evening glows through smoked glass. There is no latch.',
+    note: '<b>Shows people, put away.</b> A cigar box for phones, box-jointed at the corners. Each phone lies screen up on its own stitched suede pad, back down on a charging coil, and the solid lid keeps every screen out of sight. Light leaks from the seam. There is no latch.',
     build(g) {
-      const W = 29, D = 35.5, H = 5.6, IW = 26.6, ID = 33.1;
-      const outer = roundedRect(W, D, 1.2);
-      outer.holes.push(roundedRect(IW, ID, 0.5));
-      const wall = new THREE.ExtrudeGeometry(outer, { depth: H - 0.4, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.15, bevelSegments: 3, curveSegments: 12 });
-      wall.rotateX(-Math.PI / 2); wall.translate(0, 0.2, 0);
-      g.add(tag(new THREE.Mesh(wall), 'body'));
-      const floor = new THREE.ExtrudeGeometry(roundedRect(IW + 0.2, ID + 0.2, 0.5), { depth: 1, bevelEnabled: false, curveSegments: 12 });
+      const W = 29, D = 35.5, H = 5.6, T = 1.2, IW = W - 2 * T, ID = D - 2 * T, P = 0.5;
+      // a recessed plinth, so the box sits on a line of shadow
+      const plinth = new THREE.Mesh(new THREE.ExtrudeGeometry(roundedRect(W - 1.4, D - 1.4, 0.3), { depth: P, bevelEnabled: false }).rotateX(-Math.PI / 2), mats.plinth);
+      plinth.castShadow = plinth.receiveShadow = true; g.add(plinth);
+      const b = new THREE.Group(); b.position.y = P; g.add(b);
+
+      const outer = roundedRect(W, D, 0.22); outer.holes.push(roundedRect(IW, ID, 0.12));
+      const wall = new THREE.ExtrudeGeometry(outer, { depth: H - 0.16, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.06, bevelSegments: 3, curveSegments: 8 });
+      wall.rotateX(-Math.PI / 2); wall.translate(0, 0.08, 0);
+      b.add(tag(new THREE.Mesh(wall), 'body'));
+      const floor = new THREE.ExtrudeGeometry(roundedRect(IW + 0.1, ID + 0.1, 0.12), { depth: 1, bevelEnabled: false });
       floor.rotateX(-Math.PI / 2);
-      g.add(tag(new THREE.Mesh(floor), 'felt'));
-      // dividers: one across, two front to back
-      const divH = 2.3, cw = IW / 3, slots = [], leds = [], pools = [];
-      const across = new THREE.Mesh(new THREE.BoxGeometry(IW, divH, 0.5)); across.position.set(0, 1 + divH / 2, 0); g.add(tag(across, 'body'));
-      [-1, 1].forEach(k => { const d = new THREE.Mesh(new THREE.BoxGeometry(0.5, divH, ID)); d.position.set(k * cw / 2, 1 + divH / 2, 0); g.add(tag(d, 'body')); });
+      b.add(tag(new THREE.Mesh(floor), 'felt'));
+
+      // box joints: seven fingers a corner, end grain alternating between the faces
+      const n = 7, fh = H / n, ox = W / 2 + 0.065, oz = D / 2 + 0.065;
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
+        for (let k = 0; k < n; k++) {
+          const onFront = k % 2 === 0;
+          const m = new THREE.Mesh(onFront ? new THREE.BoxGeometry(T - 0.12, fh - 0.04, 0.02) : new THREE.BoxGeometry(0.02, fh - 0.04, T - 0.12));
+          m.position.set(onFront ? sx * (W / 2 - T / 2 - 0.02) : sx * ox, (k + 0.5) * fh, onFront ? sz * oz : sz * (D / 2 - T / 2 - 0.02));
+          b.add(tag(m, 'end'));
+        }
+      });
+
+      // dividers with rounded tops
+      const divH = 2.3, cw = IW / 3;
+      const divGeo = len => { const gg = new THREE.ExtrudeGeometry(roundedRect(0.5, divH, 0.24), { depth: len, bevelEnabled: false, curveSegments: 8 }); gg.translate(0, 0, -len / 2); return gg; };
+      const across = new THREE.Mesh(divGeo(IW)); across.rotation.y = Math.PI / 2; across.position.set(0, 1 + divH / 2, 0); b.add(tag(across, 'body'));
+      [-1, 1].forEach(k => { const d = new THREE.Mesh(divGeo(ID)); d.position.set(k * cw / 2, 1 + divH / 2, 0); b.add(tag(d, 'body')); });
+
+      // upholstered pads, each with a stitched ring over its coil
+      const padW = cw - 0.9, padD = ID / 2 - 0.9;
+      const padGeo = new THREE.ExtrudeGeometry(roundedRect(padW - 0.5, padD - 0.5, 0.5), { depth: 0.2, bevelEnabled: true, bevelThickness: 0.25, bevelSize: 0.25, bevelSegments: 5, curveSegments: 10 });
+      padGeo.rotateX(-Math.PI / 2); padGeo.translate(0, 1.25, 0); cmUV(padGeo, 1);
+      const padTop = 1.7;
+      const stitchGeo = new THREE.BoxGeometry(0.34, 0.04, 0.07);
+      const STITCHES = 44, stitches = new THREE.InstancedMesh(stitchGeo, mats.thread, STITCHES * 6);
+      stitches.userData.role = 'thread';
+      const mtx = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(1, 1, 1), at = new THREE.Vector3();
+      const slots = [], leds = [], pools = [];
       [[-1, 1], [0, 1], [1, 1], [-1, -1], [0, -1], [1, -1]].forEach(([cx, row], i) => {
         const x = cx * cw, z = row * ID / 4;
-        slots.push({ pos: new THREE.Vector3(x, 1 + PHONE.t / 2 + 0.01, z), yaw: 0 });
-        const pl = pool(1); pl.scale.set(11, 21, 1); pl.position.set(x, 1.03, z); g.add(pl); pools.push(pl);
-        const l = led(0.7); l.rotation.z = Math.PI / 2; l.position.set((i - 2.5) * 2.2, 2.0, D / 2 + 0.19); g.add(l); leds.push([l]);
+        const pad = new THREE.Mesh(padGeo); pad.position.set(x, 0, z); b.add(tag(pad, 'felt'));
+        for (let k = 0; k < STITCHES; k++) {
+          const a = (k / STITCHES) * Math.PI * 2;
+          q.setFromAxisAngle(Y_AXIS, -a + Math.PI / 2);
+          at.set(x + Math.cos(a) * 2.7, padTop + 0.01, z + Math.sin(a) * 2.7);
+          stitches.setMatrixAt(i * STITCHES + k, mtx.compose(at, q, sc));
+        }
+        slots.push({ pos: new THREE.Vector3(x, P + padTop + PHONE.t / 2 + 0.01, z), yaw: Math.PI, flip: true });
+        const pl = pool(1); pl.scale.set(9, 17, 1); pl.position.set(x, padTop + 0.02, z); b.add(pl); pools.push(pl);
+        const l = led(0.001); l.scale.setScalar(0.9); l.rotation.x = Math.PI / 2; l.position.set((i - 2.5) * 1.3, 2.3, D / 2 + 0.07); b.add(l); leds.push([l]);
       });
+      b.add(stitches);
       const front = pool(34); front.position.set(0, 0.05, D / 2 + 6); g.add(front);
-      // the lid, hinged along the back edge
-      const hinge = new THREE.Group(); hinge.position.set(0, H + 0.02, -D / 2); g.add(hinge);
-      const frameShape = roundedRect(W, D, 1.2); frameShape.holes.push(roundedRect(W - 6, D - 6, 0.8));
-      const lidGeo = new THREE.ExtrudeGeometry(frameShape, { depth: 1.0, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.15, bevelSegments: 3, curveSegments: 12 });
-      lidGeo.rotateX(-Math.PI / 2); lidGeo.translate(0, 0.2, D / 2);
-      const lidFrame = tag(new THREE.Mesh(lidGeo), 'body'); lidFrame.userData.lid = true; hinge.add(lidFrame);
-      const glass = new THREE.Mesh(new THREE.BoxGeometry(W - 5.6, 0.3, D - 5.6),
-        new THREE.MeshPhysicalMaterial({ color: '#2A1E16', roughness: 0.04, metalness: 0, clearcoat: 1, transparent: true, opacity: 0.38, depthWrite: false }));
-      glass.position.set(0, 0.75, D / 2); glass.userData.lid = true; glass.renderOrder = 2; hinge.add(glass);
-      const light = new THREE.PointLight('#fff', 0, 45, 0); light.position.set(0, 4, 0); g.add(light);
-      return { slots, leds, pools, light, hinge, front };
+
+      // the lid: solid, felt underneath, a brass line let into the top, a leather pull at the front
+      const hinge = new THREE.Group(); hinge.position.set(0, P + H + 0.14, -D / 2); g.add(hinge);
+      const lidGeo = new THREE.ExtrudeGeometry(roundedRect(W, D, 0.22), { depth: 1.04, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.06, bevelSegments: 3, curveSegments: 8 });
+      lidGeo.rotateX(-Math.PI / 2); lidGeo.translate(0, 0.08, D / 2);
+      const lidTop = tag(new THREE.Mesh(lidGeo), 'body'); lidTop.userData.lid = true; hinge.add(lidTop);
+      const inlay = roundedRect(W - 3, D - 3, 0.1); inlay.holes.push(roundedRect(W - 3.16, D - 3.16, 0.06));
+      const inlayGeo = new THREE.ExtrudeGeometry(inlay, { depth: 0.02, bevelEnabled: false }); inlayGeo.rotateX(-Math.PI / 2);
+      const line = new THREE.Mesh(inlayGeo, mats.brass); line.position.set(0, 1.2, D / 2); line.userData.lid = true; hinge.add(line);
+      const lining = new THREE.Mesh(cmUV(new THREE.ShapeGeometry(roundedRect(IW, ID, 0.12)), 1)); lining.rotation.x = Math.PI / 2; lining.position.set(0, -0.01, D / 2);
+      tag(lining, 'felt').userData.lid = true; hinge.add(lining);
+      const tab = new THREE.Mesh(new THREE.ExtrudeGeometry(roundedRect(2.2, 2.4, 0.9), { depth: 0.12, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 2, curveSegments: 10 }).rotateX(-Math.PI / 2), mats.leather);
+      tab.position.set(0, -0.06, D + 0.15); tab.castShadow = true; tab.userData.lid = true; hinge.add(tab);
+
+      // brass butt hinges: a leaf on the box, a leaf on the lid, a pinned knuckle between
+      [-1, 1].forEach(k => {
+        const knuckle = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 3.4, 24), mats.brass);
+        knuckle.rotation.z = Math.PI / 2; knuckle.position.set(k * 8, P + H + 0.1, -D / 2 - 0.2); knuckle.castShadow = true; g.add(knuckle);
+        const leaf = new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.4, 0.05), mats.brass); leaf.position.set(k * 8, P + H - 0.62, -D / 2 - 0.09); g.add(leaf);
+        const lidLeaf = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.9, 0.05), mats.brass); lidLeaf.position.set(k * 8, 0.55, -0.09); lidLeaf.userData.lid = true; hinge.add(lidLeaf);
+        [-1.1, 0, 1.1].forEach(dx => {
+          const screw = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.04, 16), mats.brass); screw.rotation.x = Math.PI / 2;
+          screw.position.set(k * 8 + dx, P + H - 0.75, -D / 2 - 0.12); g.add(screw);
+        });
+      });
+
+      // the seam: when the lid is shut, the evening leaks out around its edge
+      const seamShape = roundedRect(W - 0.1, D - 0.1, 0.2); seamShape.holes.push(roundedRect(W - 0.8, D - 0.8, 0.15));
+      const seamGeo = new THREE.ExtrudeGeometry(seamShape, { depth: 0.12, bevelEnabled: false }); seamGeo.rotateX(-Math.PI / 2);
+      const seam = new THREE.Mesh(seamGeo, new THREE.MeshBasicMaterial({ color: '#000', toneMapped: false, transparent: true, opacity: 0, depthWrite: false }));
+      seam.position.y = P + H + 0.02; g.add(seam);
+      const light = new THREE.PointLight('#fff', 0, 45, 0); light.position.set(0, P + 4, 0); g.add(light);
+      return { slots, leds, pools, light, hinge, front, seam };
     },
   },
   puck: {
@@ -661,7 +728,7 @@ const ease = { io: t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 
 function restPose(i, pos, quat) {
   const s = device.slots[i];
   pos.copy(s.pos);
-  quat.setFromEuler(e3.set(s.tilt || 0, s.yaw, 0, 'YXZ'));
+  quat.setFromEuler(e3.set(s.tilt || 0, s.yaw, s.flip ? Math.PI : 0, 'YXZ'));   // flip: screen up, back on the coil
 }
 
 function applyPose(i) {
@@ -875,6 +942,7 @@ function updateGlow(now) {
   }
   if (device.sharedPool) device.pools[0].material.color.copy(glowColor).multiplyScalar(sum * 0.55);
   if (device.front) device.front.material.color.copy(glowColor).multiplyScalar(sum * 0.3);
+  if (device.seam) { const k = Math.min(1, sum * 2.2) * (1 - lid.open); device.seam.material.color.copy(glowColor).multiplyScalar(4); device.seam.material.opacity = k; }
   device.light.color.copy(glowColor);
   device.light.intensity = sum * (formKey === 'box' ? 1.6 : formKey === 'tray' ? 1.4 : 0.9);
 }

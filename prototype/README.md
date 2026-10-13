@@ -41,7 +41,7 @@ the phones go. It compares three shapes, each answering a different question:
 | Shape | Its light shows | Holds |
 |---|---|---|
 | **Tray** | people: a point wakes under each phone set down | six |
-| **Box** | people, put away: a bay lights under each phone, and the glow shows through a smoked-glass lid | six, one per felt bay |
+| **Box** | people, put away: a cigar box with a solid lid; light leaks from the seam and a pinhole wakes on the front for each phone | six, screen up on stitched suede pads |
 | **Puck** | time: a ring that fills over three hours of the phone being down | one |
 
 **Try it** lets you set phones down, pick them up (the lock screen shows the
@@ -49,6 +49,10 @@ Live Activity), open and close the box's lid, and end the evening. **An evening*
 6:30 to 11:00: dusk, five arrivals, one phone lifted to check on the
 babysitter, coats on, and an afterglow. Finishes (oak, walnut, clay, stone, ink)
 and light colours switch live.
+
+Wireless charging is through the back of the phone, so in the box phones lie
+screen up and the lid is what hides the screens. The tray and puck still show
+phones face down, which wouldn't charge; they're kept for comparison only.
 
 It holds to the product rules: lifting a phone never dims its light, an empty
 place is just space rather than someone missing, the box lid has no latch,
