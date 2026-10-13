@@ -134,7 +134,7 @@
   <h1>Where the phones go</h1>
   <div class="seg" id="formSeg" role="group" aria-label="Shape">
     <button type="button" data-form="tray" aria-pressed="true">Tray</button>
-    <button type="button" data-form="bowl" aria-pressed="false">Bowl</button>
+    <button type="button" data-form="box" aria-pressed="false">Box</button>
     <button type="button" data-form="puck" aria-pressed="false">Puck</button>
   </div>
   <p id="formNote"></p>
@@ -182,6 +182,7 @@
   </div>
   <div class="bar" id="manualBar">
     <button type="button" class="primary" id="addBtn">Set a phone down</button>
+    <button type="button" class="secondary" id="lidBtn" hidden>Close the lid</button>
     <button type="button" class="secondary" id="endBtn" disabled>Evening ends</button>
     <button type="button" class="secondary" id="clearBtn">Clear the table</button>
   </div>
@@ -555,27 +556,41 @@ const FORMS = {
       return { slots, leds, pools, light };
     },
   },
-  bowl: {
-    capacity: 6, frame: 0.8, width: 36, stack: true,
-    note: '<b>Shows warmth.</b> The phone stack, given a vessel. Phones pile in face down and the bowl glows up through the gaps, warmer as it fills.',
+  box: {
+    capacity: 6, frame: 1.4, width: 44, lift: 5, lid: true,
+    note: '<b>Shows people, put away.</b> A lidded box, like a watch case. Six felt bays, each over its own charging coil. Close the lid and the evening glows through smoked glass. There is no latch.',
     build(g) {
-      const pts = [[0, 0], [8, 0], [9.6, 0.25], [12.2, 1.1], [14.6, 3], [15.9, 5.4], [16.3, 7.1], [16.15, 7.45], [15.75, 7.5], [15.45, 7.25],
-        [15.05, 5.7], [13.8, 3.6], [11.3, 2.0], [8, 1.3], [4, 1.08], [0, 1.05]].map(([x, y]) => new THREE.Vector2(x, y));
-      const geo = cmUV(new THREE.LatheGeometry(pts, 120), Math.PI * 2 * 16, 38);
-      const bowl = tag(new THREE.Mesh(geo), 'body');
-      g.add(bowl);
-      const ember = new THREE.Mesh(new THREE.CircleGeometry(7.2, 64), new THREE.MeshBasicMaterial({ map: POOL_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, color: '#000', toneMapped: false }));
-      ember.rotation.x = -Math.PI / 2; ember.position.y = 1.16; g.add(ember);
-      const r = rng(7), slots = [], leds = [], pools = [];
-      for (let i = 0; i < 6; i++) {
-        slots.push({ pos: new THREE.Vector3((r() - 0.5) * 2.6, 1.15 + PHONE.t / 2, (r() - 0.5) * 2.6), yaw: (i * 0.95 + r() * 0.5) % Math.PI - 0.4, tilt: (r() - 0.5) * 0.06 });
-        const a = -Math.PI / 2 + (i - 2.5) * 0.2 + Math.PI;
-        const l = led(0.5); l.rotation.x = Math.PI / 2; l.rotation.z = -a + Math.PI / 2;
-        l.position.set(Math.cos(a) * 15.95, 7.52, Math.sin(a) * 15.95); g.add(l); leds.push([l]);
-      }
-      const p = pool(70); g.add(p); pools.push(p);
-      const light = new THREE.PointLight('#fff', 0, 40, 0); light.position.set(0, 3.5, 0); g.add(light);
-      return { slots, leds, pools, light, ember, sharedPool: true };
+      const W = 29, D = 35.5, H = 5.6, IW = 26.6, ID = 33.1;
+      const outer = roundedRect(W, D, 1.2);
+      outer.holes.push(roundedRect(IW, ID, 0.5));
+      const wall = new THREE.ExtrudeGeometry(outer, { depth: H - 0.4, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.15, bevelSegments: 3, curveSegments: 12 });
+      wall.rotateX(-Math.PI / 2); wall.translate(0, 0.2, 0);
+      g.add(tag(new THREE.Mesh(wall), 'body'));
+      const floor = new THREE.ExtrudeGeometry(roundedRect(IW + 0.2, ID + 0.2, 0.5), { depth: 1, bevelEnabled: false, curveSegments: 12 });
+      floor.rotateX(-Math.PI / 2);
+      g.add(tag(new THREE.Mesh(floor), 'felt'));
+      // dividers: one across, two front to back
+      const divH = 2.3, cw = IW / 3, slots = [], leds = [], pools = [];
+      const across = new THREE.Mesh(new THREE.BoxGeometry(IW, divH, 0.5)); across.position.set(0, 1 + divH / 2, 0); g.add(tag(across, 'body'));
+      [-1, 1].forEach(k => { const d = new THREE.Mesh(new THREE.BoxGeometry(0.5, divH, ID)); d.position.set(k * cw / 2, 1 + divH / 2, 0); g.add(tag(d, 'body')); });
+      [[-1, 1], [0, 1], [1, 1], [-1, -1], [0, -1], [1, -1]].forEach(([cx, row], i) => {
+        const x = cx * cw, z = row * ID / 4;
+        slots.push({ pos: new THREE.Vector3(x, 1 + PHONE.t / 2 + 0.01, z), yaw: 0 });
+        const pl = pool(1); pl.scale.set(11, 21, 1); pl.position.set(x, 1.03, z); g.add(pl); pools.push(pl);
+        const l = led(0.7); l.rotation.z = Math.PI / 2; l.position.set((i - 2.5) * 2.2, 2.0, D / 2 + 0.19); g.add(l); leds.push([l]);
+      });
+      const front = pool(34); front.position.set(0, 0.05, D / 2 + 6); g.add(front);
+      // the lid, hinged along the back edge
+      const hinge = new THREE.Group(); hinge.position.set(0, H + 0.02, -D / 2); g.add(hinge);
+      const frameShape = roundedRect(W, D, 1.2); frameShape.holes.push(roundedRect(W - 6, D - 6, 0.8));
+      const lidGeo = new THREE.ExtrudeGeometry(frameShape, { depth: 1.0, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.15, bevelSegments: 3, curveSegments: 12 });
+      lidGeo.rotateX(-Math.PI / 2); lidGeo.translate(0, 0.2, D / 2);
+      const lidFrame = tag(new THREE.Mesh(lidGeo), 'body'); lidFrame.userData.lid = true; hinge.add(lidFrame);
+      const glass = new THREE.Mesh(new THREE.BoxGeometry(W - 5.6, 0.3, D - 5.6),
+        new THREE.MeshPhysicalMaterial({ color: '#2A1E16', roughness: 0.04, metalness: 0, clearcoat: 1, transparent: true, opacity: 0.38, depthWrite: false }));
+      glass.position.set(0, 0.75, D / 2); glass.userData.lid = true; glass.renderOrder = 2; hinge.add(glass);
+      const light = new THREE.PointLight('#fff', 0, 45, 0); light.position.set(0, 4, 0); g.add(light);
+      return { slots, leds, pools, light, hinge, front };
     },
   },
   puck: {
@@ -607,13 +622,16 @@ const MAX = 6;
 const phones = Array.from({ length: MAX }, (_, i) => ({
   mesh: makePhone(i),
   target: 'away', p: 0, l: 0,            // p: 0 away → 1 resting · l: 0 resting → 1 in hand
-  lit: 0, glow: 0, downAt: 0, stackY: 0, landed: false, liftQ: new THREE.Quaternion(),
+  lit: 0, glow: 0, downAt: 0, landed: false, liftQ: new THREE.Quaternion(),
 }));
 
 let formKey = 'tray', form = null, device = null;
 let mode = 'manual';
 const manual = { minutes: 0, firstAt: null, count: 0, over: false, overAt: 0, lastEvent: '' };
 let eveningM = 0, playing = false;
+const lid = { open: 1, target: 1 };   // 0 closed · 1 open
+// In the scripted evening, someone closes the lid once everyone's in, and opens it when a phone is wanted.
+const LID_CLOSED = [[64, 127], [136, 167], [174, 219]];
 
 function buildForm(key) {
   if (device) { scene.remove(device.group); device.group.traverse(o => { if (o.isMesh && !o.userData.role) { o.geometry.dispose(); o.material.dispose?.(); } }); }
@@ -628,6 +646,7 @@ function buildForm(key) {
 }
 
 function resetEvening() {
+  lid.target = 1;
   phones.forEach(ph => { ph.target = 'away'; ph.p = 0; ph.l = 0; ph.lit = 0; ph.glow = 0; ph.landed = false; ph.mesh.visible = false; });
   Object.assign(manual, { minutes: 0, firstAt: null, count: 0, over: false, overAt: 0, lastEvent: '' });
 }
@@ -642,7 +661,6 @@ const ease = { io: t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 
 function restPose(i, pos, quat) {
   const s = device.slots[i];
   pos.copy(s.pos);
-  if (form.stack) pos.y += phones[i].stackY;
   quat.setFromEuler(e3.set(s.tilt || 0, s.yaw, 0, 'YXZ'));
 }
 
@@ -716,7 +734,7 @@ function thock() {
   const len = 0.09, b = ac.createBuffer(1, ac.sampleRate * len, ac.sampleRate), d = b.getChannelData(0);
   for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 4);
   const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
-  s.buffer = b; f.type = 'lowpass'; f.frequency.value = formKey === 'bowl' ? 1400 : 520; g.gain.value = 0.5;
+  s.buffer = b; f.type = 'lowpass'; f.frequency.value = 520; g.gain.value = 0.5;
   s.connect(f).connect(g).connect(master); s.start();
 }
 
@@ -746,6 +764,7 @@ const NARRATION = [
   [35, 'The first phone goes down.'],
   [42, 'Then the rest, more or less together.'],
   [61, 'Someone arrives late, and joins.'],
+  [64, 'Someone closes the lid.', 'box'],
   [80, 'Dinner. Nobody is watching the tray.'],
   [130, 'Someone checks on the babysitter. The light stays.'],
   [134, 'Back down. Nothing dimmed.'],
@@ -849,15 +868,15 @@ function updateGlow(now) {
       const ph = phones[i];
       ph.glow += (level(i, ph.lit) - ph.glow) * 0.06;
       ls.forEach(l => { l.material.color.copy(OFF).lerp(cTmp.copy(glowColor).multiplyScalar(6), ph.glow); l.material.opacity = 0.2 + 0.8 * Math.min(1, ph.glow * 3); });
-      if (!device.sharedPool) device.pools[i].material.color.copy(glowColor).multiplyScalar(ph.glow * 0.42);
+      if (!device.sharedPool) device.pools[i].material.color.copy(glowColor).multiplyScalar(ph.glow * (form.lid ? 0.9 : 0.42));
       sum += ph.glow;
     });
     sum /= form.capacity;
   }
-  if (device.sharedPool) device.pools[0].material.color.copy(glowColor).multiplyScalar(sum * (formKey === 'bowl' ? 0.5 : 0.55));
-  if (device.ember) device.ember.material.color.copy(glowColor).multiplyScalar(sum * 4.5);
+  if (device.sharedPool) device.pools[0].material.color.copy(glowColor).multiplyScalar(sum * 0.55);
+  if (device.front) device.front.material.color.copy(glowColor).multiplyScalar(sum * 0.3);
   device.light.color.copy(glowColor);
-  device.light.intensity = sum * (formKey === 'bowl' ? 3.5 : formKey === 'tray' ? 1.4 : 0.9);
+  device.light.intensity = sum * (formKey === 'box' ? 1.6 : formKey === 'tray' ? 1.4 : 0.9);
 }
 
 /* ───────────────────────── frame ───────────────────────── */
@@ -873,6 +892,7 @@ function frame(now) {
       if (eveningM >= LEN) setPlaying(false);
     }
     eveningState(eveningM);
+    if (form.lid) lid.target = LID_CLOSED.some(([a, b]) => eveningM >= a && eveningM < b) ? 0 : 1;
     dayTarget = 1 - THREE.MathUtils.smoothstep(eveningM, 10, 75);
     renderEveningText();
   } else {
@@ -886,16 +906,19 @@ function frame(now) {
   const speed = scrubbing ? 6 : 1;
   prevM = eveningM;
 
-  if (form.stack) {   // phones pile in the order they last went down
-    const order = phones.slice(0, form.capacity).map((p, i) => ({ p, i })).filter(o => o.p.target === 'down' || (o.p.target === 'away' && o.p.p > 0.5 && o.p.landed))
-      .sort((a, b) => a.p.downAt - b.p.downAt);
-    phones.forEach(p => p.stackTarget = 0);
-    order.forEach((o, k) => o.p.stackTarget = k * (PHONE.t + 0.05));
-    phones.forEach(p => { if (p.target === 'lifted') p.stackTarget = p.stackY; p.stackY += ((p.stackTarget ?? 0) - p.stackY) * Math.min(1, dt * 8); });
+  if (form.lid) {
+    const was = lid.open;
+    lid.open += Math.sign(lid.target - lid.open) * Math.min(Math.abs(lid.target - lid.open), dt * speed / 0.9);
+    if (was > 0.02 && lid.open <= 0.02 && !scrubbing) thock();
+    device.hinge.rotation.x = -1.85 * ease.io(lid.open);
+    if (mode === 'manual' && lid.target === 0 && phones.some(p => p.target !== 'away' && p.p < 0.999)) lid.target = 1;
   }
-
+  const lidReady = !form.lid || lid.open > 0.85 || scrubbing;
   phones.forEach((ph, i) => {
     if (i >= form.capacity) { ph.mesh.visible = false; return; }
+    // a phone waits for the lid: it can't come out, or go in, through glass
+    const moving = (ph.target === 'away' && ph.p > 0) || (ph.target === 'down' && ph.p < 1) || (ph.target === 'lifted' && ph.l < 1);
+    if (!lidReady && moving && ph.l < 0.01) { applyPose(i); return; }
     const pT = ph.target === 'away' ? 0 : 1, lT = ph.target === 'lifted' ? 1 : 0;
     const before = ph.p;
     ph.p += Math.sign(pT - ph.p) * Math.min(Math.abs(pT - ph.p), dt * speed / 1.25);
@@ -935,9 +958,10 @@ function pick(e) {
   ray.setFromCamera(ndc, camera);
   const targets = [];
   phones.forEach((p, i) => { if (i < form.capacity && p.mesh.visible && p.p > 0.9) targets.push(p.mesh); });
-  device.group.traverse(o => { if (o.isMesh && o.userData.role) targets.push(o); });
+  device.group.traverse(o => { if (o.isMesh && (o.userData.role || o.userData.lid)) targets.push(o); });
   const hit = ray.intersectObjects(targets, true)[0];
   if (!hit) return null;
+  if (hit.object.userData.lid) return { lid: true };
   return hit.object.userData.phone !== undefined ? { phone: hit.object.userData.phone } : { device: true };
 }
 renderer.domElement.addEventListener('pointerdown', e => { downXY = [e.clientX, e.clientY]; audio(); stopTween(); });
@@ -945,7 +969,8 @@ renderer.domElement.addEventListener('pointerup', e => {
   if (!downXY || Math.hypot(e.clientX - downXY[0], e.clientY - downXY[1]) > 6) return;
   const h = pick(e);
   if (!h) return;
-  if (h.phone !== undefined) togglePhone(h.phone);
+  if (h.lid) toggleLid();
+  else if (h.phone !== undefined) togglePhone(h.phone);
   else addPhone();
 });
 renderer.domElement.addEventListener('pointermove', e => {
@@ -954,6 +979,7 @@ renderer.domElement.addEventListener('pointermove', e => {
   renderer.domElement.style.cursor = h ? 'pointer' : 'grab';
 });
 
+function toggleLid() { toManual(); lid.target = lid.target ? 0 : 1; }
 function toManual() { if (mode !== 'manual') setMode('manual', true); }
 
 function addPhone() {
@@ -961,6 +987,7 @@ function addPhone() {
   if (manual.over) { resetEvening(); }
   const i = phones.findIndex((p, k) => k < form.capacity && p.target === 'away' && p.p < 0.02);
   if (i < 0) return;
+  if (form.lid) lid.target = 1;
   phones[i].target = 'down';
   phones[i].downAt = performance.now();
   if (manual.firstAt === null) manual.firstAt = performance.now();
@@ -969,14 +996,14 @@ function addPhone() {
 function togglePhone(i) {
   toManual();
   const ph = phones[i];
-  if (ph.target === 'down') { aimLift(i); ph.target = 'lifted'; }
+  if (ph.target === 'down') { if (form.lid) lid.target = 1; aimLift(i); ph.target = 'lifted'; }
   else if (ph.target === 'lifted') { ph.target = 'down'; ph.downAt = performance.now(); }
 }
 function endEvening() {
   toManual();
   let k = 0;
   phones.forEach(p => { if (p.target !== 'away') { const ph = p; setTimeout(() => { ph.target = 'away'; }, k++ * 260); } });
-  if (k) { manual.over = true; manual.overAt = manual.minutes; }
+  if (k) { manual.over = true; manual.overAt = manual.minutes; if (form.lid) lid.target = 1; }
 }
 
 function syncButtons() {
@@ -984,6 +1011,9 @@ function syncButtons() {
   const free = phones.some((p, k) => k < form.capacity && p.target === 'away' && p.p < 0.02);
   addBtn.disabled = !free && !manual.over;
   endBtn.disabled = manual.over || !phones.some(p => p.target !== 'away');
+  lidBtn.hidden = !form.lid;
+  const lidLabel = lid.target ? 'Close the lid' : 'Open the lid';
+  if (lidBtn.textContent !== lidLabel) lidBtn.textContent = lidLabel;
 }
 
 /* ───────────────────────── camera ───────────────────────── */
@@ -1000,7 +1030,7 @@ function goView(name, instant) {
   const hTan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect;
   const d = Math.max(v.dist * form.frame, (form.width * v.fit / 2) / hTan);
   const to = new THREE.Vector3(...v.dir).normalize().multiplyScalar(d);
-  const target = new THREE.Vector3(0, v.y, 0);
+  const target = new THREE.Vector3(0, v.y + (form.lift || 0), 0);
   if (instant || reduceMotion) { camera.position.copy(to); controls.target.copy(target); tween = null; return; }
   tween = { from: camera.position.clone(), fromT: controls.target.clone(), to, target, t: 0 };
 }
@@ -1017,7 +1047,7 @@ function stopTween() { tween = null; }
 /* ───────────────────────── panels ───────────────────────── */
 
 const $ = id => document.getElementById(id);
-const addBtn = $('addBtn'), endBtn = $('endBtn'), scrub = $('scrub'), playBtn = $('playBtn');
+const addBtn = $('addBtn'), endBtn = $('endBtn'), lidBtn = $('lidBtn'), scrub = $('scrub'), playBtn = $('playBtn');
 
 function chips(el, items, current, onPick) {
   el.innerHTML = '';
@@ -1052,6 +1082,7 @@ $('finishClose').onclick = () => openFinish(false);
 
 addBtn.onclick = () => { audio(); addPhone(); };
 endBtn.onclick = endEvening;
+lidBtn.onclick = toggleLid;
 $('clearBtn').onclick = () => { resetEvening(); };
 
 function setMode(m, keepPhones) {
@@ -1092,9 +1123,9 @@ let lastNarr = '';
 function renderEveningText() {
   $('clock').textContent = clock(START + eveningM);
   let line = '';
-  NARRATION.forEach(([m, s]) => { if (eveningM >= m) line = s; });
+  NARRATION.forEach(([m, s, only]) => { if (eveningM >= m && (!only || only === formKey)) line = s; });
   if (formKey === 'puck') line = line.replace('the tray', 'the puck').replace('The tray', 'The puck');
-  if (formKey === 'bowl') line = line.replace('the tray', 'the bowl').replace('The tray', 'The bowl');
+  if (formKey === 'box') line = line.replace('the tray', 'the box').replace('The tray', 'The box');
   if (line !== lastNarr) { $('narr').textContent = line; lastNarr = line; }
 }
 
@@ -1111,5 +1142,5 @@ phones.forEach(p => { if (p.target === 'down') { p.p = 1; p.landed = true; p.lit
 
 if (location.hash === '#evening') setMode('evening');
 requestAnimationFrame(frame);
-window.__puck = { snap() { phones.forEach(p => { p.p = p.target === 'away' ? 0 : 1; p.l = p.target === 'lifted' ? 1 : 0; if (p.p) { p.landed = true; p.lit = 1; } }); }, phones, setMode, goView, buildForm, get eveningM() { return eveningM; }, set eveningM(v) { eveningM = v; scrub.value = v; } };
+window.__puck = { lid, snap() { phones.forEach(p => { p.p = p.target === 'away' ? 0 : 1; p.l = p.target === 'lifted' ? 1 : 0; if (p.p) { p.landed = true; p.lit = 1; } }); }, phones, setMode, goView, buildForm, get eveningM() { return eveningM; }, set eveningM(v) { eveningM = v; scrub.value = v; } };
 </script>

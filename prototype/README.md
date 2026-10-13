@@ -41,16 +41,16 @@ the phones go. It compares three shapes, each answering a different question:
 | Shape | Its light shows | Holds |
 |---|---|---|
 | **Tray** | people: a point wakes under each phone set down | six |
-| **Bowl** | warmth: the phone stack, glowing up through the gaps | six, piled |
+| **Box** | people, put away: a bay lights under each phone, and the glow shows through a smoked-glass lid | six, one per felt bay |
 | **Puck** | time: a ring that fills over three hours of the phone being down | one |
 
 **Try it** lets you set phones down, pick them up (the lock screen shows the
-Live Activity) and end the evening. **An evening** plays a scripted night from
+Live Activity), open and close the box's lid, and end the evening. **An evening** plays a scripted night from
 6:30 to 11:00: dusk, five arrivals, one phone lifted to check on the
 babysitter, coats on, and an afterglow. Finishes (oak, walnut, clay, stone, ink)
 and light colours switch live.
 
 It holds to the product rules: lifting a phone never dims its light, an empty
-place is just space rather than someone missing, and the tray never knows a
-name. Open it straight from disk — three.js loads from jsDelivr, so it
+place is just space rather than someone missing, the box lid has no latch,
+and nothing ever knows a name. Open it straight from disk — three.js loads from jsDelivr, so it
 needs a network connection.
