@@ -1,0 +1,1115 @@
+<title>Puck Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=Work+Sans:wght@400;500;600&display=swap">
+<style>
+  /* Layout: a full-bleed 3D room; quiet glass panels pinned to the corners, the voice line low and centred. */
+  :root {
+    --night:  #17140F;   /* the room after dark, from the app's night palette */
+    --glass:  rgba(23, 20, 15, 0.66);
+    --line:   rgba(243, 237, 225, 0.10);
+    --cream:  #F3EDE1;
+    --dust:   #A39685;
+    --ember:  #E08A4E;
+    --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+    --sans:  'Work Sans', ui-sans-serif, system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; overflow: hidden;
+    background: var(--night); color: var(--cream);
+    font-family: var(--sans); font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  #vignette {
+    position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(8, 6, 4, 0.55) 100%);
+  }
+
+  .panel {
+    position: fixed; z-index: 2;
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(16px) saturate(120%);
+    backdrop-filter: blur(16px) saturate(120%);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+  }
+  .eyebrow {
+    margin: 0; font-size: 11px; font-weight: 600;
+    letter-spacing: .16em; text-transform: uppercase; color: var(--dust);
+  }
+
+  /* top left: what you're looking at */
+  #about { top: calc(16px + env(safe-area-inset-top, 0px)); left: 16px; width: min(320px, calc(100vw - 32px)); padding: 16px; display: grid; gap: 12px; }
+  #about h1 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 26px; line-height: 1.1; text-wrap: balance; }
+  #formNote { margin: 0; color: var(--dust); line-height: 1.5; min-height: 4.5em; }
+  #formNote b { color: var(--cream); font-weight: 500; }
+
+  .seg { display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: rgba(243, 237, 225, 0.06); }
+  .seg button {
+    flex: 1; font: inherit; font-weight: 500; color: var(--dust);
+    background: none; border: 0; border-radius: 8px; padding: 7px 10px; cursor: pointer;
+  }
+  .seg button[aria-pressed="true"] { background: rgba(243, 237, 225, 0.14); color: var(--cream); }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+
+  /* top right: finishes and camera */
+  #finish { top: calc(16px + env(safe-area-inset-top, 0px)); right: 16px; width: 236px; padding: 14px 16px; display: grid; gap: 14px; }
+  #finish .group { display: grid; gap: 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    font: inherit; font-size: 13px; color: var(--cream);
+    background: rgba(243, 237, 225, 0.05); border: 1px solid var(--line);
+    border-radius: 999px; padding: 5px 10px 5px 6px; cursor: pointer;
+  }
+  .chip[aria-pressed="true"] { border-color: rgba(243, 237, 225, 0.55); background: rgba(243, 237, 225, 0.12); }
+  .swatch { width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .ghost {
+    font: inherit; font-size: 13px; color: var(--cream); cursor: pointer;
+    background: none; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px;
+  }
+  .ghost[aria-pressed="true"] { background: rgba(243, 237, 225, 0.12); border-color: rgba(243, 237, 225, 0.4); }
+  #finishToggle, #finishClose { display: none; }
+
+  /* bottom: the voice, then the controls */
+  #dock {
+    position: fixed; z-index: 2; left: 50%; transform: translateX(-50%);
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    width: min(640px, calc(100vw - 32px));
+    display: flex; flex-direction: column; gap: 16px; pointer-events: none;
+  }
+  #voice { text-align: center; text-shadow: 0 1px 18px rgba(0, 0, 0, 0.6); }
+  #status { margin: 0; font-family: var(--serif); font-weight: 300; font-size: clamp(24px, 4.2vw, 34px); line-height: 1.15; text-wrap: balance; transition: opacity .5s ease; }
+  #sub { margin: 8px 0 0; color: var(--dust); font-size: 14px; min-height: 1.4em; }
+
+  #controls { position: static; pointer-events: auto; padding: 12px; display: grid; gap: 12px; }
+  #controls .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  #modeTabs { flex: 0 1 260px; }
+  #hint { margin: 0; color: var(--dust); font-size: 12px; }
+  .bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .primary {
+    font: inherit; font-weight: 600; color: #1F1B16; cursor: pointer;
+    background: var(--cream); border: 0; border-radius: 10px; padding: 10px 16px;
+  }
+  .primary:disabled { opacity: .4; cursor: default; }
+  .secondary {
+    font: inherit; font-weight: 500; color: var(--cream); cursor: pointer;
+    background: rgba(243, 237, 225, 0.07); border: 1px solid var(--line); border-radius: 10px; padding: 9px 14px;
+  }
+  .secondary:disabled { opacity: .4; cursor: default; }
+
+  #eveningBar { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
+  #playBtn { width: 42px; height: 42px; padding: 0; display: grid; place-items: center; }
+  #clock { font-variant-numeric: tabular-nums; font-weight: 500; min-width: 64px; text-align: right; }
+  .track { position: relative; min-width: 0; }
+  #ticks { position: absolute; left: 0; right: 0; top: -9px; height: 6px; pointer-events: none; }
+  #ticks i { position: absolute; width: 2px; height: 6px; border-radius: 1px; background: var(--ember); opacity: .8; transform: translateX(-1px); }
+  #narr { margin: 0; color: var(--dust); font-size: 12px; grid-column: 1 / -1; min-height: 1.3em; }
+  input[type=range] { width: 100%; accent-color: var(--ember); margin: 0; }
+
+  @media (max-width: 760px) {
+    #about { padding: 12px; gap: 10px; }
+    #about h1 { font-size: 20px; }
+    #formNote { font-size: 13px; min-height: 0; }
+    #finish { left: 16px; right: 16px; width: auto; z-index: 3; }
+    #finish:not(.open) { display: none; }
+    #finishToggle, #finishClose { display: inline-block; }
+    #hint { display: none; }
+  }
+  @media (max-width: 760px) and (max-height: 760px) {
+    #formNote { display: none; }
+  }
+</style>
+
+<div id="stage"></div>
+<div id="vignette"></div>
+
+<section id="about" class="panel" aria-label="The object">
+  <p class="eyebrow">Hardware study · rendered, not photographed</p>
+  <h1>Where the phones go</h1>
+  <div class="seg" id="formSeg" role="group" aria-label="Shape">
+    <button type="button" data-form="tray" aria-pressed="true">Tray</button>
+    <button type="button" data-form="bowl" aria-pressed="false">Bowl</button>
+    <button type="button" data-form="puck" aria-pressed="false">Puck</button>
+  </div>
+  <p id="formNote"></p>
+</section>
+
+<section id="finish" class="panel" aria-label="Finish and view">
+  <div class="group">
+    <p class="eyebrow">Body</p>
+    <div class="chips" id="finishChips"></div>
+  </div>
+  <div class="group">
+    <p class="eyebrow">Light</p>
+    <div class="chips" id="glowChips"></div>
+  </div>
+  <div class="group">
+    <p class="eyebrow">View</p>
+    <div class="row" id="views">
+      <button type="button" class="ghost" data-view="hero">Table</button>
+      <button type="button" class="ghost" data-view="close">Close</button>
+      <button type="button" class="ghost" data-view="top">Above</button>
+    </div>
+    <div class="row">
+      <button type="button" class="ghost" id="turntable" aria-pressed="false">Turntable</button>
+      <button type="button" class="ghost" id="roomBtn" aria-pressed="true">Evening</button>
+      <button type="button" class="ghost" id="soundBtn" aria-pressed="true">Sound on</button>
+    </div>
+  </div>
+  <button type="button" class="ghost" id="finishClose">Done</button>
+</section>
+
+<div id="dock">
+<div id="voice" aria-live="polite">
+  <h2 id="status">Nothing here yet.</h2>
+  <p id="sub"></p>
+</div>
+
+<section id="controls" class="panel" aria-label="Controls">
+  <div class="top">
+    <div class="seg" id="modeTabs" role="group" aria-label="Mode">
+      <button type="button" data-mode="manual" aria-pressed="true">Try it</button>
+      <button type="button" data-mode="evening" aria-pressed="false">An evening</button>
+    </div>
+    <p id="hint">Drag to look around · scroll to zoom · click a phone to pick it up</p>
+    <button type="button" class="ghost" id="finishToggle" aria-expanded="false">Finish &amp; view</button>
+  </div>
+  <div class="bar" id="manualBar">
+    <button type="button" class="primary" id="addBtn">Set a phone down</button>
+    <button type="button" class="secondary" id="endBtn" disabled>Evening ends</button>
+    <button type="button" class="secondary" id="clearBtn">Clear the table</button>
+  </div>
+  <div id="eveningBar" hidden>
+    <button type="button" class="primary" id="playBtn" aria-label="Play">▶</button>
+    <div class="track">
+      <div id="ticks"></div>
+      <input type="range" id="scrub" min="0" max="270" step="0.1" value="0" aria-label="Time of evening">
+    </div>
+    <span id="clock">6:30 pm</span>
+    <p id="narr"></p>
+  </div>
+</section>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+// Units are centimetres. A phone is 7.15 × 14.7 × 0.84.
+const PHONE = { w: 7.15, l: 14.7, t: 0.84 };
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ───────────────────────── renderer, scene, camera ───────────────────────── */
+
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+const camera = new THREE.PerspectiveCamera(32, innerWidth / innerHeight, 1, 3000);
+camera.position.set(28, 46, 88);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.target.set(0, 2, 0);
+controls.minDistance = 22;
+controls.maxDistance = 420;
+controls.maxPolarAngle = Math.PI * 0.47;
+controls.autoRotateSpeed = 0.6;
+
+const rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: 4 });
+const composer = new EffectComposer(renderer, rt);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.85, 0.55, 1.0);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  composer.setSize(innerWidth, innerHeight);
+  goView(currentView, true);
+});
+
+/* ───────────────────────── procedural textures ───────────────────────── */
+
+function rng(seed) { return () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646; }
+
+function canvasTex(size, draw, repeat = 1) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  draw(c.getContext('2d'), size);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(repeat, repeat);
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return t;
+}
+
+function grain(ctx, s, r, amount) {
+  const img = ctx.getImageData(0, 0, s, s), d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const n = (r() - 0.5) * amount;
+    d[i] += n; d[i + 1] += n; d[i + 2] += n;
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+function woodTex(base, line, seed, repeat) {
+  return canvasTex(1024, (ctx, s) => {
+    const r = rng(seed);
+    ctx.fillStyle = base; ctx.fillRect(0, 0, s, s);
+    for (let b = 0; b < 14; b++) {               // broad figure
+      const y = r() * s, h = 20 + r() * 90;
+      ctx.fillStyle = line; ctx.globalAlpha = 0.05 + r() * 0.08;
+      ctx.fillRect(0, y, s, h);
+    }
+    for (let i = 0; i < 260; i++) {              // grain lines
+      const y0 = r() * s, amp = 2 + r() * 10, f = 1 + Math.floor(r() * 3), ph = r() * 6.28;
+      ctx.strokeStyle = line; ctx.globalAlpha = 0.06 + r() * 0.22; ctx.lineWidth = 0.4 + r() * 2.2;
+      ctx.beginPath();
+      for (let x = 0; x <= s; x += 8) {
+        const y = y0 + Math.sin((x / s) * Math.PI * 2 * f + ph) * amp + Math.sin(x * 0.05 + ph) * 0.8;
+        x ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    grain(ctx, s, r, 10);
+  }, repeat);
+}
+
+function speckleTex(base, dots, seed, repeat, blotch) {
+  return canvasTex(1024, (ctx, s) => {
+    const r = rng(seed);
+    ctx.fillStyle = base; ctx.fillRect(0, 0, s, s);
+    for (let i = 0; i < 40; i++) {
+      const x = r() * s, y = r() * s, rad = 40 + r() * 160;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, rad);
+      g.addColorStop(0, blotch); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.globalAlpha = 0.25; ctx.fillStyle = g; ctx.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+    }
+    for (let i = 0; i < 9000; i++) {
+      ctx.globalAlpha = 0.15 + r() * 0.5;
+      ctx.fillStyle = dots[Math.floor(r() * dots.length)];
+      const rad = 0.4 + r() * r() * 2.2;
+      ctx.beginPath(); ctx.arc(r() * s, r() * s, rad, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    grain(ctx, s, r, 8);
+  }, repeat);
+}
+
+function radialTex() {
+  return canvasTex(256, (ctx, s) => {
+    const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+    g.addColorStop(0, 'rgba(255,255,255,1)');
+    g.addColorStop(0.35, 'rgba(255,255,255,0.45)');
+    g.addColorStop(0.7, 'rgba(255,255,255,0.1)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, s, s);
+  });
+}
+const POOL_TEX = radialTex();
+
+/* ───────────────────────── finishes and light colours ───────────────────────── */
+
+const FINISHES = {
+  oak:    { label: 'Oak',    swatch: '#C9A274', felt: '#CDBFA8', make: () => ({ map: woodTex('#C29B6C', '#6E4A2A', 11, 1 / 40), roughness: 0.62, clearcoat: 0.15 }) },
+  walnut: { label: 'Walnut', swatch: '#6A4630', felt: '#2E2A26', make: () => ({ map: woodTex('#5E3C27', '#2A170C', 23, 1 / 40), roughness: 0.5,  clearcoat: 0.3 }) },
+  clay:   { label: 'Clay',   swatch: '#B4643E', felt: '#E2D6C4', make: () => ({ map: speckleTex('#B2623C', ['#7A3A1F', '#D99A73', '#5A2A16'], 31, 1 / 30, '#8A4528'), roughness: 0.88 }) },
+  stone:  { label: 'Stone',  swatch: '#CFCAC0', felt: '#3A3733', make: () => ({ map: speckleTex('#CBC5BA', ['#8E877C', '#EFEAE0', '#6F695F'], 47, 1 / 30, '#B3AC9F'), roughness: 0.78 }) },
+  ink:    { label: 'Ink',    swatch: '#25221F', felt: '#8A6A52', make: () => ({ map: speckleTex('#211E1B', ['#2E2A26', '#151311'], 59, 1 / 30, '#2A2622'), roughness: 0.4, clearcoat: 0.5 }) },
+};
+const GLOWS = {
+  ember:  { label: 'Ember',  hex: '#FF7A2E' },
+  candle: { label: 'Candle', hex: '#FFB45C' },
+  linen:  { label: 'Linen',  hex: '#FFE3BE' },
+};
+
+const mats = { body: null, felt: null };
+let finishKey = 'oak', glowKey = 'ember';
+const glowColor = new THREE.Color(GLOWS[glowKey].hex);
+
+function makeFinish(key) {
+  const f = FINISHES[key], p = f.make();
+  mats.body?.map?.dispose(); mats.body?.dispose(); mats.felt?.map?.dispose(); mats.felt?.dispose();
+  mats.body = new THREE.MeshPhysicalMaterial({ map: p.map, roughness: p.roughness, clearcoat: p.clearcoat || 0, clearcoatRoughness: 0.4, bumpMap: p.map, bumpScale: 0.6 });
+  const feltMap = speckleTex(f.felt, ['#00000022', '#ffffff18'], 71, 1 / 6, 'rgba(0,0,0,0.05)');
+  mats.felt = new THREE.MeshPhysicalMaterial({ map: feltMap, roughness: 1, sheen: 1, sheenRoughness: 0.8, sheenColor: new THREE.Color(f.felt).multiplyScalar(1.2) });
+}
+makeFinish(finishKey);
+
+/* ───────────────────────── the room ───────────────────────── */
+
+const table = new THREE.Mesh(
+  new THREE.PlaneGeometry(900, 900),
+  new THREE.MeshStandardMaterial({ map: woodTex('#3B2B20', '#140C07', 5, 1 / 120), roughness: 0.55 })
+);
+table.material.bumpMap = table.material.map; table.material.bumpScale = 0.4;
+table.rotation.x = -Math.PI / 2;
+table.receiveShadow = true;
+scene.add(table);
+
+const hemi = new THREE.HemisphereLight('#F6E9D6', '#2A1E14', 1);
+scene.add(hemi);
+
+const windowLight = new THREE.DirectionalLight('#DCE6F2', 2);
+windowLight.position.set(-160, 140, -60);
+windowLight.castShadow = true;
+windowLight.shadow.mapSize.set(2048, 2048);
+Object.assign(windowLight.shadow.camera, { left: -70, right: 70, top: 70, bottom: -70, near: 50, far: 500 });
+windowLight.shadow.bias = -0.0004; windowLight.shadow.radius = 6;
+scene.add(windowLight);
+
+const lamp = new THREE.SpotLight('#FFC88A', 2, 0, 0.62, 0.9, 0);
+lamp.position.set(8, 120, 10);
+lamp.castShadow = true;
+lamp.shadow.mapSize.set(2048, 2048);
+lamp.shadow.bias = -0.0003; lamp.shadow.radius = 8;
+lamp.shadow.camera.near = 40; lamp.shadow.camera.far = 260;
+scene.add(lamp, lamp.target);
+
+const DAY = { bg: new THREE.Color('#BCAE9B'), hemi: 1.1, window: 2.4, lamp: 0.0, env: 0.75 };
+const EVE = { bg: new THREE.Color('#0D0A07'), hemi: 0.06, window: 0.0, lamp: 2.6, env: 0.14 };
+scene.background = EVE.bg.clone();
+scene.fog = new THREE.Fog(EVE.bg.clone(), 180, 520);
+
+function setDaylight(d) {          // 1 = afternoon, 0 = evening
+  const lampOn = 1 - THREE.MathUtils.smoothstep(d, 0.45, 0.85);
+  scene.background.copy(EVE.bg).lerp(DAY.bg, d);
+  scene.fog.color.copy(scene.background);
+  hemi.intensity = THREE.MathUtils.lerp(EVE.hemi, DAY.hemi, d);
+  windowLight.intensity = THREE.MathUtils.lerp(EVE.window, DAY.window, d);
+  lamp.intensity = EVE.lamp * lampOn;
+  scene.environmentIntensity = THREE.MathUtils.lerp(EVE.env, DAY.env, d);
+}
+
+/* ───────────────────────── phones ───────────────────────── */
+
+function roundedRect(w, h, r) {
+  const s = new THREE.Shape(), x = -w / 2, y = -h / 2;
+  s.moveTo(x + r, y);
+  s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r);
+  s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
+  s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
+  return s;
+}
+
+const phoneBodyGeo = (() => {
+  const g = new THREE.ExtrudeGeometry(roundedRect(PHONE.w - 0.24, PHONE.l - 0.24, 1.0), {
+    depth: PHONE.t - 0.24, bevelEnabled: true, bevelThickness: 0.12, bevelSize: 0.12, bevelSegments: 4, curveSegments: 16,
+  });
+  g.rotateX(-Math.PI / 2);
+  g.translate(0, -(PHONE.t - 0.24) / 2, 0);
+  return g;
+})();
+const screenGeo = (() => {
+  const w = PHONE.w - 0.3, h = PHONE.l - 0.3, g = new THREE.ShapeGeometry(roundedRect(w, h, 0.95), 12), uv = g.attributes.uv;
+  // Read from the screen side: right is local −x, up is local −z.
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, 0.5 - uv.getX(i) / w, 0.5 - uv.getY(i) / h);
+  g.rotateX(Math.PI / 2);
+  return g;
+})();
+const bumpGeo = (() => {
+  const g = new THREE.ExtrudeGeometry(roundedRect(3.5, 3.5, 0.85), { depth: 0.12, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04, bevelSegments: 2, curveSegments: 10 });
+  g.rotateX(-Math.PI / 2);
+  return g;
+})();
+const lensRingGeo = new THREE.CylinderGeometry(0.66, 0.68, 0.16, 32);
+const lensGlassGeo = new THREE.CylinderGeometry(0.46, 0.46, 0.17, 32);
+const lensRingMat = new THREE.MeshStandardMaterial({ color: '#8C8780', metalness: 1, roughness: 0.25 });
+const lensGlassMat = new THREE.MeshPhysicalMaterial({ color: '#05070A', roughness: 0.05, clearcoat: 1 });
+
+const PHONE_FINISHES = [
+  { back: '#2A2927', frame: '#4A4845', frost: 0.32 },
+  { back: '#D6D0C6', frame: '#BEB8AE', frost: 0.35 },
+  { back: '#66725F', frame: '#7F8A78', frost: 0.32 },
+  { back: '#E4CFC6', frame: '#D3BCB0', frost: 0.34 },
+  { back: '#3C4A60', frame: '#5A6680', frost: 0.32 },
+  { back: '#A85E3E', frame: '#A85E3E', frost: 0.75, case: true },
+];
+
+function lockScreen(minutesSinceMidnight, sinceMinutes) {
+  const c = document.createElement('canvas'); c.width = 360; c.height = 740;
+  const x = c.getContext('2d');
+  const g = x.createLinearGradient(0, 0, 0, 740);
+  g.addColorStop(0, '#2B1E16'); g.addColorStop(1, '#0B0806');
+  x.fillStyle = g; x.fillRect(0, 0, 360, 740);
+  x.fillStyle = '#F3EDE1'; x.textAlign = 'center';
+  x.font = '300 92px Fraunces, Georgia, serif';
+  x.fillText(clockShort(minutesSinceMidnight), 180, 190);
+  x.font = '500 20px "Work Sans", system-ui, sans-serif'; x.fillStyle = '#A39685';
+  x.fillText('Thursday', 180, 92);
+  x.fillStyle = 'rgba(243,237,225,0.14)';
+  x.beginPath(); x.roundRect(22, 520, 316, 120, 28); x.fill();
+  x.textAlign = 'left';
+  x.fillStyle = '#E08A4E'; x.font = '600 15px "Work Sans", system-ui, sans-serif';
+  x.fillText('COUNTING', 48, 560);
+  x.fillStyle = '#F3EDE1'; x.font = '400 30px Fraunces, Georgia, serif';
+  x.fillText('Since ' + clockShort(sinceMinutes), 48, 604);
+  x.strokeStyle = '#E08A4E'; x.lineWidth = 6; x.lineCap = 'round';
+  x.beginPath(); x.arc(290, 580, 24, -Math.PI / 2, Math.PI * 0.9); x.stroke();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+function makePhone(i) {
+  const f = PHONE_FINISHES[i % PHONE_FINISHES.length];
+  const back = new THREE.MeshPhysicalMaterial({ color: f.back, roughness: f.frost, clearcoat: f.case ? 0 : 1, clearcoatRoughness: 0.3, transparent: true });
+  const frame = f.case
+    ? new THREE.MeshPhysicalMaterial({ color: f.frame, roughness: 0.8, transparent: true })
+    : new THREE.MeshStandardMaterial({ color: f.frame, metalness: 1, roughness: 0.28, transparent: true });
+  const screen = new THREE.MeshPhysicalMaterial({ color: '#030304', roughness: 0.06, clearcoat: 1, emissive: '#ffffff', emissiveIntensity: 0, transparent: true });
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(phoneBodyGeo, [back, frame]);
+  const scr = new THREE.Mesh(screenGeo, screen);
+  scr.position.y = -PHONE.t / 2 - 0.005;
+  const bump = new THREE.Mesh(bumpGeo, back);
+  bump.position.set(-1.45, PHONE.t / 2 - 0.02, -4.95);
+  g.add(body, scr, bump);
+  [[-2.3, -5.8], [-0.6, -5.8], [-2.3, -4.1]].forEach(([px, pz]) => {
+    const ring = new THREE.Mesh(lensRingGeo, lensRingMat), glass = new THREE.Mesh(lensGlassGeo, lensGlassMat);
+    ring.position.set(px, PHONE.t / 2 + 0.16, pz); glass.position.copy(ring.position); glass.position.y += 0.01;
+    g.add(ring, glass);
+  });
+  g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.userData.phone = i; } });
+  g.userData.mats = [back, frame, screen];
+  g.userData.screen = screen;
+  g.visible = false;
+  scene.add(g);
+  return g;
+}
+
+/* ───────────────────────── the three shapes ───────────────────────── */
+
+function led(len = 1.4) {
+  const m = new THREE.Mesh(new THREE.CapsuleGeometry(0.11, len, 4, 10), new THREE.MeshBasicMaterial({ color: '#000', toneMapped: false, transparent: true, opacity: 0.2 }));
+  return m;
+}
+function pool(size) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size),
+    new THREE.MeshBasicMaterial({ map: POOL_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, color: '#000', toneMapped: false }));
+  m.rotation.x = -Math.PI / 2; m.position.y = 0.05;
+  return m;
+}
+function cmUV(geo, su, sv = su) {
+  const uv = geo.attributes.uv;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * su, uv.getY(i) * sv);
+  return geo;
+}
+function tag(mesh, role) { mesh.userData.role = role; mesh.material = mats[role]; mesh.castShadow = mesh.receiveShadow = true; return mesh; }
+
+const FORMS = {
+  tray: {
+    capacity: 6, frame: 1, width: 60,
+    note: '<b>Shows people.</b> Sits on the table. Up to six phones lie face down in a felt bed, and a point of light wakes under each one. Lifting a phone never dims it.',
+    build(g) {
+      const W = 58, D = 20, H = 2.4;
+      const outer = roundedRect(W, D, 4.5);
+      outer.holes.push(roundedRect(W - 3.4, D - 3.4, 3));
+      const bodyGeo = new THREE.ExtrudeGeometry(outer, { depth: H - 0.8, bevelEnabled: true, bevelThickness: 0.4, bevelSize: 0.35, bevelSegments: 6, curveSegments: 24 });
+      bodyGeo.rotateX(-Math.PI / 2); bodyGeo.translate(0, 0.4, 0);
+      g.add(tag(new THREE.Mesh(bodyGeo), 'body'));
+      const floorGeo = new THREE.ExtrudeGeometry(roundedRect(W - 3.2, D - 3.2, 3), { depth: 1.7, bevelEnabled: false, curveSegments: 24 });
+      floorGeo.rotateX(-Math.PI / 2);
+      g.add(tag(new THREE.Mesh(floorGeo), 'felt'));
+      const slots = [], leds = [], pools = [];
+      for (let i = 0; i < 6; i++) {
+        const x = (i - 2.5) * 8.4;
+        slots.push({ pos: new THREE.Vector3(x, 1.7 + PHONE.t / 2 + 0.01, 0), yaw: 0 });
+        const l = led(1.6); l.rotation.z = Math.PI / 2; l.position.set(x, 1.15, D / 2 + 0.36);
+        g.add(l); leds.push([l]);
+        const p = pool(26); p.position.set(x, 0.05, D / 2 + 5); g.add(p); pools.push(p);
+      }
+      const light = new THREE.PointLight('#fff', 0, 70, 0); light.position.set(0, 2.5, D / 2 + 9); g.add(light);
+      return { slots, leds, pools, light };
+    },
+  },
+  bowl: {
+    capacity: 6, frame: 0.8, width: 36, stack: true,
+    note: '<b>Shows warmth.</b> The phone stack, given a vessel. Phones pile in face down and the bowl glows up through the gaps, warmer as it fills.',
+    build(g) {
+      const pts = [[0, 0], [8, 0], [9.6, 0.25], [12.2, 1.1], [14.6, 3], [15.9, 5.4], [16.3, 7.1], [16.15, 7.45], [15.75, 7.5], [15.45, 7.25],
+        [15.05, 5.7], [13.8, 3.6], [11.3, 2.0], [8, 1.3], [4, 1.08], [0, 1.05]].map(([x, y]) => new THREE.Vector2(x, y));
+      const geo = cmUV(new THREE.LatheGeometry(pts, 120), Math.PI * 2 * 16, 38);
+      const bowl = tag(new THREE.Mesh(geo), 'body');
+      g.add(bowl);
+      const ember = new THREE.Mesh(new THREE.CircleGeometry(7.2, 64), new THREE.MeshBasicMaterial({ map: POOL_TEX, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, color: '#000', toneMapped: false }));
+      ember.rotation.x = -Math.PI / 2; ember.position.y = 1.16; g.add(ember);
+      const r = rng(7), slots = [], leds = [], pools = [];
+      for (let i = 0; i < 6; i++) {
+        slots.push({ pos: new THREE.Vector3((r() - 0.5) * 2.6, 1.15 + PHONE.t / 2, (r() - 0.5) * 2.6), yaw: (i * 0.95 + r() * 0.5) % Math.PI - 0.4, tilt: (r() - 0.5) * 0.06 });
+        const a = -Math.PI / 2 + (i - 2.5) * 0.2 + Math.PI;
+        const l = led(0.5); l.rotation.x = Math.PI / 2; l.rotation.z = -a + Math.PI / 2;
+        l.position.set(Math.cos(a) * 15.95, 7.52, Math.sin(a) * 15.95); g.add(l); leds.push([l]);
+      }
+      const p = pool(70); g.add(p); pools.push(p);
+      const light = new THREE.PointLight('#fff', 0, 40, 0); light.position.set(0, 3.5, 0); g.add(light);
+      return { slots, leds, pools, light, ember, sharedPool: true };
+    },
+  },
+  puck: {
+    capacity: 1, frame: 0.5, width: 18, clock: true,
+    note: '<b>Shows time.</b> One phone, one disc, by the door or the bed. The ring around its base fills over three hours of the phone being down.',
+    build(g) {
+      const pts = [[0, 0], [5.5, 0], [5.9, 0.12], [6.05, 0.45], [6.05, 1.35], [5.9, 1.68], [5.55, 1.82], [5.3, 1.84], [0, 1.84]].map(([x, y]) => new THREE.Vector2(x, y));
+      g.add(tag(new THREE.Mesh(cmUV(new THREE.LatheGeometry(pts, 96), Math.PI * 2 * 6, 14)), 'body'));
+      const top = new THREE.Mesh(cmUV(new THREE.CircleGeometry(5.1, 64), 10.2), null); top.rotation.x = -Math.PI / 2; top.position.y = 1.86;
+      g.add(tag(top, 'felt'));
+      const slots = [{ pos: new THREE.Vector3(0, 1.86 + PHONE.t / 2 + 0.01, 0), yaw: 0.18 }];
+      const dots = [], N = 72;
+      for (let k = 0; k < N; k++) {
+        const a = Math.PI / 2 - (k / N) * Math.PI * 2;    // starts at the front, runs clockwise seen from above
+        const d = led(0.16); d.rotation.z = Math.PI / 2; d.rotation.y = -a + Math.PI / 2;
+        d.position.set(Math.cos(a) * 6.09, 0.62, Math.sin(a) * 6.09);
+        g.add(d); dots.push(d);
+      }
+      const p = pool(40); g.add(p);
+      const light = new THREE.PointLight('#fff', 0, 30, 0); light.position.set(0, 0.8, 9); g.add(light);
+      return { slots, leds: [dots], pools: [p], light, sharedPool: true };
+    },
+  },
+};
+
+/* ───────────────────────── state ───────────────────────── */
+
+const MAX = 6;
+const phones = Array.from({ length: MAX }, (_, i) => ({
+  mesh: makePhone(i),
+  target: 'away', p: 0, l: 0,            // p: 0 away → 1 resting · l: 0 resting → 1 in hand
+  lit: 0, glow: 0, downAt: 0, stackY: 0, landed: false, liftQ: new THREE.Quaternion(),
+}));
+
+let formKey = 'tray', form = null, device = null;
+let mode = 'manual';
+const manual = { minutes: 0, firstAt: null, count: 0, over: false, overAt: 0, lastEvent: '' };
+let eveningM = 0, playing = false;
+
+function buildForm(key) {
+  if (device) { scene.remove(device.group); device.group.traverse(o => { if (o.isMesh && !o.userData.role) { o.geometry.dispose(); o.material.dispose?.(); } }); }
+  formKey = key; form = FORMS[key];
+  const group = new THREE.Group();
+  device = { group, ...form.build(group) };
+  scene.add(group);
+  resetEvening();
+  document.getElementById('formNote').innerHTML = form.note;
+  document.querySelectorAll('#formSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.form === key)));
+  goView(currentView, true);
+}
+
+function resetEvening() {
+  phones.forEach(ph => { ph.target = 'away'; ph.p = 0; ph.l = 0; ph.lit = 0; ph.glow = 0; ph.landed = false; ph.mesh.visible = false; });
+  Object.assign(manual, { minutes: 0, firstAt: null, count: 0, over: false, overAt: 0, lastEvent: '' });
+}
+
+/* ───────────────────────── poses ───────────────────────── */
+
+const qA = new THREE.Quaternion(), qB = new THREE.Quaternion(), e3 = new THREE.Euler();
+const X_AXIS = new THREE.Vector3(1, 0, 0), Y_AXIS = new THREE.Vector3(0, 1, 0);
+const vA = new THREE.Vector3(), vB = new THREE.Vector3(), vC = new THREE.Vector3();
+const ease = { io: t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2, out: t => 1 - Math.pow(1 - t, 3), sine: t => -(Math.cos(Math.PI * t) - 1) / 2 };
+
+function restPose(i, pos, quat) {
+  const s = device.slots[i];
+  pos.copy(s.pos);
+  if (form.stack) pos.y += phones[i].stackY;
+  quat.setFromEuler(e3.set(s.tilt || 0, s.yaw, 0, 'YXZ'));
+}
+
+function applyPose(i) {
+  const ph = phones[i];
+  if (i >= form.capacity) { ph.mesh.visible = false; return; }
+  ph.mesh.visible = ph.p > 0.002;
+  if (!ph.mesh.visible) return;
+  restPose(i, vA, qA);
+  const side = Math.sign(vA.x) || (i % 2 ? 1 : -1);
+  vB.set(vA.x + side * 10, vA.y + 34, vA.z + 34);                             // in a hand, near the viewer
+  qB.setFromEuler(e3.set(Math.PI * 0.8, device.slots[i].yaw + side * 0.5, side * 0.2, 'YXZ'));   // screen up
+  const p = ph.p;
+  const h = ease.out(p), v = ease.sine(p), r = ease.io(Math.min(1, p * 1.18));
+  const pos = ph.mesh.position, quat = ph.mesh.quaternion;
+  pos.set(THREE.MathUtils.lerp(vB.x, vA.x, h), THREE.MathUtils.lerp(vB.y, vA.y, v), THREE.MathUtils.lerp(vB.z, vA.z, h));
+  quat.copy(qB).slerp(qA, r);
+  if (ph.l > 0) {
+    const l = ease.io(ph.l);
+    vC.copy(vA).add({ x: 0, y: 13, z: 5 });
+    pos.lerp(vC, l);
+    quat.slerp(ph.liftQ, l);
+  }
+  const fade = THREE.MathUtils.smoothstep(p, 0, 0.25);
+  ph.mesh.userData.mats.forEach(m => { m.opacity = fade; m.transparent = fade < 0.999; m.depthWrite = fade > 0.5; });
+  const shadow = fade > 0.7;
+  if (ph.mesh.userData.shadow !== shadow) { ph.mesh.userData.shadow = shadow; ph.mesh.traverse(o => { if (o.isMesh) o.castShadow = shadow; }); }
+  ph.mesh.userData.screen.emissiveIntensity = ph.l * 0.9;
+}
+
+function aimLift(i) {
+  const ph = phones[i];
+  restPose(i, vA, qA);
+  const yaw = Math.atan2(camera.position.x - vA.x, camera.position.z - vA.z);
+  // turned end over end so the screen faces you, top up
+  ph.liftQ.setFromAxisAngle(Y_AXIS, yaw)
+    .multiply(qB.setFromAxisAngle(X_AXIS, -1.92))
+    .multiply(qA.setFromAxisAngle(Y_AXIS, Math.PI));
+  // The lock screen shows what the phone would: the Live Activity, counting.
+  const now = mode === 'evening' ? START + eveningM : 19 * 60 + manual.minutes;
+  const since = mode === 'evening' ? START + (people()[i]?.in ?? 0) : 19 * 60;
+  const scr = ph.mesh.userData.screen;
+  scr.emissiveMap?.dispose();
+  scr.emissiveMap = lockScreen(now, since);
+  scr.needsUpdate = true;
+}
+
+/* ───────────────────────── sound ───────────────────────── */
+
+let ac = null, master = null, soundOn = true, lastChime = 0;
+function audio() {
+  if (ac) return ac;
+  try { ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.gain.value = 0.9; master.connect(ac.destination); } catch { ac = null; }
+  return ac;
+}
+function chime(first) {
+  if (!soundOn || !audio() || performance.now() - lastChime < 220) return;
+  lastChime = performance.now();
+  const t = ac.currentTime + 0.02;
+  const notes = first ? [[587.33, 0], [880, 0.16]] : [[659.25, 0], [987.77, 0.14]];
+  notes.forEach(([f, d]) => {
+    const g = ac.createGain(), o = ac.createOscillator(), o2 = ac.createOscillator(), g2 = ac.createGain();
+    o.frequency.value = f; o2.frequency.value = f * 2.76; g2.gain.value = 0.08;
+    o.connect(g); o2.connect(g2).connect(g); g.connect(master);
+    g.gain.setValueAtTime(0, t + d); g.gain.linearRampToValueAtTime(0.11, t + d + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + d + 2.4);
+    o.start(t + d); o2.start(t + d); o.stop(t + d + 2.5); o2.stop(t + d + 2.5);
+  });
+}
+function thock() {
+  if (!soundOn || !audio()) return;
+  const len = 0.09, b = ac.createBuffer(1, ac.sampleRate * len, ac.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 4);
+  const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+  s.buffer = b; f.type = 'lowpass'; f.frequency.value = formKey === 'bowl' ? 1400 : 520; g.gain.value = 0.5;
+  s.connect(f).connect(g).connect(master); s.start();
+}
+
+/* ───────────────────────── the charging pulse ───────────────────────── */
+
+const pulses = [];
+const pulseGeo = new THREE.RingGeometry(1, 1.06, 96); pulseGeo.rotateX(-Math.PI / 2);
+function pulse(i) {
+  const m = new THREE.Mesh(pulseGeo, new THREE.MeshBasicMaterial({ color: glowColor.clone().multiplyScalar(3), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  restPose(i, m.position, qA); m.position.y -= PHONE.t / 2 - 0.06;
+  scene.add(m); pulses.push({ m, t: 0 });
+}
+
+/* ───────────────────────── the evening, scripted ───────────────────────── */
+
+// Minutes after 6:30 pm. Five people, one empty place: the empty place is just space.
+const START = 18 * 60 + 30, LEN = 270;
+const PEOPLE = [
+  { in: 35, out: 225 },
+  { in: 42, out: 226, lift: [130, 134] },
+  { in: 44, out: 227 },
+  { in: 61, out: 229 },
+  { in: 170, out: 231 },
+];
+const NARRATION = [
+  [0, 'Late afternoon. The table’s set.'],
+  [35, 'The first phone goes down.'],
+  [42, 'Then the rest, more or less together.'],
+  [61, 'Someone arrives late, and joins.'],
+  [80, 'Dinner. Nobody is watching the tray.'],
+  [130, 'Someone checks on the babysitter. The light stays.'],
+  [134, 'Back down. Nothing dimmed.'],
+  [170, 'A neighbour drops in for dessert.'],
+  [222, 'Coats on.'],
+  [233, 'Everyone’s gone. The tray keeps a little of the evening.'],
+];
+
+function people() { return formKey === 'puck' ? PEOPLE.slice(0, 1) : PEOPLE; }
+
+function eveningState(m) {
+  const ps = people();
+  ps.forEach((pp, i) => {
+    const ph = phones[i];
+    const lifted = pp.lift && m >= pp.lift[0] && m < pp.lift[1];
+    const t = m < pp.in || m >= pp.out ? 'away' : lifted ? 'lifted' : 'down';
+    if (t === 'lifted' && ph.target !== 'lifted') aimLift(i);
+    ph.target = t;
+    ph.lit = m >= pp.in + 0.4 ? 1 : 0;
+    ph.downAt = pp.lift && m >= pp.lift[1] ? pp.lift[1] : pp.in;
+  });
+  for (let i = ps.length; i < MAX; i++) { phones[i].target = 'away'; phones[i].lit = 0; }
+}
+
+/* ───────────────────────── words ───────────────────────── */
+
+const WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty'];
+function word(n) { return n < 20 ? WORDS[n] : TENS[Math.floor(n / 10)] + (n % 10 ? '-' + WORDS[n % 10] : ''); }
+function cap(s) { return s[0].toUpperCase() + s.slice(1); }
+function duration(min) {
+  const h = Math.floor(min / 60), m = Math.round(min % 60);
+  const hs = h ? (h === 1 ? 'an hour' : word(h) + ' hours') : '';
+  const ms = m ? (m === 1 ? 'a minute' : word(m) + ' minutes') : '';
+  return hs && ms ? hs + ' and ' + ms : hs || ms || 'a moment';
+}
+function clockShort(min) { const h = Math.floor(min / 60) % 12 || 12, m = Math.floor(min % 60); return h + ':' + String(m).padStart(2, '0'); }
+function clock(min) { return clockShort(min) + (Math.floor(min / 60) >= 12 ? ' pm' : ' am'); }
+
+function voice() {
+  const ps = mode === 'evening' ? people() : null;
+  const n = mode === 'evening' ? ps.filter(p => eveningM >= p.in).length : manual.count;
+  const present = phones.slice(0, form.capacity).some(p => p.target !== 'away');
+  const lifted = phones.slice(0, form.capacity).some(p => p.target === 'lifted');
+  const over = mode === 'evening' ? n > 0 && !present && eveningM >= ps[ps.length - 1].out : manual.over;
+  let span = 0;
+  if (mode === 'evening' && n) span = Math.min(eveningM, Math.max(...ps.map(p => p.out))) - ps[0].in;
+  if (mode === 'manual') span = manual.minutes;
+
+  if (!n) return ['Nothing here yet.', mode === 'manual' ? `Click the ${formKey} to set a phone down.` : ''];
+  if (over) return ['That’s the evening.', form.clock ? cap(duration(span)) + ', given back.' : `${cap(word(n))} of you, ${duration(span)}.`];
+  if (lifted) return ['Picked up. The evening’s still counting.', 'You can always pick it up.'];
+  if (form.clock) return span < 3 ? ['Docked. See you in a bit.', ''] : ['Docked. See you in a bit.', cap(duration(span)) + ' so far.'];
+  if (n === 1) return ['Docked. See you in a bit.', ''];
+  return [`${cap(word(n))} of you so far.`, ''];
+}
+
+let lastVoice = '';
+function renderVoice() {
+  const [a, b] = voice();
+  if (a + b === lastVoice) return;
+  lastVoice = a + b;
+  document.getElementById('status').textContent = a;
+  document.getElementById('sub').textContent = b;
+}
+
+/* ───────────────────────── glow ───────────────────────── */
+
+const cTmp = new THREE.Color(), OFF = new THREE.Color('#1a1714');
+function afterglow(minSinceEnd) { return 0.3 + 0.7 * Math.exp(-minSinceEnd / 14); }
+
+function updateGlow(now) {
+  const t = now / 1000;
+  let overFor = -1;
+  if (mode === 'evening') {
+    const ps = people(), end = Math.max(...ps.map(p => p.out));
+    if (eveningM >= end) overFor = eveningM - end;
+  } else if (manual.over) overFor = manual.minutes - manual.overAt;
+
+  const level = (i, lit) => {
+    if (!lit) return 0;
+    if (overFor >= 0) return afterglow(overFor) * (0.82 + 0.18 * Math.sin(t * 1.3 + i * 0.4));
+    return 0.9 + 0.1 * Math.sin(t * 0.9 + i * 1.7);
+  };
+
+  let sum = 0;
+  if (form.clock) {
+    const ph = phones[0];
+    const minutes = mode === 'evening' ? Math.max(0, Math.min(eveningM, PEOPLE[0].out) - PEOPLE[0].in) : manual.minutes;
+    const frac = Math.min(1, minutes / 180), dots = device.leds[0], N = dots.length;
+    ph.glow += (level(0, ph.lit) - ph.glow) * 0.08;
+    dots.forEach((d, k) => {
+      const lit = THREE.MathUtils.clamp(frac * N - k, 0, 1);
+      const head = ph.lit && overFor < 0 && Math.abs(frac * N - k - 0.5) < 1 ? 0.6 + 0.4 * Math.sin(t * 3) : 0;
+      const v = Math.max(lit * ph.glow, head * ph.glow);
+      d.material.color.copy(OFF).lerp(cTmp.copy(glowColor).multiplyScalar(5), v); d.material.opacity = 0.2 + 0.8 * Math.min(1, v * 3);
+    });
+    sum = ph.glow * (0.4 + 0.6 * Math.min(1, frac * 4));
+  } else {
+    device.leds.forEach((ls, i) => {
+      const ph = phones[i];
+      ph.glow += (level(i, ph.lit) - ph.glow) * 0.06;
+      ls.forEach(l => { l.material.color.copy(OFF).lerp(cTmp.copy(glowColor).multiplyScalar(6), ph.glow); l.material.opacity = 0.2 + 0.8 * Math.min(1, ph.glow * 3); });
+      if (!device.sharedPool) device.pools[i].material.color.copy(glowColor).multiplyScalar(ph.glow * 0.42);
+      sum += ph.glow;
+    });
+    sum /= form.capacity;
+  }
+  if (device.sharedPool) device.pools[0].material.color.copy(glowColor).multiplyScalar(sum * (formKey === 'bowl' ? 0.5 : 0.55));
+  if (device.ember) device.ember.material.color.copy(glowColor).multiplyScalar(sum * 4.5);
+  device.light.color.copy(glowColor);
+  device.light.intensity = sum * (formKey === 'bowl' ? 3.5 : formKey === 'tray' ? 1.4 : 0.9);
+}
+
+/* ───────────────────────── frame ───────────────────────── */
+
+let last = performance.now(), dayTarget = 0, day = 0, prevM = 0;
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+
+  if (mode === 'evening') {
+    if (playing) {
+      eveningM = Math.min(LEN, eveningM + dt * 4.5);
+      scrub.value = eveningM;
+      if (eveningM >= LEN) setPlaying(false);
+    }
+    eveningState(eveningM);
+    dayTarget = 1 - THREE.MathUtils.smoothstep(eveningM, 10, 75);
+    renderEveningText();
+  } else {
+    if (manual.firstAt !== null && !manual.over) manual.minutes += dt;            // sped up: a minute a second
+    else if (manual.over) manual.minutes += dt;
+  }
+  day += (dayTarget - day) * Math.min(1, dt * (mode === 'evening' && !playing ? 10 : 2));
+  setDaylight(day);
+
+  const scrubbing = mode === 'evening' && !playing && Math.abs(eveningM - prevM) > 0.001;
+  const speed = scrubbing ? 6 : 1;
+  prevM = eveningM;
+
+  if (form.stack) {   // phones pile in the order they last went down
+    const order = phones.slice(0, form.capacity).map((p, i) => ({ p, i })).filter(o => o.p.target === 'down' || (o.p.target === 'away' && o.p.p > 0.5 && o.p.landed))
+      .sort((a, b) => a.p.downAt - b.p.downAt);
+    phones.forEach(p => p.stackTarget = 0);
+    order.forEach((o, k) => o.p.stackTarget = k * (PHONE.t + 0.05));
+    phones.forEach(p => { if (p.target === 'lifted') p.stackTarget = p.stackY; p.stackY += ((p.stackTarget ?? 0) - p.stackY) * Math.min(1, dt * 8); });
+  }
+
+  phones.forEach((ph, i) => {
+    if (i >= form.capacity) { ph.mesh.visible = false; return; }
+    const pT = ph.target === 'away' ? 0 : 1, lT = ph.target === 'lifted' ? 1 : 0;
+    const before = ph.p;
+    ph.p += Math.sign(pT - ph.p) * Math.min(Math.abs(pT - ph.p), dt * speed / 1.25);
+    ph.l += Math.sign(lT - ph.l) * Math.min(Math.abs(lT - ph.l), dt * speed / 0.6);
+    if (before < 0.985 && ph.p >= 0.985 && pT === 1) {
+      if (!scrubbing) { thock(); chime(i === 0 && !phones.some((q, j) => j !== i && q.target !== 'away' && q.p > 0.98)); pulse(i); }
+      ph.landed = true;
+      if (mode === 'manual' && !ph.lit) { ph.lit = 1; }
+    }
+    if (ph.p <= 0) ph.landed = false;
+    applyPose(i);
+  });
+
+  for (let k = pulses.length - 1; k >= 0; k--) {
+    const pu = pulses[k]; pu.t += dt / 1.3;
+    const s = 6 + pu.t * 10; pu.m.scale.set(s, 1, s);
+    pu.m.material.opacity = Math.max(0, 1 - pu.t) * 0.9;
+    if (pu.t >= 1) { scene.remove(pu.m); pu.m.material.dispose(); pulses.splice(k, 1); }
+  }
+
+  updateGlow(now);
+  renderVoice();
+  syncButtons();
+  tweenCamera(dt);
+  controls.update();
+  composer.render();
+  requestAnimationFrame(frame);
+}
+
+/* ───────────────────────── interaction ───────────────────────── */
+
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let downXY = null;
+function pick(e) {
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const targets = [];
+  phones.forEach((p, i) => { if (i < form.capacity && p.mesh.visible && p.p > 0.9) targets.push(p.mesh); });
+  device.group.traverse(o => { if (o.isMesh && o.userData.role) targets.push(o); });
+  const hit = ray.intersectObjects(targets, true)[0];
+  if (!hit) return null;
+  return hit.object.userData.phone !== undefined ? { phone: hit.object.userData.phone } : { device: true };
+}
+renderer.domElement.addEventListener('pointerdown', e => { downXY = [e.clientX, e.clientY]; audio(); stopTween(); });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!downXY || Math.hypot(e.clientX - downXY[0], e.clientY - downXY[1]) > 6) return;
+  const h = pick(e);
+  if (!h) return;
+  if (h.phone !== undefined) togglePhone(h.phone);
+  else addPhone();
+});
+renderer.domElement.addEventListener('pointermove', e => {
+  if (e.buttons) return;
+  const h = pick(e);
+  renderer.domElement.style.cursor = h ? 'pointer' : 'grab';
+});
+
+function toManual() { if (mode !== 'manual') setMode('manual', true); }
+
+function addPhone() {
+  toManual();
+  if (manual.over) { resetEvening(); }
+  const i = phones.findIndex((p, k) => k < form.capacity && p.target === 'away' && p.p < 0.02);
+  if (i < 0) return;
+  phones[i].target = 'down';
+  phones[i].downAt = performance.now();
+  if (manual.firstAt === null) manual.firstAt = performance.now();
+  manual.count++;
+}
+function togglePhone(i) {
+  toManual();
+  const ph = phones[i];
+  if (ph.target === 'down') { aimLift(i); ph.target = 'lifted'; }
+  else if (ph.target === 'lifted') { ph.target = 'down'; ph.downAt = performance.now(); }
+}
+function endEvening() {
+  toManual();
+  let k = 0;
+  phones.forEach(p => { if (p.target !== 'away') { const ph = p; setTimeout(() => { ph.target = 'away'; }, k++ * 260); } });
+  if (k) { manual.over = true; manual.overAt = manual.minutes; }
+}
+
+function syncButtons() {
+  if (mode !== 'manual') return;
+  const free = phones.some((p, k) => k < form.capacity && p.target === 'away' && p.p < 0.02);
+  addBtn.disabled = !free && !manual.over;
+  endBtn.disabled = manual.over || !phones.some(p => p.target !== 'away');
+}
+
+/* ───────────────────────── camera ───────────────────────── */
+
+let currentView = 'hero', tween = null;
+const VIEWS = {
+  hero:  { dir: [0.3, 0.52, 1], dist: 98, y: 2, fit: 1.25 },
+  close: { dir: [0.75, 0.3, 0.7], dist: 52, y: 3, fit: 0.75 },
+  top:   { dir: [0, 1, 0.08], dist: 96, y: 0, fit: 1.25 },
+};
+function goView(name, instant) {
+  currentView = name;
+  const v = VIEWS[name];
+  const hTan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect;
+  const d = Math.max(v.dist * form.frame, (form.width * v.fit / 2) / hTan);
+  const to = new THREE.Vector3(...v.dir).normalize().multiplyScalar(d);
+  const target = new THREE.Vector3(0, v.y, 0);
+  if (instant || reduceMotion) { camera.position.copy(to); controls.target.copy(target); tween = null; return; }
+  tween = { from: camera.position.clone(), fromT: controls.target.clone(), to, target, t: 0 };
+}
+function tweenCamera(dt) {
+  if (!tween) return;
+  tween.t = Math.min(1, tween.t + dt / 1.4);
+  const k = ease.io(tween.t);
+  camera.position.lerpVectors(tween.from, tween.to, k);
+  controls.target.lerpVectors(tween.fromT, tween.target, k);
+  if (tween.t >= 1) tween = null;
+}
+function stopTween() { tween = null; }
+
+/* ───────────────────────── panels ───────────────────────── */
+
+const $ = id => document.getElementById(id);
+const addBtn = $('addBtn'), endBtn = $('endBtn'), scrub = $('scrub'), playBtn = $('playBtn');
+
+function chips(el, items, current, onPick) {
+  el.innerHTML = '';
+  Object.entries(items).forEach(([k, v]) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.dataset.key = k;
+    b.setAttribute('aria-pressed', String(k === current));
+    b.innerHTML = `<span class="swatch" style="background:${v.swatch || v.hex}"></span>${v.label}`;
+    b.onclick = () => { el.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(c === b))); onPick(k); };
+    el.appendChild(b);
+  });
+}
+chips($('finishChips'), FINISHES, finishKey, k => {
+  finishKey = k; makeFinish(k);
+  device.group.traverse(o => { if (o.userData.role) o.material = mats[o.userData.role]; });
+});
+chips($('glowChips'), GLOWS, glowKey, k => { glowKey = k; glowColor.set(GLOWS[k].hex); });
+
+document.querySelectorAll('#formSeg button').forEach(b => b.onclick = () => { if (b.dataset.form !== formKey) { buildForm(b.dataset.form); if (mode === 'evening') eveningState(eveningM); } });
+document.querySelectorAll('#views button').forEach(b => b.onclick = () => goView(b.dataset.view));
+$('turntable').onclick = e => { controls.autoRotate = !controls.autoRotate; e.currentTarget.setAttribute('aria-pressed', String(controls.autoRotate)); };
+$('soundBtn').onclick = e => { soundOn = !soundOn; e.currentTarget.setAttribute('aria-pressed', String(soundOn)); e.currentTarget.textContent = soundOn ? 'Sound on' : 'Sound off'; };
+$('roomBtn').onclick = e => {
+  toManual();
+  dayTarget = dayTarget > 0.5 ? 0 : 1;
+  e.currentTarget.setAttribute('aria-pressed', String(dayTarget < 0.5));
+  e.currentTarget.textContent = dayTarget < 0.5 ? 'Evening' : 'Daylight';
+};
+function openFinish(open) { $('finish').classList.toggle('open', open); $('finishToggle').setAttribute('aria-expanded', String(open)); }
+$('finishToggle').onclick = () => openFinish(!$('finish').classList.contains('open'));
+$('finishClose').onclick = () => openFinish(false);
+
+addBtn.onclick = () => { audio(); addPhone(); };
+endBtn.onclick = endEvening;
+$('clearBtn').onclick = () => { resetEvening(); };
+
+function setMode(m, keepPhones) {
+  mode = m;
+  document.querySelectorAll('#modeTabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+  $('manualBar').hidden = m !== 'manual';
+  $('eveningBar').hidden = m !== 'evening';
+  if (m === 'evening') {
+    resetEvening();
+    eveningM = 0; scrub.value = 0; prevM = -1;
+    setPlaying(true);
+  } else {
+    setPlaying(false);
+    if (keepPhones) {     // carry the scripted evening over into your hands
+      const n = phones.filter(p => p.lit).length;
+      Object.assign(manual, { count: n, firstAt: n ? performance.now() : null, minutes: n ? Math.max(0, eveningM - PEOPLE[0].in) : 0, over: false });
+    } else resetEvening();
+    dayTarget = $('roomBtn').getAttribute('aria-pressed') === 'true' ? 0 : 1;
+  }
+}
+document.querySelectorAll('#modeTabs button').forEach(b => b.onclick = () => { audio(); if (b.dataset.mode !== mode) setMode(b.dataset.mode); });
+
+function setPlaying(p) {
+  playing = p;
+  playBtn.textContent = p ? '❚❚' : '▶';
+  playBtn.setAttribute('aria-label', p ? 'Pause' : 'Play');
+}
+playBtn.onclick = () => { audio(); if (eveningM >= LEN) { eveningM = 0; resetEvening(); } setPlaying(!playing); };
+scrub.addEventListener('input', () => { eveningM = +scrub.value; setPlaying(false); });
+
+function drawTicks() {
+  const el = $('ticks'); el.innerHTML = '';
+  const marks = new Set();
+  people().forEach(p => { marks.add(p.in); if (p.lift) marks.add(p.lift[0]); });
+  marks.forEach(m => { const i = document.createElement('i'); i.style.left = (m / LEN * 100) + '%'; el.appendChild(i); });
+}
+let lastNarr = '';
+function renderEveningText() {
+  $('clock').textContent = clock(START + eveningM);
+  let line = '';
+  NARRATION.forEach(([m, s]) => { if (eveningM >= m) line = s; });
+  if (formKey === 'puck') line = line.replace('the tray', 'the puck').replace('The tray', 'The puck');
+  if (formKey === 'bowl') line = line.replace('the tray', 'the bowl').replace('The tray', 'The bowl');
+  if (line !== lastNarr) { $('narr').textContent = line; lastNarr = line; }
+}
+
+/* ───────────────────────── go ───────────────────────── */
+
+buildForm('tray');
+drawTicks();
+document.querySelectorAll('#formSeg button').forEach(b => b.addEventListener('click', drawTicks));
+setDaylight(0);
+
+// A table already in use, so the first frame shows what this is.
+[0, 1, 2].forEach(() => addPhone());
+phones.forEach(p => { if (p.target === 'down') { p.p = 1; p.landed = true; p.lit = 1; p.glow = 0.9; } });
+
+if (location.hash === '#evening') setMode('evening');
+requestAnimationFrame(frame);
+window.__puck = { snap() { phones.forEach(p => { p.p = p.target === 'away' ? 0 : 1; p.l = p.target === 'lifted' ? 1 : 0; if (p.p) { p.landed = true; p.lit = 1; } }); }, phones, setMode, goView, buildForm, get eveningM() { return eveningM; }, set eveningM(v) { eveningM = v; scrub.value = v; } };
+</script>
