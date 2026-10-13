@@ -117,6 +117,10 @@
     -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   }
   .tag b { display: block; font-weight: 600; }
+  #dims { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; display: none; }
+  #dims line { stroke: rgba(243, 237, 225, 0.75); stroke-width: 1; }
+  #dims text { fill: var(--cream); font: 500 12px var(--sans); }
+  body.dims #dims { display: block; }
   #about, #finish { transition: opacity .5s ease; }
   body.inside #about, body.inside #finish { opacity: 0; pointer-events: none; }
 
@@ -170,7 +174,8 @@
   <div class="group">
     <p class="eyebrow">Edge</p>
     <div class="seg" id="edgeSeg" role="group" aria-label="Edge">
-      <button type="button" data-edge="bevel" aria-pressed="true">Fine bevel</button>
+      <button type="button" data-edge="bevel" aria-pressed="false">Fine bevel</button>
+      <button type="button" data-edge="eased" aria-pressed="true">Eased</button>
       <button type="button" data-edge="soft" aria-pressed="false">Soft</button>
     </div>
   </div>
@@ -184,6 +189,9 @@
       <button type="button" class="ghost" data-view="hero">Table</button>
       <button type="button" class="ghost" data-view="close">Close</button>
       <button type="button" class="ghost" data-view="top">Above</button>
+      <button type="button" class="ghost" data-view="front">Front</button>
+      <button type="button" class="ghost" data-view="corner">Corner</button>
+      <button type="button" class="ghost" id="dimsBtn" aria-pressed="false">Dimensions</button>
     </div>
     <div class="row">
       <button type="button" class="ghost" id="turntable" aria-pressed="false">Turntable</button>
@@ -195,6 +203,7 @@
 </section>
 
 <div id="labels" aria-hidden="true"></div>
+<svg id="dims" aria-hidden="true"><g></g></svg>
 <div id="dock">
 <div id="voice" aria-live="polite">
   <h2 id="status">Nothing here yet.</h2>
@@ -243,6 +252,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 
 // Units are centimetres. A phone is 7.15 × 14.7 × 0.84.
 const PHONE = { w: 7.15, l: 14.7, t: 0.84 };
@@ -278,6 +288,9 @@ controls.autoRotateSpeed = 0.6;
 const rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: 4 });
 const composer = new EffectComposer(renderer, rt);
 composer.addPass(new RenderPass(scene, camera));
+// a real lens: the object sharp, the room behind it soft
+const dof = new BokehPass(scene, camera, { focus: 100, aperture: 0.00003, maxblur: 0.007 });
+composer.addPass(dof);
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.85, 0.55, 1.0);
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
@@ -382,6 +395,7 @@ const POOL_TEX = radialTex();
 const FINISHES = {
   walnut:   { label: 'Walnut',   swatch: '#6A4630', felt: '#2E2A26', make: () => ({ map: woodTex('#5E3C27', '#2A170C', 23, 1 / 40), roughness: 0.5, clearcoat: 0.3 }) },
   oak:      { label: 'Oak',      swatch: '#C9A274', felt: '#CDBFA8', make: () => ({ map: woodTex('#C29B6C', '#6E4A2A', 11, 1 / 40), roughness: 0.62, clearcoat: 0.15 }) },
+  ebonized: { label: 'Ebonized oak', swatch: '#211B17', felt: '#2E2A26', make: () => ({ map: woodTex('#211B16', '#0A0705', 37, 1 / 40), roughness: 0.46, clearcoat: 0.35 }) },
   silver:   { label: 'Silver',   swatch: '#C9CCCF', felt: '#3A3836', metal: true, make: () => ({ map: blastTex('#C6C9CC', 83), roughness: 0.36 }) },
   graphite: { label: 'Graphite', swatch: '#4A4C50', felt: '#3A3836', metal: true, make: () => ({ map: blastTex('#4C4E52', 89), roughness: 0.42 }) },
 };
@@ -391,8 +405,8 @@ const LEATHERS = {
   oxblood: { label: 'Oxblood', hex: '#5C2121' },
   stone:   { label: 'Stone',   hex: '#B5A996' },
 };
-const EDGES = { bevel: { r: 0.3, b: 0.14, seg: 1 }, soft: { r: 1.6, b: 0.55, seg: 7 } };
-let edgeKey = 'bevel', leatherLid = false, leatherKey = 'tan';
+const EDGES = { bevel: { r: 0.3, b: 0.14, seg: 1 }, eased: { r: 1.3, b: 0.38, seg: 5 }, soft: { r: 1.8, b: 0.65, seg: 7 } };
+let edgeKey = 'eased', leatherLid = false, leatherKey = 'tan';
 const GLOWS = {
   ember:  { label: 'Ember',  hex: '#FF7A2E' },
   candle: { label: 'Candle', hex: '#FFB45C' },
@@ -441,11 +455,12 @@ makeLeather(leatherKey);
 
 /* ───────────────────────── the room ───────────────────────── */
 
+// a lacquered dining table: it catches the lamp, and the warm light under the box
+const tableMap = woodTex('#3A2A1F', '#130B06', 5, 1 / 120);
 const table = new THREE.Mesh(
   new THREE.PlaneGeometry(900, 900),
-  new THREE.MeshStandardMaterial({ map: woodTex('#3B2B20', '#140C07', 5, 1 / 120), roughness: 0.55 })
+  new THREE.MeshPhysicalMaterial({ map: tableMap, roughness: 0.55, clearcoat: 0.25, clearcoatRoughness: 0.5, bumpMap: tableMap, bumpScale: 0.25 })
 );
-table.material.bumpMap = table.material.map; table.material.bumpScale = 0.4;
 table.rotation.x = -Math.PI / 2;
 table.receiveShadow = true;
 scene.add(table);
@@ -469,10 +484,58 @@ lamp.shadow.bias = -0.0003; lamp.shadow.radius = 8;
 lamp.shadow.camera.near = 40; lamp.shadow.camera.far = 260;
 scene.add(lamp, lamp.target);
 
+// a warm rim from behind, the way a product photographer catches the top edges
+const rim = new THREE.DirectionalLight('#FFB070', 0);
+rim.position.set(-70, 45, -120);
+scene.add(rim);
+// and a soft fill from the camera side, so the front reads as wood and not a silhouette
+const fill = new THREE.DirectionalLight('#FFD2A0', 0);
+fill.position.set(30, 25, 140);
+scene.add(fill);
+
+// the room behind, never in focus: a back wall, a sideboard with a lamp and a plant,
+// a picture, and a second pendant further down the table
+const room = new THREE.Group(); scene.add(room);
+const roomMat = c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.85 });
+const wall = new THREE.Mesh(new THREE.PlaneGeometry(1400, 500), roomMat('#5E4A3A')); wall.position.set(0, 150, -330); wall.receiveShadow = true; room.add(wall);
+const sideboard = new THREE.Mesh(new THREE.BoxGeometry(200, 80, 50), new THREE.MeshStandardMaterial({ map: woodTex('#3A2618', '#160C06', 41, 1 / 80), roughness: 0.5 }));
+sideboard.position.set(-170, 40, -290); room.add(sideboard);
+const picture = new THREE.Mesh(new THREE.BoxGeometry(80, 60, 3), roomMat('#1A130E')); picture.position.set(-150, 185, -328); room.add(picture);
+const art = new THREE.Mesh(new THREE.PlaneGeometry(64, 44), roomMat('#7A6650')); art.position.set(-150, 185, -326); room.add(art);
+const pot = new THREE.Mesh(new THREE.CylinderGeometry(9, 7, 22, 24), roomMat('#2C2520')); pot.position.set(-220, 91, -290); room.add(pot);
+const leafMat = roomMat('#24301F');
+for (let k = 0; k < 9; k++) {
+  const leaf = new THREE.Mesh(new THREE.SphereGeometry(9, 12, 10), leafMat);
+  const a = k * 0.7;
+  leaf.scale.set(0.5, 1.5, 0.35); leaf.position.set(-220 + Math.cos(a) * 9, 118 + (k % 3) * 9, -290 + Math.sin(a) * 9);
+  leaf.rotation.z = Math.cos(a) * 0.6; room.add(leaf);
+}
+const glowMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.5, 0.9, 0.42), toneMapped: false });
+function practical(x, y, z, shadeR, shadeH, onTable) {
+  const g = new THREE.Group(); g.position.set(x, y, z); room.add(g);
+  const shade = new THREE.Mesh(new THREE.CylinderGeometry(shadeR * 0.55, shadeR, shadeH, 32, 1, true), new THREE.MeshStandardMaterial({ color: '#141210', roughness: 0.6, side: THREE.DoubleSide }));
+  g.add(shade);
+  const mouth = new THREE.Mesh(new THREE.CircleGeometry(shadeR * 0.96, 32), glowMat); mouth.rotation.x = Math.PI / 2; mouth.position.y = -shadeH / 2 + 0.2; g.add(mouth);
+  if (onTable) { const stem = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 30, 8), roomMat('#1A1612')); stem.position.y = -shadeH / 2 - 15; g.add(stem); }
+  else { const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 300, 6), roomMat('#0E0C0A')); cord.position.y = shadeH / 2 + 150; g.add(cord); }
+  const l = new THREE.PointLight('#FFB066', 0, 260, 0); l.position.y = -shadeH / 2 - 5; g.add(l);
+  return { g, l, mouth };
+}
+const practicals = [practical(-140, 112, -290, 14, 18, true), practical(80, 150, -250, 18, 20, false)];
+
+// what the box itself reflects in the evening: a dark room, a warm lamp overhead, a softer one behind
+const eveEnvScene = new THREE.Scene();
+eveEnvScene.add(new THREE.Mesh(new THREE.BoxGeometry(20, 20, 20), new THREE.MeshBasicMaterial({ color: '#120C08', side: THREE.BackSide })));
+[[0, 9.5, 1, 3.5, 2, new THREE.Color(2.4, 1.5, 0.8)], [-6, 3, -9.5, 5, 3, new THREE.Color(0.7, 0.42, 0.22)], [9.5, 2, 0, 3, 5, new THREE.Color(0.25, 0.15, 0.09)]].forEach(([x, y, z, w, h, c]) => {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide }));
+  m.position.set(x, y, z); m.lookAt(0, 0, 0); eveEnvScene.add(m);
+});
+const ENV = { day: scene.environment, eve: pmrem.fromScene(eveEnvScene, 0.03).texture };
+
 const DAY = { bg: new THREE.Color('#BCAE9B'), hemi: 1.1, window: 2.4, lamp: 0.0, env: 0.75 };
-const EVE = { bg: new THREE.Color('#0D0A07'), hemi: 0.06, window: 0.0, lamp: 2.6, env: 0.14 };
+const EVE = { bg: new THREE.Color('#0D0A07'), hemi: 0.06, window: 0.0, lamp: 2.6, env: 0.55 };
 scene.background = EVE.bg.clone();
-scene.fog = new THREE.Fog(EVE.bg.clone(), 180, 520);
+scene.fog = new THREE.Fog(EVE.bg.clone(), 260, 900);
 
 function setDaylight(d) {          // 1 = afternoon, 0 = evening
   const lampOn = 1 - THREE.MathUtils.smoothstep(d, 0.45, 0.85);
@@ -481,7 +544,11 @@ function setDaylight(d) {          // 1 = afternoon, 0 = evening
   hemi.intensity = THREE.MathUtils.lerp(EVE.hemi, DAY.hemi, d);
   windowLight.intensity = THREE.MathUtils.lerp(EVE.window, DAY.window, d);
   lamp.intensity = EVE.lamp * lampOn;
+  scene.environment = d > 0.5 ? ENV.day : ENV.eve;
   scene.environmentIntensity = THREE.MathUtils.lerp(EVE.env, DAY.env, d);
+  rim.intensity = 1.3 * lampOn;
+  fill.intensity = 1.5 * lampOn;
+  practicals.forEach((p, k) => { p.l.intensity = (k ? 4 : 7) * lampOn; p.mouth.visible = lampOn > 0.05; });
 }
 
 /* ───────────────────────── phones ───────────────────────── */
@@ -710,7 +777,7 @@ braidTex.repeat.set(60, 1);
 
 function makeBox(g, cols, rows) {
   const E = EDGES[edgeKey];
-  const T = 1.2, H = 5.6, P = 0.5, GAP = 0.06, IW = cols * BAY.w, ID = rows * BAY.d, W = IW + 2 * T, D = ID + 2 * T;
+  const T = 1.2, H = 5.2, P = 0.5, GAP = 0.06, IW = cols * BAY.w, ID = rows * BAY.d, W = IW + 2 * T, D = ID + 2 * T;
   const parts = [], labels = [];
   const explode = (obj, dy) => { obj.userData.base = obj.position.clone(); obj.userData.dy = dy; parts.push(obj); return obj; };
   const label = (obj, at, title, text, side) => labels.push({ obj, at: new THREE.Vector3(...at), title, text, side });
@@ -802,15 +869,15 @@ function makeBox(g, cols, rows) {
   const front = new THREE.Group(); b.add(front);
   if (cols * rows === 1) {
     const dots = [];
-    for (let k = 0; k < 12; k++) { const d = pinhole((k - 5.5) * 0.72, 2.3, D / 2 + 0.01); front.add(d, d.userData.halo); dots.push(d); }
+    for (let k = 0; k < 12; k++) { const d = pinhole((k - 5.5) * 0.72, H * 0.5, D / 2 + 0.01); front.add(d, d.userData.halo); dots.push(d); }
     leds.push(dots);
   } else {
-    bays.forEach((_, i) => { const d = pinhole((i - (bays.length - 1) / 2) * 1.3, 2.3, D / 2 + 0.01); front.add(d, d.userData.halo); leds.push([d]); });
+    bays.forEach((_, i) => { const d = pinhole((i - (bays.length - 1) / 2) * 1.3, H * 0.5, D / 2 + 0.01); front.add(d, d.userData.halo); leds.push([d]); });
   }
   const frontPool = pool(Math.min(34, W + 6)); frontPool.position.set(0, 0.05, D / 2 + 6); g.add(frontPool);
 
   // the lid: the same solid, one hairline seam all round, hinged invisibly along the back
-  const Ld = 1.3;
+  const Ld = 1.75;
   const hinge = new THREE.Group(); hinge.position.set(0, P + H + GAP, -D / 2); g.add(explode(hinge, 37));
   const lidGeo = slab(W, D, Ld, { uv: grainUV(W, D, Ld) }); lidGeo.translate(0, 0, D / 2);
   const lidTop = tag(new THREE.Mesh(lidGeo), 'body'); lidTop.userData.lid = true; hinge.add(lidTop);
@@ -839,7 +906,7 @@ function makeBox(g, cols, rows) {
   const seam = new THREE.Mesh(seamGeo, new THREE.MeshBasicMaterial({ color: '#000', toneMapped: false, transparent: true, opacity: 0, depthWrite: false }));
   seam.position.y = P + H - 0.02; g.add(seam);
   const light = new THREE.PointLight('#fff', 0, 45, 0); light.position.set(0, P + 4, 0); g.add(light);
-  return { slots, leds, pools, light, hinge, front: frontPool, seam, parts, labels, phoneDy: 30 };
+  return { slots, leds, pools, light, hinge, front: frontPool, seam, parts, labels, phoneDy: 30, dims: { W, D, H: P + H + GAP + Ld } };
 }
 
 /* ───────────────────────── state ───────────────────────── */
@@ -1203,6 +1270,9 @@ function frame(now) {
   syncButtons();
   tweenCamera(dt);
   controls.update();
+  dof.uniforms.focus.value = camera.position.distanceTo(controls.target);
+  dof.uniforms.aperture.value = (innerWidth < 760 ? 0.6 : 1) * 0.000035 * (100 / Math.max(40, dof.uniforms.focus.value));
+  if (dimsOn) renderDims();
   composer.render();
   requestAnimationFrame(frame);
 }
@@ -1285,6 +1355,8 @@ const VIEWS = {
   close: { dir: [0.75, 0.3, 0.7], dist: 52, y: 3, fit: 0.75 },
   inside: { dir: [0.9, 0.42, 1], dist: 140, y: 19, fit: 2.6, absolute: true },
   top:   { dir: [0, 1, 0.08], dist: 96, y: 0, fit: 1.25 },
+  front: { dir: [0, 0.16, 1], dist: 98, y: 3, fit: 1.5 },
+  corner: { dir: [1, 0.55, 0.85], dist: 34, fit: 0, corner: true },
 };
 function goView(name, instant) {
   currentView = name;
@@ -1293,6 +1365,11 @@ function goView(name, instant) {
   const d = Math.max(v.dist * (v.absolute ? Math.max(0.75, form.frame) : form.frame), (form.width * v.fit / 2) / hTan);
   const to = new THREE.Vector3(...v.dir).normalize().multiplyScalar(d);
   const target = new THREE.Vector3(0, v.y + (v.absolute ? 0 : form.lift || 0), 0);
+  if (v.corner) {
+    const dm = device.dims || { W: 20, D: 20, H: 4 };
+    target.set(dm.W / 2 - 1.5, dm.H - 1.2, dm.D / 2 - 1.5);
+    to.copy(new THREE.Vector3(...v.dir).normalize().multiplyScalar(v.dist * Math.max(0.6, form.frame / 1.4))).add(target);
+  }
   if (instant || reduceMotion) { camera.position.copy(to); controls.target.copy(target); tween = null; return; }
   tween = { from: camera.position.clone(), fromT: controls.target.clone(), to, target, t: 0 };
 }
@@ -1305,6 +1382,32 @@ function tweenCamera(dt) {
   if (tween.t >= 1) tween = null;
 }
 function stopTween() { tween = null; }
+
+/* ───────────────────────── dimensions ───────────────────────── */
+
+let dimsOn = false;
+const dimsG = document.querySelector('#dims g'), vD = new THREE.Vector3();
+function scr(x, y, z) { vD.set(x, y, z).project(camera); return [(vD.x + 1) / 2 * innerWidth, (1 - vD.y) / 2 * innerHeight]; }
+function renderDims() {
+  camera.updateMatrixWorld();
+  const dm = device.dims;
+  if (!dm || inside.k > 0.05) { dimsG.innerHTML = ''; return; }
+  const cm = v => (Math.round(v * 2) / 2).toFixed(1).replace('.0', '') + ' cm';
+  const o = 3.5, tick = 1.2;
+  const seg = (a, b, label, t) => {
+    const [x1, y1] = scr(...a), [x2, y2] = scr(...b), [tx1, ty1] = scr(...t[0]), [tx2, ty2] = scr(...t[1]);
+    const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len;
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>` +
+      `<line x1="${x1 - nx * 5}" y1="${y1 - ny * 5}" x2="${x1 + nx * 5}" y2="${y1 + ny * 5}"/>` +
+      `<line x1="${x2 - nx * 5}" y1="${y2 - ny * 5}" x2="${x2 + nx * 5}" y2="${y2 + ny * 5}"/>` +
+      `<text x="${(tx1 + tx2) / 2}" y="${(ty1 + ty2) / 2}" text-anchor="middle" dominant-baseline="middle">${label}</text>`;
+  };
+  const W = dm.W, D = dm.D, H = dm.H;
+  dimsG.innerHTML =
+    seg([-W / 2, 0.1, D / 2 + o], [W / 2, 0.1, D / 2 + o], cm(W), [[-W / 2, 0.1, D / 2 + o + 3], [W / 2, 0.1, D / 2 + o + 3]]) +
+    seg([W / 2 + o, 0, D / 2], [W / 2 + o, H, D / 2], cm(H), [[W / 2 + o + 4.5, 0, D / 2], [W / 2 + o + 4.5, H, D / 2]]) +
+    seg([W / 2 + o, 0.1, D / 2], [W / 2 + o, 0.1, -D / 2], cm(D), [[W / 2 + o + 4, 0.1, D / 2], [W / 2 + o + 4, 0.1, -D / 2]]);
+}
 
 /* ───────────────────────── panels ───────────────────────── */
 
@@ -1352,6 +1455,11 @@ $('leatherLidBtn').onclick = e => {
 
 document.querySelectorAll('#formSeg button').forEach(b => b.onclick = () => { if (b.dataset.form !== formKey) { if (inside.target) setInside(false); buildForm(b.dataset.form); if (mode === 'evening') eveningState(eveningM); } });
 document.querySelectorAll('#views button').forEach(b => b.onclick = () => goView(b.dataset.view));
+$('dimsBtn').onclick = e => {
+  dimsOn = !dimsOn; document.body.classList.toggle('dims', dimsOn);
+  e.currentTarget.setAttribute('aria-pressed', String(dimsOn));
+  if (!dimsOn) dimsG.innerHTML = '';
+};
 $('turntable').onclick = e => { controls.autoRotate = !controls.autoRotate; e.currentTarget.setAttribute('aria-pressed', String(controls.autoRotate)); };
 $('soundBtn').onclick = e => { soundOn = !soundOn; e.currentTarget.setAttribute('aria-pressed', String(soundOn)); e.currentTarget.textContent = soundOn ? 'Sound on' : 'Sound off'; };
 $('roomBtn').onclick = e => {
@@ -1386,6 +1494,7 @@ function renderLabels() {
     labelsEl.innerHTML = `<svg>${list.map(() => '<line></line><circle r="3.5"></circle>').join('')}</svg>` +
       list.map(l => `<div class="tag ${l.side === 'left' ? 'left' : ''}"><span><b>${l.title}</b>${l.text}</span></div>`).join('');
   }
+  camera.updateMatrixWorld();
   const show = THREE.MathUtils.smoothstep(inside.k, 0.7, 1);
   const tags = labelsEl.querySelectorAll('.tag'), lines = labelsEl.querySelectorAll('line'), dots = labelsEl.querySelectorAll('circle');
   labelsEl.style.opacity = show;

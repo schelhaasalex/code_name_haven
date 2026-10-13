@@ -53,6 +53,11 @@ outside.
 board, body, coils over ferrite, magnet rings, the leather insert, phones,
 lid, plus the hidden hinge, the vents and the single USB-C cable. It is a proposal, not an engineered design.
 
+The scene is lit and shot like a product photograph: a lens with depth of
+field, a room behind the table that stays out of focus, a warm rim light on
+the top edges. **Front**, **Corner** and **Dimensions** give the elevation,
+the detail and the measured drawing.
+
 **Try it** lets you set phones down, pick them up (the lock screen shows the
 Live Activity), open and close the lid, and end the evening. **An evening**
 plays a scripted night from 6:30 to 11:00. Finishes and light colours switch
