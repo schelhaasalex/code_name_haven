@@ -12,7 +12,7 @@ box notices the phone itself is at the bottom.
 ## What happens
 
 1. The phone goes into a slot and snaps onto the pad. On the way in it reads
-   the slot's tag: `https://<LINK_DOMAIN>/d/<box secret>/<slot>`.
+   the slot's tag: `https://<LINK_DOMAIN>/p/<box secret>/<slot>`.
 2. iOS shows a banner. One tap opens the app. (With the optional "NFC tag
    scanned" automation, there is no tap.)
 3. The app turns that slot's light on (`DockLight`, never waited on). Then it
@@ -48,7 +48,15 @@ each. Slot 1 is segment 0, through to slot 4 as segment 3. Set the segments up
 once in WLED's LED settings. The app only switches a segment on or off. It
 turns on the controller as a whole when lighting a slot, and never turns it off.
 
-**Site.** `links/` must be deployed for `/d/` links to open the app. Apple
+**Links live under `/p/`, beside the cards.** A card is `/p/<secret>`; a slot
+is `/p/<secret>/<slot>`. They were `/d/` at first, and a phone installed before
+`/d/` existed kept sending them to Safari: iOS caches the site's
+`apple-app-site-association` for days, separately from the app, and neither
+reinstalling nor restarting reliably refreshes it. The site now claims every
+path except the home page, so the next new link type won't wait on that cache.
+Old `/d/` tags still read.
+
+**Site.** `links/` must be deployed for these links to open the app. Apple
 caches `apple-app-site-association`, so a phone may need the app reinstalled
 before it notices a new path.
 
