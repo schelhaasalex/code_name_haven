@@ -7,6 +7,7 @@
   ],
   "rewrites": [
     { "source": "/p/:secret", "destination": "/index.html" },
+    { "source": "/p/:secret/:slot", "destination": "/index.html" },
     { "source": "/i/:token", "destination": "/index.html" },
     { "source": "/d/:secret/:slot", "destination": "/index.html" }
   ]

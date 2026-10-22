@@ -4,9 +4,8 @@
       {
         "appIDs": ["73TQJ9R77A.com.alexschelhaas.reclaim"],
         "components": [
-          { "/": "/p/*", "comment": "A place's card: tapped, scanned, or opened from the Camera" },
-          { "/": "/i/*", "comment": "An invitation to a place, sent in a message" },
-          { "/": "/d/*", "comment": "A slot in the box: its tag, read as the phone goes in" }
+          { "/": "/", "exclude": true, "comment": "The home page stays a web page" },
+          { "/": "/*", "comment": "Everything else opens the app: a card (/p/<secret>), a slot in the box (/p/<secret>/<n>), an invitation (/i/<token>), and whatever comes next. Claimed whole, because phones cache this file for days and a path added later waits on every one of them" }
         ]
       }
     ]

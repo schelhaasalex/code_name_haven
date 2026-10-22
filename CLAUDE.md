@@ -233,7 +233,7 @@ scripts/shape.sh      # about a second, no toolchain, no network
 | Every sheet has something that opens it | Screen 17's "Name them" was a word printed on a card: the sheet was wired, nothing set the flag, and it built and previewed fine |
 | The build number is not written into the project | A setting in `project.yml` beats the xcconfig it comes from, so every upload after the first would carry the same number — refused at the end of an archive, not the start |
 | The box's lights can be found | iOS won't browse for a Bonjour service missing from `NSBonjourServices`, and says nothing — the box just never lights |
-| Every link the app makes opens it | A path missing from `apple-app-site-association` opens Safari on a page instead of the app |
+| Every link the app makes opens it | The site claims every path but the home page. Phones cache `apple-app-site-association` for days, apart from the app, and a path added later (`/d/`, the slot links' first home) opened Safari until that cache refreshed |
 
 It runs in CI on every pull request, and from a `Stop` hook in
 `.claude/settings.json` — a session here cannot end on a repo that breaks it.

@@ -21,7 +21,7 @@ domain=$(sed -n 's/^[[:space:]]*LINK_DOMAIN:[[:space:]]*\([^[:space:]#]*\).*/\1/
 secret=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '=\n')
 
 for slot in 1 2 3 4; do
-  echo "slot $slot  https://$domain/d/$secret/$slot"
+  echo "slot $slot  https://$domain/p/$secret/$slot"
 done
 
 # What the box's radio is flashed with (firmware/box/box.ino, BOX_ID_HEX): the

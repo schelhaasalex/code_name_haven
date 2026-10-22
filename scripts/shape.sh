@@ -237,14 +237,17 @@ if grep -q 'NWBrowser' $ALL_SWIFT 2>/dev/null; then
     || bad "Something browses the local network with no NSLocalNetworkUsageDescription"
 fi
 
-# 18. A link the app makes is one the site has to open. Each path is written
-#     twice outside Swift — the apple-app-site-association that hands it to the
-#     app, and the rewrite that answers it in a browser — and a path missing
-#     from the first opens Safari on a page instead of the app.
+# 18. A link the app makes is one the site has to open. The site's
+#     apple-app-site-association claims EVERY path but the home page, not a
+#     list of them: phones cache that file for days, apart from the app, and
+#     the slot links' first path, /d/, opened Safari on a phone installed the
+#     week before it existed. A path claimed whole is never waited on. Each
+#     path still needs a rewrite, so a browser gets a page rather than a 404.
 note "Every link the app makes opens it"
 AASA=links/.well-known/apple-app-site-association
+grep -qE '"/": *"/\*"' "$AASA" \
+  || bad "$AASA lists paths instead of claiming /* — a path added later waits days on every phone's cache"
 for path in $(grep -ho 'https://\\(domain)/[a-z]*/' $ALL_SWIFT | sed 's|.*)/||; s|/$||' | sort -u); do
-  grep -q "\"/$path/\*\"" "$AASA" || bad "/$path/ links are made in Swift, and $AASA doesn't hand them to the app"
   grep -q "\"/$path/:" links/vercel.json || bad "/$path/ links are made in Swift, and links/vercel.json doesn't answer them"
 done
 
