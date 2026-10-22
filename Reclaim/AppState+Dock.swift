@@ -27,6 +27,7 @@ extension AppState {
             return
         }
         PlaceSecrets.save(link.secret, for: place)
+        pairBox(secret: link.secret, place: place)
         if isLive {
             await moveHere(place)
         } else {
@@ -34,12 +35,24 @@ extension AppState {
         }
     }
 
+    /// Catching up with the box on every return to the foreground.
+    ///
     /// The light of a phone that has quietly left the box. iOS doesn't wake
     /// the app when a phone comes off the pad unless the person added the
     /// charger automation, so every return to the foreground checks. A slot
     /// can stay lit for a phone that's gone; it never goes dark under one
     /// that's there.
     func checkDock() async {
+        // An evening the box started while the app was asleep has no Live
+        // Activity — iOS won't let a background wake start one. The first look
+        // at the app is where it appears; for one already showing, this only
+        // refreshes it.
+        if let s = session, isLive {
+            await LiveActivityController.start(gatheringId: s.gatheringId,
+                                               startedAt: startedAt ?? s.startedAt,
+                                               memberCount: max(1, members.count),
+                                               placeName: placeName)
+        }
         guard DockSlot.current != nil else { return }
         let device = UIDevice.current
         device.isBatteryMonitoringEnabled = true

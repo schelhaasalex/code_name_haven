@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# The four links for a new box's slot tags, under one fresh secret.
+# The four links for a new box's slot tags, under one fresh secret, and the
+# id its Bluetooth radio is flashed with.
 #
 #   scripts/dock-tags.sh
 #
@@ -22,3 +23,9 @@ secret=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '=\n')
 for slot in 1 2 3 4; do
   echo "slot $slot  https://$domain/d/$secret/$slot"
 done
+
+# What the box's radio is flashed with (firmware/box/box.ino, BOX_ID_HEX): the
+# start of the secret's hash, so a phone can tell its box from the next one
+# without the secret ever going over the air. `Box.id(secret:)` is the same sum.
+echo
+echo "BOX_ID_HEX  $(printf %s "$secret" | shasum -a 256 | cut -c1-16)"

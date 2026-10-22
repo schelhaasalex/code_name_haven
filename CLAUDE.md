@@ -89,6 +89,7 @@ scripts/       shape.sh — the style rules, as a check rather than a hope
                generate.sh — the project, with a build number nobody has to remember
                dock-tags.sh — the four slot links for a new box
 prototype/     ceremony.html — the web rehearsal of the five-phone moment
+firmware/      box/box.ino — the box's Bluetooth radio and slot sensors (ESP32)
 ReclaimKit/    shared Swift package: models, data, ceremony, copy, design
                — and Tests/, which is where anything testable belongs
 Reclaim/       the app target
@@ -228,7 +229,7 @@ scripts/shape.sh      # about a second, no toolchain, no network
 | Siri phrases live in the app target | App Shortcuts declared in ReclaimKit built fine and were never registered |
 | Links use `LINK_DOMAIN` | There's no real domain yet; a host written into Swift is one the rename misses |
 | The App Group is the same everywhere | Two entitlements and `SessionFlag` name it; if they differ, Control Centre shows "off" forever |
-| A phone that is down keeps talking | Without `bluetooth-peripheral` the advertisement stops a second after the phone is set down, and nothing says so |
+| A phone that is down keeps talking | Without `bluetooth-peripheral` the advertisement stops a second after the phone is set down, and without `bluetooth-central` the box's news never reaches a phone that's locked — nothing says so either way |
 | Every sheet has something that opens it | Screen 17's "Name them" was a word printed on a card: the sheet was wired, nothing set the flag, and it built and previewed fine |
 | The build number is not written into the project | A setting in `project.yml` beats the xcconfig it comes from, so every upload after the first would carry the same number — refused at the end of an archive, not the start |
 | The box's lights can be found | iOS won't browse for a Bonjour service missing from `NSBonjourServices`, and says nothing — the box just never lights |
