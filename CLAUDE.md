@@ -40,7 +40,9 @@ honestly and the exact nagging instrument this product replaces.
 **4. Sensors may only ever offer.** Face-down detection, proximity, motion
 history — all of it proposes, a human confirms. A false negative (telling
 someone they weren't there when they obviously were) is the worst failure this
-product can have and is unrecoverable tonally.
+product can have and is unrecoverable tonally. The one act that confirms by
+itself is putting your phone in the box: that is the person deciding, with a
+drawer around it. Taking it out ends nothing — only the person does.
 
 **5. Zero required setup.** Never design a feature as "the user must configure
 this first". Default it. The only optional setup in the product is screen 20,
@@ -80,11 +82,12 @@ Never compare people or households against each other.
 
 ```
 VISION.md  BRIEF.md  CLAUDE.md
-docs/          APP-SPEC.md, SCHEMA-REVIEW.md, STYLE.md
+docs/          APP-SPEC.md, SCHEMA-REVIEW.md, STYLE.md, DOCK.md (the box)
 copy/          strings.json — every user-facing string
 supabase/      migrations/ (applied, tested) and tests/
 scripts/       shape.sh — the style rules, as a check rather than a hope
                generate.sh — the project, with a build number nobody has to remember
+               dock-tags.sh — the four slot links for a new box
 prototype/     ceremony.html — the web rehearsal of the five-phone moment
 ReclaimKit/    shared Swift package: models, data, ceremony, copy, design
                — and Tests/, which is where anything testable belongs
@@ -162,7 +165,7 @@ it still doesn't belong in git.
 ## The database
 
 ```sh
-supabase/tests/run.sh      # 121 assertions, in 25 blocks, on a scratch Postgres
+supabase/tests/run.sh      # 129 assertions, in 26 blocks, on a scratch Postgres
 ```
 
 Needs a local Postgres reachable via `PGHOST`/`PGPORT`/`PGUSER`. The harness
@@ -228,6 +231,8 @@ scripts/shape.sh      # about a second, no toolchain, no network
 | A phone that is down keeps talking | Without `bluetooth-peripheral` the advertisement stops a second after the phone is set down, and nothing says so |
 | Every sheet has something that opens it | Screen 17's "Name them" was a word printed on a card: the sheet was wired, nothing set the flag, and it built and previewed fine |
 | The build number is not written into the project | A setting in `project.yml` beats the xcconfig it comes from, so every upload after the first would carry the same number — refused at the end of an archive, not the start |
+| The box's lights can be found | iOS won't browse for a Bonjour service missing from `NSBonjourServices`, and says nothing — the box just never lights |
+| Every link the app makes opens it | A path missing from `apple-app-site-association` opens Safari on a page instead of the app |
 
 It runs in CI on every pull request, and from a `Stop` hook in
 `.claude/settings.json` — a session here cannot end on a repo that breaks it.
@@ -241,6 +246,10 @@ suggestion.** Write the check, and make it fail before you make it pass.
 on the table without a card or a link (in scope since 2026-09-22). It is the
 puck's software rehearsal.
 
-**Out until explicitly asked for:** the BLE/NFC puck itself, geofencing,
+**In:** the box — a drawer with four charging slots, an NFC tag and a light on
+the outside for each (in scope since 2026-10-22). It ships with the app, so
+putting a phone in it has to be enough. `docs/DOCK.md` has how it works.
+
+**Out until explicitly asked for:** geofencing,
 Android, office/B2B mode, parent mode, payments of any kind. The app is free;
 the puck is the business.

@@ -147,6 +147,7 @@ public final class AppState {
         let found: Result<Session?, any Error>
         do { found = .success(try await live) } catch { found = .failure(error) }
         await reconcile(Reconciliation.between(running: session, database: found))
+        await checkDock()
         if let token = pendingInvite {
             pendingInvite = nil
             await accept(inviteToken: token)

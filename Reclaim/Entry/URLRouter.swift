@@ -15,6 +15,12 @@ enum URLRouter {
             await state.accept(inviteToken: token)
             return
         }
+        // A slot in the box: never an unknown card — a new box's place is
+        // made by the first phone into it.
+        if let dock = Dock.link(from: url) {
+            await state.dock(dock)
+            return
+        }
         guard let secret = Handle.secret(fromCardURL: url) else { return }
         guard let place = try? await state.repo.resolvePlace(secret: secret) else {
             state.banner = t("error.card")

@@ -127,6 +127,8 @@ extension AppState {
         session = nil; gathering = nil; members = []; startedAt = nil
         iAmFaceDown = false
         SessionFlag.isLive = false
+        // However it ended, the box goes dark for this phone — never waited on.
+        Task { await DockSlot.undock() }
         watchPlaces()
     }
 

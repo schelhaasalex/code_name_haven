@@ -115,6 +115,14 @@ targets:
           When you set your phone down, $(APP_DISPLAY_NAME) lets the phones at the same
           table find this evening, so the people around you can join it without
           scanning anything. It is never used to work out where you are.
+        # The box's lights. Its controller is found by name on the home Wi-Fi
+        # and told which slot to light — nothing leaves the house. Declining
+        # leaves the box dark and changes nothing else (rule 7). iOS refuses to
+        # browse for a service that isn't listed here, without an error.
+        NSLocalNetworkUsageDescription: >-
+          $(APP_DISPLAY_NAME) turns on your slot's light when your phone is in the
+          box, using the box's controller on your Wi-Fi.
+        NSBonjourServices: [_wled._tcp]
         NSSupportsLiveActivities: true
         SUPABASE_URL: $(SUPABASE_URL)
         SUPABASE_PUBLISHABLE_KEY: $(SUPABASE_PUBLISHABLE_KEY)

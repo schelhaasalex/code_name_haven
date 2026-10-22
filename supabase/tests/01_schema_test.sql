@@ -418,7 +418,8 @@ begin
       'record_retroactive', 'gathering_members', 'place_summary', 'my_rhythm',
       'name_somewhere', 'merge_places', 'move_evening',
       'create_invite', 'accept_invite', 'has_company',
-      'open_nearby', 'nearby_offer', 'join_nearby', 'my_evenings']) as name
+      'open_nearby', 'nearby_offer', 'join_nearby', 'my_evenings',
+      'dock_place']) as name
     where not exists (
       select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'public' and p.proname = name)
@@ -430,7 +431,7 @@ begin
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public'
      and has_function_privilege('authenticated', p.oid, 'execute');
-  assert v_wrapped = 18, format('expected 18 callable wrappers, found %s', v_wrapped);
+  assert v_wrapped = 19, format('expected 19 callable wrappers, found %s', v_wrapped);
 
   -- The scheduler's job is not a client's to call: nine hours of
   -- phone-on-the-side becoming 180 minutes has to happen TO you, not by you.
@@ -443,7 +444,7 @@ begin
    where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute');
   assert v_anon = 0, format('anon can execute %s functions in public', v_anon);
 
-  raise notice 'PASS 12  eighteen wrappers callable by authenticated, none by anon';
+  raise notice 'PASS 12  nineteen wrappers callable by authenticated, none by anon';
 end $$;
 
 -- ============================================================ FINDING 15
@@ -938,6 +939,56 @@ begin
 
   perform auth.logout();
   raise notice 'PASS 22  retroactive credit is capped like auto-close, and agrees with its own clock';
+end $$;
+
+-- ============================================================ 23
+-- A box is a place whose secret was written before anyone owned it (0013).
+-- The first phone set into it makes the place; everyone after lands in it —
+-- including someone who did it in the same second, which the unique secret
+-- turns from two places into one.
+
+do $$
+declare
+  v_first  uuid := 'abababab-abab-abab-abab-ababababab01';
+  v_second uuid := 'abababab-abab-abab-abab-ababababab02';
+  v_box    uuid; v_again uuid; v_taken uuid;
+begin
+  insert into auth.users (id, email) values
+    (v_first, 'first-in@example.test'), (v_second, 'second-in@example.test');
+  insert into profiles (id, display_name) values (v_first, 'First'), (v_second, 'Second');
+
+  perform auth.login(v_first);
+  v_box := app.dock_place('a-box-secret-from-the-factory', 'still-heron');
+  assert v_box is not null, 'the first phone into a new box makes its place';
+  assert (select name from places where id = v_box) is null,
+    'a box arrives unnamed — the people at it get to say what it is';
+  assert exists (select 1 from place_people where place_id = v_box and profile_id = v_first),
+    'whoever made it is one of its people';
+
+  perform auth.login(v_second);
+  v_again := app.dock_place('a-box-secret-from-the-factory', 'calm-finch');
+  assert v_again = v_box, 'the second phone lands in the same place, not a new one';
+  assert (select count(*) from places
+           where join_secret_hash = encode(extensions.digest('a-box-secret-from-the-factory', 'sha256'), 'hex')) = 1,
+    'one box, one place';
+
+  -- Losing the race at the insert — the other phone got there between the
+  -- lookup and the write — is the unique secret's job, not the lookup's.
+  begin
+    perform app.create_place('slow-moth', 'a-box-secret-from-the-factory', null);
+    assert false, 'a second place with the same secret must be refused';
+  exception when unique_violation then null;
+  end;
+
+  -- A handle someone has already drawn is "ask again", never an error.
+  v_taken := app.dock_place('a-different-box-secret', 'still-heron');
+  assert v_taken is null, 'a taken handle comes back as null, for the phone to try another';
+  assert not exists (select 1 from places
+                      where join_secret_hash = encode(extensions.digest('a-different-box-secret', 'sha256'), 'hex')),
+    'and nothing is left half-made';
+
+  perform auth.logout();
+  raise notice 'PASS 23  a box makes its place once, and everyone set into it lands there';
 end $$;
 
 do $$ begin raise notice '--- all assertions held ---'; end $$;

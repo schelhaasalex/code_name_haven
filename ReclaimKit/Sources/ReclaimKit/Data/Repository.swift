@@ -47,6 +47,9 @@ public protocol Repository: Sendable {
     func myEvenings() async throws -> EveningTotal
     func resolvePlace(secret: String) async throws -> UUID?
     func createPlace(handle: String, secret: String, name: String?) async throws -> UUID
+    /// A box's place, made by whoever is first into it (migration 0013). Nil
+    /// means the handle was taken: draw another and ask again.
+    func dockPlace(secret: String, handle: String) async throws -> UUID?
     func nameSomewhere(handle: String, secret: String, name: String) async throws -> UUID
     func mergePlaces(from: UUID, into: UUID) async throws
     /// A week-long link into one of your places (migration 0008). Joins the

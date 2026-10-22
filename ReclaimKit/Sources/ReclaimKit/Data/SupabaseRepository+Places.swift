@@ -44,6 +44,12 @@ extension SupabaseRepository {
             .execute().value
     }
 
+    public func dockPlace(secret: String, handle: String) async throws -> UUID? {
+        struct P: Encodable { let p_secret: String; let p_handle: String }
+        return try await client.rpc("dock_place", params: P(p_secret: secret, p_handle: handle))
+            .execute().value
+    }
+
     public func nameSomewhere(handle: String, secret: String, name: String) async throws -> UUID {
         struct P: Encodable { let p_handle: String; let p_secret: String; let p_name: String }
         return try await client.rpc("name_somewhere",
