@@ -7,8 +7,14 @@ import ReclaimKit
 /// only offers to open http(s) URLs from a BACKGROUND tag read — which is the
 /// whole point: the phone stays locked and the app stays closed.
 enum URLRouter {
+
+    /// The same link, arriving by both doors at once, is one tap.
+    @MainActor private static var last: (url: URL, at: Date)?
+
     @MainActor
     static func handle(_ url: URL, state: AppState) async {
+        if let last, last.url == url, Date().timeIntervalSince(last.at) < 3 { return }
+        last = (url, Date())
         // An invite joins a place and starts nothing — checked first, and a
         // different path from a card, so the two can't be mistaken.
         if let token = Links.inviteToken(from: url) {

@@ -46,6 +46,13 @@ struct ReclaimApp: App {
                 .onOpenURL { url in
                     Task { await URLRouter.handle(url, state: state) }
                 }
+                // A tag read by the system arrives as an activity to
+                // continue, not a URL to open — `onOpenURL` never sees it.
+                // The app came forward on every tap and did nothing.
+                .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+                    guard let url = activity.webpageURL else { return }
+                    Task { await URLRouter.handle(url, state: state) }
+                }
         }
     }
 }
