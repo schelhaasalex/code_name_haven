@@ -95,6 +95,11 @@ extension PreviewRepository {
         return p.id
     }
 
+    /// The sample household's box is its kitchen table.
+    public func dockPlace(secret: String, handle: String) async throws -> UUID? {
+        places.first?.id
+    }
+
     /// Like the RPC, every placeless evening of yours moves onto the new place.
     public func nameSomewhere(handle: String, secret: String, name: String) async throws -> UUID {
         let id = try await createPlace(handle: handle, secret: secret, name: name)
