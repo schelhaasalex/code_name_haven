@@ -24,7 +24,11 @@ const char *BOX_ID_HEX = "0000000000000000";
 // One digital input per slot. An IR obstacle module (FC-51 and the like)
 // pulls its output LOW when something is over it; so does a switch wired to
 // ground. Set SLOT_ACTIVE to HIGH for a sensor that does the opposite.
-const int SLOT_PINS[4] = {2, 3, 4, 5};
+//
+// GPIO numbers, not the board's labels. On a XIAO ESP32-C3 these are D1–D4.
+// Not D0 (GPIO 2), D8 or D9: the chip reads those while it boots, and a phone
+// sitting in that slot at power-on could stop it starting.
+const int SLOT_PINS[4] = {3, 4, 5, 6};
 const int SLOT_ACTIVE = LOW;
 
 // The lights, if this board runs them: a strip with two LEDs per slot, slot 1

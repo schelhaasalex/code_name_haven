@@ -117,7 +117,9 @@ the way in.
    library's `src/nimconfig.h`.
 3. Run `scripts/dock-tags.sh`. Write the four links onto the tags, and put its
    `BOX_ID_HEX` into the sketch. **Both come from the same run.**
-4. Set `SLOT_PINS` for your wiring, then flash. The serial monitor at 115200
+4. Set `SLOT_PINS` for your wiring, then flash. On a XIAO ESP32-C3 the defaults are
+   D1–D4; keep sensors off D0, D8 and D9, which the chip reads at boot. Fit
+   the antenna that comes with it: without it the range is a few centimetres. The serial monitor at 115200
    prints `slots 01` when slot 1 fills.
 
 ### Testing it
