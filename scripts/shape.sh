@@ -188,6 +188,14 @@ if grep -lq 'CBPeripheralManager' $ALL_SWIFT 2>/dev/null; then
   grep -q 'NSBluetoothAlwaysUsageDescription' project.yml \
     || bad "Bluetooth is used with no NSBluetoothAlwaysUsageDescription — the app crashes on first use"
 fi
+# The same, for the phone in the box: a central that asks iOS to restore it is
+# one that expects to be woken in the background, and only bluetooth-central
+# lets that happen. Without it the connection to the box goes quiet the moment
+# the screen does — which is the moment the phone is put in.
+if grep -q 'CBCentralManagerOptionRestoreIdentifierKey' $ALL_SWIFT 2>/dev/null; then
+  grep -qE 'UIBackgroundModes:.*bluetooth-central' project.yml \
+    || bad "Something restores a Bluetooth central, but UIBackgroundModes has no bluetooth-central"
+fi
 
 # 15. A sheet nothing opens. `@State private var naming = false` and
 #     `.sheet(isPresented: $naming)` were both there on screen 17, and nothing

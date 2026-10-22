@@ -114,7 +114,8 @@ targets:
         NSBluetoothAlwaysUsageDescription: >-
           When you set your phone down, $(APP_DISPLAY_NAME) lets the phones at the same
           table find this evening, so the people around you can join it without
-          scanning anything. It is never used to work out where you are.
+          scanning anything. With a box, it hears when your phone goes in. It is
+          never used to work out where you are.
         # The box's lights. Its controller is found by name on the home Wi-Fi
         # and told which slot to light — nothing leaves the house. Declining
         # leaves the box dark and changes nothing else (rule 7). iOS refuses to
@@ -127,10 +128,14 @@ targets:
         SUPABASE_URL: $(SUPABASE_URL)
         SUPABASE_PUBLISHABLE_KEY: $(SUPABASE_PUBLISHABLE_KEY)
         # The phone that is DOWN keeps saying so while the screen is off —
-        # that is the whole evening, and it is the only reason this is here.
-        # The phone still in a hand listens in the foreground only, which
-        # needs no mode at all, so `bluetooth-central` is deliberately absent.
-        UIBackgroundModes: [bluetooth-peripheral]
+        # that is the whole evening. The phone still in a hand listens for
+        # tables in the foreground only (NearbyScanner).
+        #
+        # `bluetooth-central` is for the box alone: the standing connection
+        # that lets a slot filling wake the app and start the evening with
+        # nobody touching the phone (BoxLink). Without it iOS never delivers
+        # the box's news to an app in the background, and nothing says so.
+        UIBackgroundModes: [bluetooth-peripheral, bluetooth-central]
         CFBundleURLTypes:
           - CFBundleURLSchemes: [reclaim]
 

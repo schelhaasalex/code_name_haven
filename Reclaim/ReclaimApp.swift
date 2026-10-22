@@ -29,6 +29,10 @@ struct ReclaimApp: App {
         // an evening started elsewhere or ending one ended elsewhere.
         IntentEnvironment.repository = repo
         IntentEnvironment.onSessionChanged = { await state.load() }
+        // Here, not in a view: when the box relaunches the app in the
+        // background there is no view, and the connection iOS kept open has
+        // to be claimed before launch finishes.
+        state.watchBox()
     }
 
     var body: some Scene {

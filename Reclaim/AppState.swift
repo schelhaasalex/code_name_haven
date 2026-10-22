@@ -91,6 +91,9 @@ public final class AppState {
     /// `AppState+Nearby` has the shape of it.
     let beacon = NearbyBeacon()
     let scanner = NearbyScanner()
+    /// The box, if this phone has one: a standing connection that wakes the
+    /// app when a slot fills (`AppState+Box`).
+    let boxLink = BoxLink()
     /// Asked once per table, never twice (`NearbyOffers`).
     var offers = NearbyOffers()
     var pump: Task<Void, Never>?
