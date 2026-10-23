@@ -245,6 +245,10 @@ only hook the hardware needs.
 a timer) and is deliberately *not* granted to `authenticated` — it runs from a
 scheduler, not a client.
 
+*Done in 0014, a month late:* nothing had scheduled it, and an evening on the
+hosted project sat "live" for seventeen hours before anyone noticed. 0014
+turns on `pg_cron` and runs it every five minutes, where `pg_cron` exists.
+
 **Realtime.** The publication for the ceremony broadcast isn't configured yet.
 That belongs with step 3 of the build order, since the broadcast is a channel
 message rather than a table change.
