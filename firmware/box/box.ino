@@ -14,6 +14,17 @@
 
 #include <NimBLEDevice.h>
 
+// The radio has a fixed number of things it can do at once — advertising is
+// one, each connected phone is another (6 in all on an ESP32-C3). NimBLE's
+// connection limit lives in the library's nimconfig.h, and setting it past
+// what the radio has doesn't fail the build: the board crashes on every boot
+// with "assert failed: npl_freertos_mutex_pend", and never advertises. So the
+// build fails here instead. On a C3 that means 5 at most: five phones in the
+// house connected, and one more advertisement for the next.
+#if defined(CONFIG_BT_CTRL_BLE_MAX_ACT) && CONFIG_BT_NIMBLE_MAX_CONNECTIONS >= CONFIG_BT_CTRL_BLE_MAX_ACT
+#error "CONFIG_BT_NIMBLE_MAX_CONNECTIONS in NimBLE-Arduino's nimconfig.h is more than this chip's radio can hold; on an ESP32-C3 use 5"
+#endif
+
 // ---------------------------------------------------------------- this box
 // From scripts/dock-tags.sh, which prints it beside the four tag links. The
 // first eight bytes of SHA-256 of the box's secret: who the box is, never the

@@ -124,7 +124,10 @@ the way in.
    build tools is Intel-only and fails with "bad CPU type" without it.
 2. NimBLE-Arduino allows three connections by default, and every phone in the
    house holds one. In the library's `src/nimconfig.h`, uncomment
-   `// #define CONFIG_BT_NIMBLE_MAX_CONNECTIONS 3` near the top and make it 9.
+   `// #define CONFIG_BT_NIMBLE_MAX_CONNECTIONS 3` near the top and make it
+   **5** on an ESP32-C3. Not more: the C3's radio holds 6 things at once and
+   advertising is one of them, and asking for more crashes the board on every
+   boot. The sketch refuses to compile if it's set too high.
 3. Run `scripts/dock-tags.sh`. Write the four links onto the tags, and put its
    `BOX_ID_HEX` into the sketch. **Both come from the same run.**
 4. Set `SLOT_PINS` for your wiring, then flash. On a XIAO ESP32-C3 the defaults are
@@ -146,6 +149,9 @@ the way in.
 - **No Live Activity, at first.** iOS doesn't let an app woken in the
   background start one. The evening counts, and the Live Activity appears the
   next time the app is opened. Starting it remotely through a push is the fix.
+- **Five phones per box.** The C3's radio holds five connections plus its
+  advertisement. A sixth phone in the house can't stay connected, and uses
+  the tag. An ESP32-S3 doesn't lift this; a different radio would.
 - **Two phones in the same second** both start correctly, but each may record
   the other's slot number. The box lights its own slots, so only the phone's
   note of which slot it's in can be wrong.
