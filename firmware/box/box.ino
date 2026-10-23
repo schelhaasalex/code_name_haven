@@ -7,8 +7,8 @@
 //
 // Board: any ESP32 with Bluetooth LE — an ESP32-C3 or ESP32-S3 dev board, a
 // Seeed XIAO ESP32-C3/S3. Not an ESP32-S2: it has no Bluetooth.
-// Library: NimBLE-Arduino 1.4.x (the 2.x API is different). Optional:
-// Adafruit NeoPixel, for lights the box runs itself.
+// Library: NimBLE-Arduino 2.x (checked against 2.5.1). Optional: Adafruit
+// NeoPixel, for lights the box runs itself.
 //
 // docs/DOCK.md has the wiring, and how to flash it.
 
@@ -57,9 +57,18 @@ unsigned long seenSince = 0;
 
 // Every phone in the house stays connected, so as each one connects the box
 // has to go straight back to advertising for the next.
+//
+// `override` on both, deliberately. NimBLE-Arduino changed these signatures
+// between 1.4 and 2.x; without it, a sketch written for the other version
+// compiles cleanly and the callbacks are simply never called — a box that
+// takes one phone and then goes quiet.
 class Callbacks : public NimBLEServerCallbacks {
-  void onConnect(NimBLEServer *server) { NimBLEDevice::startAdvertising(); }
-  void onDisconnect(NimBLEServer *server) { NimBLEDevice::startAdvertising(); }
+  void onConnect(NimBLEServer *server, NimBLEConnInfo &info) override {
+    NimBLEDevice::startAdvertising();
+  }
+  void onDisconnect(NimBLEServer *server, NimBLEConnInfo &info, int reason) override {
+    NimBLEDevice::startAdvertising();
+  }
 };
 
 uint8_t readSlots() {
@@ -105,7 +114,9 @@ void setup() {
   seenSince = millis();
   slotsChar->setValue(&reported, 1);
   light(reported);
-  service->start();
+  // In NimBLE 2.x the server starts its services; advertising would start it
+  // anyway, but saying so here keeps the order readable.
+  server->start();
 
   NimBLEAdvertising *advertising = NimBLEDevice::getAdvertising();
   advertising->addServiceUUID(SERVICE_UUID);

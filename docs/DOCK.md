@@ -118,11 +118,13 @@ the way in.
 ### Flashing it
 
 1. Install the Arduino IDE, the ESP32 board package, and **NimBLE-Arduino
-   1.4.x** (2.x changed its API). Add Adafruit NeoPixel if the board runs the
-   lights.
+   2.x** (checked with 2.5.1; 1.4.x has a different API). Add Adafruit
+   NeoPixel if the board runs the lights. On an Apple-silicon Mac, install
+   Rosetta first (`softwareupdate --install-rosetta`): one of the Arduino
+   build tools is Intel-only and fails with "bad CPU type" without it.
 2. NimBLE-Arduino allows three connections by default, and every phone in the
-   house holds one. Raise `CONFIG_BT_NIMBLE_MAX_CONNECTIONS` to 9 in the
-   library's `src/nimconfig.h`.
+   house holds one. In the library's `src/nimconfig.h`, uncomment
+   `// #define CONFIG_BT_NIMBLE_MAX_CONNECTIONS 3` near the top and make it 9.
 3. Run `scripts/dock-tags.sh`. Write the four links onto the tags, and put its
    `BOX_ID_HEX` into the sketch. **Both come from the same run.**
 4. Set `SLOT_PINS` for your wiring, then flash. On a XIAO ESP32-C3 the defaults are
