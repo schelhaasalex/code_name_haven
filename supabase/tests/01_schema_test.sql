@@ -594,13 +594,17 @@ begin
   assert app.move_evening(v_solo_place) = v_host_gathering, 'a solo evening should become the place''s, not be replaced';
   assert (select place_id from gatherings where id = v_host_gathering) = v_solo_place, 'the evening now has the place';
 
-  -- Back into an evening you already left tonight: refused, not stitched.
-  v_failed := false;
-  begin
-    perform app.move_evening(v_place);
-  exception when others then v_failed := true;
-  end;
-  assert v_failed, 'rejoining an evening you ended tonight must be refused, not merged';
+  -- Back into an evening you already left tonight: a second stretch beside
+  -- the first, never stitched to it — stitching would credit the gap (0014;
+  -- until then this was refused outright).
+  select started_at into v_started from sessions where profile_id = v_host and ended_at is null;
+  assert app.move_evening(v_place) = v_friend_gathering, 'back into the evening already open there';
+  assert (select count(*) from sessions where gathering_id = v_friend_gathering and profile_id = v_host) = 2,
+    'as a second stretch, not merged into the first';
+  assert (select started_at from sessions where profile_id = v_host and ended_at is null) = v_started,
+    'the new stretch keeps its own start, so the time away is not credited';
+  select count(*) into v_members from app.gathering_members(v_friend_gathering);
+  assert v_members = 2, format('still two people, however many stretches: saw %s', v_members);
 
   -- No live evening: nothing to move.
   perform app.end_session(null);
@@ -989,6 +993,83 @@ begin
 
   perform auth.logout();
   raise notice 'PASS 23  a box makes its place once, and everyone set into it lands there';
+end $$;
+
+-- ============================================================ 24
+-- Stepping out and coming back (0014). Someone at the box left after a
+-- minute, and when their phone went back in, start_or_join found their ended
+-- row, called it a success, and started nothing — the evening was still open
+-- because someone else was in it. Coming back is a new stretch: the time away
+-- isn't credited, the person isn't counted twice, and the stretches together
+-- decide whether the evening counted.
+
+do $$
+declare
+  v_here   uuid := 'cdcdcdcd-cdcd-cdcd-cdcd-cdcdcdcdcd01';
+  v_there  uuid := 'cdcdcdcd-cdcd-cdcd-cdcd-cdcdcdcdcd02';
+  v_place  uuid; v_other uuid;
+  v_first  uuid; v_back uuid; v_again uuid; v_gathering uuid;
+  v_rows   integer; v_people integer; r record;
+begin
+  insert into auth.users (id, email) values
+    (v_here, 'stepped-out@example.test'), (v_there, 'stayed@example.test');
+  insert into profiles (id, display_name) values (v_here, 'Stepped'), (v_there, 'Stayed');
+
+  perform auth.login(v_there);
+  v_place := app.create_place('near-moth', 'rejoin-secret', null);
+  perform app.start_or_join(v_place, 'tag', 'UTC');
+
+  perform auth.login(v_here);
+  insert into place_people (place_id, profile_id) values (v_place, v_here);
+  v_first := app.start_or_join(v_place, 'tag', 'UTC');
+  select gathering_id into v_gathering from sessions where id = v_first;
+
+  -- A first stretch of ten minutes, then out.
+  update sessions set started_at = now() - interval '10 minutes' where id = v_first;
+  perform app.end_session(v_first);
+  assert not (select qualifying from sessions where id = v_first),
+    'ten minutes on its own is not an evening yet';
+
+  -- Back in, while the other person is still there.
+  v_back := app.start_or_join(v_place, 'tag', 'UTC');
+  assert v_back <> v_first, 'coming back is a new stretch, not the old one handed back';
+  assert (select ended_at is null from sessions where id = v_back), 'and it is running';
+  assert (select gathering_id from sessions where id = v_back) = v_gathering,
+    'in the same evening as everyone else';
+
+  -- A second tap while running is still the same stretch.
+  v_again := app.start_or_join(v_place, 'tag', 'UTC');
+  assert v_again = v_back, 'two taps are one stretch';
+
+  -- Two people, however many stretches.
+  select count(*) into v_rows from app.gathering_members(v_gathering);
+  assert v_rows = 2, format('two people in the evening, listed %s times', v_rows);
+  assert (select still_live from app.gathering_members(v_gathering) where profile_id = v_here),
+    'and the one who came back is live';
+
+  -- Another ten minutes: twenty in all, so the evening counted — both stretches.
+  update sessions set started_at = now() - interval '10 minutes' where id = v_back;
+  perform app.end_session(v_back);
+  assert (select bool_and(qualifying) from sessions
+           where gathering_id = v_gathering and profile_id = v_here),
+    'two stretches of ten make an evening, and both count toward it';
+  assert (select sum(duration_minutes) from sessions
+           where gathering_id = v_gathering and profile_id = v_here) = 20,
+    'and the time away is not credited';
+
+  -- Moving into an evening you were in earlier is a new stretch there too.
+  v_other := app.create_place('kind-hare', 'rejoin-other-secret', null);
+  perform app.start_or_join(v_other, 'app', 'UTC');
+  perform app.move_evening(v_place);
+  assert (select g.place_id from sessions s join gatherings g on g.id = s.gathering_id
+           where s.profile_id = v_here and s.ended_at is null) = v_place,
+    'moving back to where you were earlier tonight is allowed';
+  assert (select count(*) from sessions
+           where gathering_id = v_gathering and profile_id = v_here) = 3,
+    'as a third stretch';
+
+  perform auth.logout();
+  raise notice 'PASS 24  stepping out and coming back is a new stretch, counted once';
 end $$;
 
 do $$ begin raise notice '--- all assertions held ---'; end $$;

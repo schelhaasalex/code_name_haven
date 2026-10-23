@@ -166,7 +166,7 @@ it still doesn't belong in git.
 ## The database
 
 ```sh
-supabase/tests/run.sh      # 129 assertions, in 26 blocks, on a scratch Postgres
+supabase/tests/run.sh      # 143 assertions, in 27 blocks, on a scratch Postgres
 ```
 
 Needs a local Postgres reachable via `PGHOST`/`PGPORT`/`PGUSER`. The harness
