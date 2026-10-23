@@ -75,15 +75,30 @@ unsigned long seenSince = 0;
 // takes one phone and then goes quiet.
 class Callbacks : public NimBLEServerCallbacks {
   void onConnect(NimBLEServer *server, NimBLEConnInfo &info) override {
+    Serial.printf("phone connected (%d now)\n", server->getConnectedCount());
     NimBLEDevice::startAdvertising();
   }
   void onDisconnect(NimBLEServer *server, NimBLEConnInfo &info, int reason) override {
+    Serial.printf("phone left (%d now)\n", server->getConnectedCount());
     NimBLEDevice::startAdvertising();
   }
 };
 
+// Slots filled from the USB cable, for testing on a desk with no sensors
+// wired: send 1–4 to toggle that slot, 0 to empty them all. A box in a drawer
+// has nothing on the other end of its USB, so this never fires there.
+uint8_t pretend = 0;
+
+void readCommands() {
+  while (Serial.available()) {
+    char c = Serial.read();
+    if (c >= '1' && c <= '4') pretend ^= (1 << (c - '1'));
+    else if (c == '0') pretend = 0;
+  }
+}
+
 uint8_t readSlots() {
-  uint8_t bits = 0;
+  uint8_t bits = pretend;
   for (int i = 0; i < 4; i++) {
     if (digitalRead(SLOT_PINS[i]) == SLOT_ACTIVE) bits |= (1 << i);
   }
@@ -136,6 +151,7 @@ void setup() {
 }
 
 void loop() {
+  readCommands();
   uint8_t now = readSlots();
   if (now != seen) {
     seen = now;
