@@ -84,7 +84,7 @@ Never compare people or households against each other.
 VISION.md  BRIEF.md  CLAUDE.md
 docs/          APP-SPEC.md, SCHEMA-REVIEW.md, STYLE.md, DOCK.md (the box)
 copy/          strings.json — every user-facing string
-supabase/      migrations/ (applied, tested) and tests/
+supabase/      migrations/ (applied, tested), functions/ (Edge Functions) and tests/
 scripts/       shape.sh — the style rules, as a check rather than a hope
                generate.sh — the project, with a build number nobody has to remember
                dock-tags.sh — the four slot links for a new box
@@ -166,7 +166,8 @@ it still doesn't belong in git.
 ## The database
 
 ```sh
-supabase/tests/run.sh      # 143 assertions, in 27 blocks, on a scratch Postgres
+supabase/tests/run.sh      # 152 assertions, in 28 blocks, on a scratch Postgres
+node --test supabase/tests/apns.test.ts   # the Live Activity push, signed and checked offline
 ```
 
 Needs a local Postgres reachable via `PGHOST`/`PGPORT`/`PGUSER`. The harness
@@ -233,6 +234,7 @@ scripts/shape.sh      # about a second, no toolchain, no network
 | Every sheet has something that opens it | Screen 17's "Name them" was a word printed on a card: the sheet was wired, nothing set the flag, and it built and previewed fine |
 | The build number is not written into the project | A setting in `project.yml` beats the xcconfig it comes from, so every upload after the first would carry the same number — refused at the end of an archive, not the start |
 | The box's lights can be found | iOS won't browse for a Bonjour service missing from `NSBonjourServices`, and says nothing — the box just never lights |
+| A Live Activity can be started by push | Without `aps-environment`, iOS never hands out a push-to-start token, and an evening the box started shows nothing on the lock screen |
 | Every link the app makes opens it | The site claims every path but the home page. Phones cache `apple-app-site-association` for days, apart from the app, and a path added later (`/d/`, the slot links' first home) opened Safari until that cache refreshed |
 
 It runs in CI on every pull request, and from a `Stop` hook in

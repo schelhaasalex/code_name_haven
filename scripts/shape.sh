@@ -251,6 +251,16 @@ for path in $(grep -ho 'https://\\(domain)/[a-z]*/' $ALL_SWIFT | sed 's|.*)/||; 
   grep -q "\"/$path/:" links/vercel.json || bad "/$path/ links are made in Swift, and links/vercel.json doesn't answer them"
 done
 
+# 19. A Live Activity the server starts needs the app to be able to receive a
+#     push at all. Without aps-environment iOS never hands out a push-to-start
+#     token, so the stream the app waits on simply never yields — no error,
+#     and an evening the box started shows nothing until the app is opened.
+note "A Live Activity can be started by push"
+if grep -q 'pushToStartTokenUpdates' $ALL_SWIFT 2>/dev/null; then
+  grep -q '<key>aps-environment</key>' Reclaim/Reclaim.entitlements \
+    || bad "The app waits for a push-to-start token, and Reclaim.entitlements has no aps-environment"
+fi
+
 echo
 if [ "$FAIL" -eq 0 ]; then
   echo "Shape is fine."

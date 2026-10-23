@@ -15,6 +15,12 @@
        (links/). -->
   <key>com.apple.developer.associated-domains</key>
   <array><string>applinks:$(LINK_DOMAIN)</string></array>
+  <!-- Push, for one thing only: the server starting the Live Activity of an
+       evening the box started in the background, where iOS won't let the
+       app start it (start-live-activity). Automatic signing turns this into
+       production for an App Store or TestFlight build. -->
+  <key>aps-environment</key>
+  <string>development</string>
   <key>com.apple.security.application-groups</key>
   <array><string>group.com.alexschelhaas.reclaim</string></array>
 </dict>
