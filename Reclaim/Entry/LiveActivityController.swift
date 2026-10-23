@@ -9,6 +9,34 @@ enum LiveActivityController {
 
     private static var current: Activity<ReclaimActivityAttributes>?
 
+    /// Whether this phone is showing one at all — the one a push started
+    /// included, which `start` then adopts by its gathering.
+    static var showing: Bool { !Activity<ReclaimActivityAttributes>.activities.isEmpty }
+
+    /// Where this build's pushes go. Run from Xcode: Apple's sandbox. From
+    /// TestFlight or the App Store: production. A token sent to the other is
+    /// refused.
+    static var pushEnvironment: String {
+        #if DEBUG
+        "sandbox"
+        #else
+        "production"
+        #endif
+    }
+
+    /// This device's push-to-start token, each time iOS hands one out — it can
+    /// change, and the server has to have the current one. iOS 17.2 and later;
+    /// before that, an evening started in the background shows its Live
+    /// Activity the next time the app is opened.
+    static func watchPushToStartTokens(_ save: @escaping @MainActor (String) async -> Void) {
+        guard #available(iOS 17.2, *) else { return }
+        Task { @MainActor in
+            for await token in Activity<ReclaimActivityAttributes>.pushToStartTokenUpdates {
+                await save(RemoteActivity.hex(token))
+            }
+        }
+    }
+
     /// Reuses the activity already showing for this gathering, if the app was
     /// relaunched under it, rather than ending it and starting an identical one.
     static func start(gatheringId: UUID, startedAt: Date, memberCount: Int, placeName: String?) async {

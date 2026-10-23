@@ -419,7 +419,7 @@ begin
       'name_somewhere', 'merge_places', 'move_evening',
       'create_invite', 'accept_invite', 'has_company',
       'open_nearby', 'nearby_offer', 'join_nearby', 'my_evenings',
-      'dock_place']) as name
+      'dock_place', 'save_activity_token']) as name
     where not exists (
       select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'public' and p.proname = name)
@@ -431,7 +431,7 @@ begin
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public'
      and has_function_privilege('authenticated', p.oid, 'execute');
-  assert v_wrapped = 19, format('expected 19 callable wrappers, found %s', v_wrapped);
+  assert v_wrapped = 20, format('expected 20 callable wrappers, found %s', v_wrapped);
 
   -- The scheduler's job is not a client's to call: nine hours of
   -- phone-on-the-side becoming 180 minutes has to happen TO you, not by you.
@@ -444,7 +444,7 @@ begin
    where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute');
   assert v_anon = 0, format('anon can execute %s functions in public', v_anon);
 
-  raise notice 'PASS 12  nineteen wrappers callable by authenticated, none by anon';
+  raise notice 'PASS 12  twenty wrappers callable by authenticated, none by anon';
 end $$;
 
 -- ============================================================ FINDING 15
@@ -1070,6 +1070,53 @@ begin
 
   perform auth.logout();
   raise notice 'PASS 24  stepping out and coming back is a new stretch, counted once';
+end $$;
+
+-- ============================================================ 25
+-- A Live Activity the server starts (0015). The phone hands over a token that
+-- can put something on its lock screen; nobody may read one, a phone may only
+-- ever file its own, and a device that changes hands changes owner.
+
+do $$
+declare
+  v_a uuid := 'efefefef-efef-efef-efef-efefefefef01';
+  v_b uuid := 'efefefef-efef-efef-efef-efefefefef02';
+  v_tok text := repeat('ab', 32);
+  v_failed boolean;
+begin
+  insert into auth.users (id, email) values (v_a, 'tokens-a@example.test'), (v_b, 'tokens-b@example.test');
+  insert into profiles (id, display_name) values (v_a, 'A'), (v_b, 'B');
+
+  perform auth.login(v_a);
+  perform app.save_activity_token(upper(v_tok), 'production');
+  assert (select profile_id from activity_tokens where token = v_tok) = v_a,
+    'a phone files its own token, stored lowercase whatever it sent';
+
+  -- The same device, signed in as someone else now.
+  perform auth.login(v_b);
+  perform app.save_activity_token(v_tok, 'sandbox');
+  assert (select profile_id from activity_tokens where token = v_tok) = v_b, 'it moves to whoever has it now';
+  assert (select environment from activity_tokens where token = v_tok) = 'sandbox', 'with its environment';
+  assert (select count(*) from activity_tokens) = 1, 'one device, one row';
+
+  v_failed := false;
+  begin perform app.save_activity_token(v_tok, 'staging'); exception when check_violation then v_failed := true; end;
+  assert v_failed, 'only Apple''s two environments';
+
+  v_failed := false;
+  begin perform app.save_activity_token('not a token', 'production'); exception when check_violation then v_failed := true; end;
+  assert v_failed, 'a token is hex, nothing else';
+
+  assert not has_table_privilege('authenticated', 'public.activity_tokens', 'select'),
+    'no phone reads anyone''s tokens, its own included';
+  assert not has_table_privilege('anon', 'public.activity_tokens', 'select'), 'nor does anyone signed out';
+
+  perform auth.logout();
+  v_failed := false;
+  begin perform app.save_activity_token(v_tok, 'production'); exception when others then v_failed := true; end;
+  assert v_failed, 'signed out, nothing is filed';
+
+  raise notice 'PASS 25  a phone files its own Live Activity token, and nobody reads one';
 end $$;
 
 do $$ begin raise notice '--- all assertions held ---'; end $$;

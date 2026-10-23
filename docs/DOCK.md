@@ -141,9 +141,10 @@ the way in.
 
 ### Known gaps in this version
 
-- **No Live Activity, at first.** iOS doesn't let an app woken in the
-  background start one. The evening counts, and the Live Activity appears the
-  next time the app is opened. Starting it remotely through a push is the fix.
+- **The Live Activity comes by push.** iOS doesn't let an app woken in the
+  background start one, so the phone asks the `start-live-activity` Edge
+  Function, which starts it with a push (iOS 17.2+; migration 0015). Without
+  the network, or on iOS 17.0–17.1, it appears the next time the app is opened.
 - **Two phones in the same second** both start correctly, but each may record
   the other's slot number. The box lights its own slots, so only the phone's
   note of which slot it's in can be wrong.

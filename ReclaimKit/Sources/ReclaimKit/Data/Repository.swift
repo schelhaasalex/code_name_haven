@@ -70,6 +70,13 @@ public protocol Repository: Sendable {
     /// Join the evening that key belongs to. The key becomes a place on the
     /// server and never leaves it as one. Returns the gathering.
     func joinNearby(key: String) async throws -> UUID
+
+    // ---- the lock screen (migration 0015) ----
+    /// This device's push-to-start token, filed as yours.
+    func saveActivityToken(_ token: String, environment: String) async throws
+    /// Asks the server to show this evening's Live Activity, which the phone
+    /// couldn't do itself in the background. `body` is `RemoteActivity.startBody`.
+    func startActivityRemotely(body: Data) async throws
 }
 
 public extension Repository {

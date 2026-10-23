@@ -19,6 +19,9 @@ extension AppState {
     /// At launch, including the background launches the box causes.
     func watchBox() {
         _ = ChargingWatch.shared
+        LiveActivityController.watchPushToStartTokens { [weak self] token in
+            try? await self?.repo.saveActivityToken(token, environment: LiveActivityController.pushEnvironment)
+        }
         boxLink.resume { [weak self] now, before, rssi in
             guard let self else { return }
             Task { await self.boxChanged(now, before: before, rssi: rssi) }
@@ -71,6 +74,23 @@ extension AppState {
         } else {
             await setItDown(place: place, source: .tag)
         }
+        await showOnLockScreen()
+    }
+
+    /// iOS refuses a Live Activity to an app in the background, which is where
+    /// the box starts every evening. The server can start one with a push
+    /// (`start-live-activity`), so it's there when the screen is next woken.
+    /// Never waited on for anything that matters: the evening already counts.
+    private func showOnLockScreen() async {
+        guard isLive, !LiveActivityController.showing, let s = session else { return }
+        let state = ReclaimActivityAttributes.ContentState(
+            startedAt: startedAt ?? s.startedAt, memberCount: max(1, members.count), placeName: placeName)
+        let place = placeName ?? t("docked.where.unnamed")
+        guard let body = try? RemoteActivity.startBody(
+            gatheringId: s.gatheringId, state: state,
+            title: t("starttap.banner.title", "place", place), body: t("starttap.banner.body"))
+        else { return }
+        try? await repo.startActivityRemotely(body: body)
     }
 
     /// Somebody's phone came out. Give this one's charger a moment to say

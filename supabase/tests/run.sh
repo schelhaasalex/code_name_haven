@@ -35,6 +35,7 @@ psql -v ON_ERROR_STOP=1 -q -d "$DB" \
   -f "$ROOT/supabase/migrations/0011_my_evenings.sql" \
   -f "$ROOT/supabase/migrations/0012_retroactive_cap.sql" \
   -f "$ROOT/supabase/migrations/0013_dock_place.sql" \
-  -f "$ROOT/supabase/migrations/0014_rejoin.sql"
+  -f "$ROOT/supabase/migrations/0014_rejoin.sql" \
+  -f "$ROOT/supabase/migrations/0015_activity_tokens.sql"
 
 psql -v ON_ERROR_STOP=1 -q -d "$DB" -f "$ROOT/supabase/tests/01_schema_test.sql"
