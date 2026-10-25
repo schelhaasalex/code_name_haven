@@ -15,6 +15,8 @@ import ReclaimKit
 struct RingMark: View {
     let startedAt: Date
     var size: CGFloat
+    /// Drawn already full, and never moving — for the wrist.
+    var still = false
 
     private var counting: ClosedRange<Date> {
         startedAt...startedAt.addingTimeInterval(Double(EveningLanding.qualifyingMinutes * 60))
@@ -22,14 +24,20 @@ struct RingMark: View {
 
     var body: some View {
         ZStack {
-            ProgressView(timerInterval: counting, countsDown: false) {
-                EmptyView()
-            } currentValueLabel: {
-                EmptyView()
+            if still {
+                Circle()
+                    .stroke(Palette.ember, lineWidth: max(2, size * 0.08))
+                    .frame(width: size * 0.84, height: size * 0.84)
+            } else {
+                ProgressView(timerInterval: counting, countsDown: false) {
+                    EmptyView()
+                } currentValueLabel: {
+                    EmptyView()
+                }
+                .progressViewStyle(.circular)
+                .tint(Palette.ember)
+                .frame(width: size * 0.84, height: size * 0.84)
             }
-            .progressViewStyle(.circular)
-            .tint(Palette.ember)
-            .frame(width: size * 0.84, height: size * 0.84)
             Circle().fill(Palette.ember).frame(width: size * 0.3, height: size * 0.3)
         }
         .frame(width: size, height: size)

@@ -8,15 +8,16 @@ import ReclaimKit
 ///
 /// The lock screen's rules, smaller. No ticking digits: a wrist is glanced at
 /// far more often than a face-down phone is picked up, so a counter here would
-/// be the clock the evening was meant to put away. The ring fills once over
-/// the first fifteen minutes and stops. No End button — the wrist is for
+/// be the clock the evening was meant to put away. So nothing moves at all:
+/// the mark is drawn full, not filling as it does on the lock screen — glanced
+/// at this often, a ring creeping round is a timer without digits. No End button — the wrist is for
 /// looking, and the lock screen and the app still end the evening.
 struct WristActivity: View {
     let state: ReclaimActivityAttributes.ContentState
 
     var body: some View {
         HStack(spacing: 10) {
-            RingMark(startedAt: state.startedAt, size: 30)
+            RingMark(startedAt: state.startedAt, size: 30, still: true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(headline)
                     .font(Type.display(16))

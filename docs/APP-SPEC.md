@@ -266,8 +266,9 @@ there's company; expanded mirrors the lock screen.
 Watch (iOS 18 and watchOS 11, nothing to set up): the same activity in the
 Smart Stack, in the small family — the mark, the headline, *"Since 7:27"*. No
 End button: the wrist is for looking while the phone is in the box or face
-down, and a wrist is glanced at far more often than a phone is picked up, so
-the no-ticking-digits rule matters more there, not less. On iOS 17 there is
+down. And nothing moves: the mark is drawn full rather than filling. A wrist
+is glanced at far more often than a phone is picked up, so a ring creeping
+round reads as a timer there even without digits. On iOS 17 there is
 no Watch face; nothing else changes.
 
 In the app the same rule holds. Screens 3, 6 and 12 say *"Since 7:27"*, never
