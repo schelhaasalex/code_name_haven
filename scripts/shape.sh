@@ -79,9 +79,9 @@ hits=$(grep -rn 'Color(hex:\|Color(red:\|Color(\.sRGB' $ALL_SWIFT | grep -v '/De
 done <<< "$hits"
 
 # 6. Every screen builds in a preview against PreviewRepository with no network.
-#    The interruption screens are the ones that matter: 13, 14, 18 and 20 are
-#    unreachable at runtime without an auto-close, a broken rhythm, a still
-#    phone or five evenings.
+#    The interruption screens are the ones that matter: 13, 14 and 20 are
+#    unreachable at runtime without an auto-close, a broken rhythm or five
+#    evenings.
 note "Every view has a preview"
 for f in $VIEW_FILES; do
   grep -qE ': View \{|: View$' "$f" || continue          # not ViewModifier

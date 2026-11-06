@@ -127,14 +127,6 @@ public final class SupabaseRepository: Repository, @unchecked Sendable {
             .execute().value
     }
 
-    public func recordRetroactive(from: Date, to: Date) async throws -> UUID {
-        struct P: Encodable { let p_started: String; let p_ended: String; let p_tz: String }
-        return try await client.rpc("record_retroactive",
-            params: P(p_started: from.ISO8601Format(), p_ended: to.ISO8601Format(),
-                      p_tz: timeZoneIdentifier))
-            .execute().value
-    }
-
     public func members(of gathering: UUID) async throws -> [Member] {
         struct P: Encodable { let p_gathering: UUID }
         return try await client.rpc("gathering_members", params: P(p_gathering: gathering))

@@ -71,7 +71,7 @@ sheet flag, a step in a local flow). It may not hold a copy of anything in
 
 Mutations go through `AppState` methods, never by a screen calling the
 repository directly. There's one exception by design — the interruption screens
-call `repo.delete(session:)` and `repo.recordRetroactive` — and it's an
+call `repo.delete(session:)` — and it's an
 exception worth removing when those grow.
 
 ## Naming
@@ -105,20 +105,16 @@ So what's left to test in Swift is thin, and it's all pure:
   constraint violation nobody will connect to the generator.
 - **Dates.** `EveningCalendar` — the dot week and the four-week grid. Week
   boundaries, month boundaries, "distinct dates" behaviour.
-- **Stationary runs.** The retroactive-credit candidate logic, separated from
-  CoreMotion so it can be run on a table of fixtures.
-- **Interruption precedence.** Which of the four surfaces when several qualify.
+- **Interruption precedence.** Which of the three surfaces when several qualify.
 
 **Extract pure logic so it can be tested.** If a piece of reasoning is worth a
 test and lives inside a view or behind a framework, move it to `ReclaimKit` as a
-function over plain values. That's how `EveningCalendar`, `StationaryRuns` and
-`Interruption.first` came to exist — date arithmetic inside two `View`s, run
-detection inside a `CMMotionActivityManager` callback, and a precedence order
-buried in an `AppState` method that needed a network, a sensor and a signed-in
-person to reach.
+function over plain values. That's how `EveningCalendar` and `Interruption.first`
+came to exist — date arithmetic inside two `View`s, and a precedence order
+buried in an `AppState` method that needed a network and a signed-in person
+to reach.
 
-Where a step is what triggers a permission prompt — asking CoreMotion, asking
-for notifications — pass it in as a closure rather than a value, so the order
+Where a step is what triggers a permission prompt — asking for notifications, say — pass it in as a closure rather than a value, so the order
 in which it *isn't* called is testable too.
 
 **Don't test SwiftUI layout.** Snapshot tests of a design that's still moving

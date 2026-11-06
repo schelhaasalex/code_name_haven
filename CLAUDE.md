@@ -224,7 +224,7 @@ scripts/shape.sh      # about a second, no toolchain, no network
 | `Reclaim/Components/` never mentions `AppState` | It's what keeps a component previewable and behaviour-free |
 | No `Text("…")` outside a `#Preview` | Rule 2 — a baked string can't be changed without a release |
 | No literal colours outside `Design/` | A hex in a view drifts from the one beside it |
-| Every view has a `#Preview` | Screens 13, 14, 18 and 20 are unreachable at runtime |
+| Every view has a `#Preview` | Screens 13, 14 and 20 are unreachable at runtime |
 | Every `t("key")` is in `strings.json` | A missing key is `⟨key⟩` in dev and empty to a person |
 | The bundled `strings.json` matches `copy/` | Same file, two places; keeping them equal is the job |
 | `LaunchBone` matches `Palette.bone` | UIKit reads `Info.plist` before any Swift runs, so the launch colour genuinely is the same fact twice |

@@ -38,7 +38,6 @@ public protocol Repository: Sendable {
     /// Joins the evening open there, or makes yours the place's. Returns the
     /// gathering you are now in. Migration 0007.
     func moveEvening(to place: UUID) async throws -> UUID
-    func recordRetroactive(from: Date, to: Date) async throws -> UUID
     func members(of gathering: UUID) async throws -> [Member]
     func summary(of place: UUID) async throws -> PlaceSummary
     func myRhythm() async throws -> Rhythm
