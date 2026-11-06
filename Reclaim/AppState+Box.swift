@@ -32,15 +32,14 @@ extension AppState {
         }
     }
 
-    /// The first tag read in a box teaches this phone which box is its own.
-    /// Asks about Bluetooth, the first time — at the box, where the question
-    /// makes sense.
-    func pairBox(secret: String, place: UUID) {
-        let id = Box.id(secret: secret)
-        guard BoxPairing.current?.id != id else { return }
-        boxLink.pair(id: id) { peripheral in
+    /// The first read of a box's tag or code teaches this phone which box is
+    /// its own: the dock it's closest to, right then. Asks about Bluetooth,
+    /// the first time — at the box, where the question makes sense.
+    func pairBox(place: UUID) {
+        guard BoxPairing.current?.place != place else { return }
+        boxLink.pair { peripheral in
             guard let peripheral else { return }
-            BoxPairing.current = BoxPairing(peripheral: peripheral, place: place, id: id)
+            BoxPairing.current = BoxPairing(peripheral: peripheral, place: place)
         }
     }
 

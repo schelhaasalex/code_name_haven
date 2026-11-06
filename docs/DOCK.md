@@ -80,22 +80,46 @@ before it notices a new path.
 
 The tag needs a tap. To remove it, the box gets a sensor under each slot and a
 small Bluetooth radio (`firmware/box/box.ino`). The phone pairs with its box
-once, from the first tag it reads there. After that it stays connected
+once, from the first tag it reads there: the dock it's closest to at that
+moment is its box (`Box.closest`, -75 or stronger). After that it stays connected
 whenever it's in range, and iOS wakes the app when the box reports a change.
 
 1. A phone lands. The slot's sensor changes, and the box lights that slot
-   itself and tells every connected phone (one byte, a bit per slot).
+   itself and tells every connected phone — its slot state and a `docked`
+   event, below.
 2. Every phone in range wakes for a few seconds and asks itself whether that
    was it (`Box.isThisPhone`). It was if this phone has just started charging
    and the box's signal is strong (`Box.nearby`, -60). A phone already on the
    bedside charger, or charging in another room, is not the one.
 3. That phone starts the evening at the box's place. Nobody touches anything.
-4. A slot empties. The phone that was in it stops charging, and forgets its
-   slot. The evening carries on.
+4. A slot empties. Every phone in the box wakes, waits fifteen seconds
+   (`Box.outGrace`), and the one that still isn't charging ends its evening.
 
-The radio says who the box is with eight bytes of the secret's hash, never the
-secret. A swiped-away app can't be woken over Bluetooth, so the tag stays as
-the way in.
+A swiped-away app can't be woken over Bluetooth, so the tag stays as the way
+in.
+
+### The protocol
+
+The Portside dock protocol, version 1, which the dock with a current sensor
+on each pad speaks too. The ids are placeholders until production, and live in
+`Box.swift` and `box.ino` only.
+
+| | UUID | |
+|---|---|---|
+| Service | `6e400001-b5a3-f393-e0a9-0000706f7274` | advertised; phones scan for this, never the name |
+| Slot state | `6e400010-…` | read, notify. A byte per slot: 0 empty, 1 charging, 2 full |
+| Event | `6e400011-…` | notify. `{"v":1,"slot":1,"event":"docked","t":…}`; also `undocked`, `full`, `pong` |
+| Command | `6e400020-…` | write. `{"cmd":"time","epoch":…}` (sent on every connect), `light`, `ping` |
+
+The phone subscribes to slot state and events, reads the slot state once, and
+sends the time. A slot state change and its event say the same thing, and the
+phone acts on whichever arrives first. `full` changes nothing: a phone that has
+stopped drawing much — at 100%, or paused at 80% — is still in. The box
+advertises as `Portside-XXXX`, the end of its radio's address. It has no id of
+its own; pairing goes by which dock is closest.
+
+This box can only tell that something is in a slot, so it reports every phone
+as charging, and leaves `mA` and `V` out of its events.
 
 ### Parts to test it
 
@@ -118,17 +142,22 @@ the way in.
 ### Flashing it
 
 1. Install the Arduino IDE, the ESP32 board package, and **NimBLE-Arduino
-   1.4.x** (2.x changed its API). Add Adafruit NeoPixel if the board runs the
-   lights.
+   2.x** (checked with 2.5.1; 1.4.x has a different API). Add Adafruit
+   NeoPixel if the board runs the lights. On an Apple-silicon Mac, install
+   Rosetta first (`softwareupdate --install-rosetta`): one of the Arduino
+   build tools is Intel-only and fails with "bad CPU type" without it.
 2. NimBLE-Arduino allows three connections by default, and every phone in the
-   house holds one. Raise `CONFIG_BT_NIMBLE_MAX_CONNECTIONS` to 9 in the
-   library's `src/nimconfig.h`.
-3. Run `scripts/dock-tags.sh`. Write the four links onto the tags, and put its
-   `BOX_ID_HEX` into the sketch. **Both come from the same run.**
+   house holds one. In the library's `src/nimconfig.h`, uncomment
+   `// #define CONFIG_BT_NIMBLE_MAX_CONNECTIONS 3` near the top and make it
+   **5** on an ESP32-C3. Not more: the C3's radio holds 6 things at once and
+   advertising is one of them, and asking for more crashes the board on every
+   boot. The sketch refuses to compile if it's set too high.
+3. Run `scripts/dock-tags.sh` and write the four links onto the tags.
 4. Set `SLOT_PINS` for your wiring, then flash. On a XIAO ESP32-C3 the defaults are
    D1–D4; keep sensors off D0, D8 and D9, which the chip reads at boot. Fit
    the antenna that comes with it: without it the range is a few centimetres. The serial monitor at 115200
-   prints `slots 01` when slot 1 fills.
+   prints each event as it's sent, and takes `1`–`4` to fill or empty a slot
+   with no sensor wired (`0` empties them all).
 
 ### Testing it
 
@@ -147,6 +176,11 @@ the way in.
   background start one, so the phone asks the `start-live-activity` Edge
   Function, which starts it with a push (iOS 17.2+; migration 0015). Without
   the network, or on iOS 17.0–17.1, it appears the next time the app is opened.
+- **Five phones per box.** The C3's radio holds five connections plus its
+  advertisement. A sixth phone in the house can't stay connected, and uses
+  the tag. An ESP32-S3 doesn't lift this; a different radio would.
+- **Two boxes side by side** can pair a phone with the wrong one: pairing goes
+  by the closest dock, and the box has no id to check it against.
 - **Two phones in the same second** both start correctly, but each may record
   the other's slot number. The box lights its own slots, so only the phone's
   note of which slot it's in can be wrong.

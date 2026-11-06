@@ -3,44 +3,80 @@ import XCTest
 
 final class BoxTests: XCTestCase {
 
-    // MARK: - Who the box is
+    // MARK: - The slot state
 
-    /// The firmware is flashed with this, from `scripts/dock-tags.sh`, which
-    /// computes it with `shasum`. If the two disagree, no phone ever pairs.
-    func testTheIdIsTheStartOfTheSecretsHash() {
-        // printf %s 'box-secret' | shasum -a 256 | cut -c1-16
-        let hex = Box.id(secret: "box-secret").map { String(format: "%02x", $0) }.joined()
-        XCTAssertEqual(hex, "f30ecd80ad24cf13")
+    func testEachByteIsASlot() {
+        XCTAssertEqual(Box.Slots(state: Data([0, 0, 0, 0]))?.full, [])
+        XCTAssertEqual(Box.Slots(state: Data([1, 0, 0, 0]))?.full, [1])
+        // Charging and full are both a phone in the slot.
+        XCTAssertEqual(Box.Slots(state: Data([0, 2, 0, 1]))?.full, [2, 4])
     }
 
-    func testTheIdNeverCarriesTheSecret() {
-        let secret = "a-long-secret-from-the-factory"
-        XCTAssertEqual(Box.id(secret: secret).count, 8)
-        XCTAssertNotEqual(Box.id(secret: secret), Data(secret.utf8.prefix(8)))
+    /// The one-slot test dock sends one byte.
+    func testADockWithFewerSlotsSendsFewerBytes() {
+        XCTAssertEqual(Box.Slots(state: Data([1]))?.full, [1])
     }
 
-    // MARK: - The slots byte
-
-    func testEachBitIsASlot() {
-        XCTAssertEqual(Box.Slots(bits: 0b0000).full, [])
-        XCTAssertEqual(Box.Slots(bits: 0b0001).full, [1])
-        XCTAssertEqual(Box.Slots(bits: 0b1010).full, [2, 4])
-        // A fifth bit is nothing: the box has four slots.
-        XCTAssertEqual(Box.Slots(bits: 0b1_0000).full, [])
-    }
-
-    func testOnlyOneByteIsASlotsByte() {
-        XCTAssertEqual(Box.Slots(Data([0b0100])), Box.Slots(bits: 0b0100))
-        XCTAssertNil(Box.Slots(Data()))
-        XCTAssertNil(Box.Slots(Data([1, 2])))
-        XCTAssertNil(Box.Slots(nil))
+    func testOnlyOneToFourBytesIsASlotState() {
+        XCTAssertNil(Box.Slots(state: Data()))
+        XCTAssertNil(Box.Slots(state: Data([0, 0, 0, 0, 1])))
+        XCTAssertNil(Box.Slots(state: nil))
     }
 
     func testFilledAndEmptiedAreTheDifference() {
-        let before = Box.Slots(bits: 0b0011)
-        let now = Box.Slots(bits: 0b0110)
+        let before = Box.Slots(full: [1, 2])
+        let now = Box.Slots(full: [2, 3])
         XCTAssertEqual(now.filled(since: before), [3])
         XCTAssertEqual(now.emptied(since: before), [1])
+    }
+
+    func testAFifthSlotIsNothing() {
+        XCTAssertEqual(Box.Slots(full: [1, 5]).full, [1])
+        XCTAssertEqual(Box.Slots(bits: 0b1_0000).full, [])
+    }
+
+    // MARK: - Events
+
+    func testTheDocksEventIsRead() {
+        let json = #"{"v":1,"slot":3,"event":"docked","t":1767225600,"mA":640,"V":10.1}"#
+        XCTAssertEqual(Box.Event(Data(json.utf8)), Box.Event(slot: 3, kind: "docked"))
+    }
+
+    func testAnotherVersionIsNotReadAsThisOne() {
+        XCTAssertNil(Box.Event(Data(#"{"v":2,"slot":1,"event":"docked"}"#.utf8)))
+        XCTAssertNil(Box.Event(Data("not json".utf8)))
+    }
+
+    func testEventsMoveTheSlots() {
+        let one = Box.Slots(full: [1])
+        XCTAssertEqual(one.after(Box.Event(slot: 2, kind: "docked")).full, [1, 2])
+        XCTAssertEqual(one.after(Box.Event(slot: 1, kind: "undocked")).full, [])
+    }
+
+    /// A phone that stopped drawing much — full, or paused at 80% — is still in.
+    func testFullAndPongChangeNothing() {
+        let one = Box.Slots(full: [1])
+        XCTAssertEqual(one.after(Box.Event(slot: 1, kind: "full")), one)
+        XCTAssertEqual(one.after(Box.Event(slot: nil, kind: "pong")), one)
+        XCTAssertEqual(one.after(Box.Event(slot: 9, kind: "docked")), one)
+    }
+
+    func testTheTimeIsSentAsTheDockExpects() {
+        let sent = String(decoding: Box.timeCommand(at: Date(timeIntervalSince1970: 1_767_225_600)), as: UTF8.self)
+        XCTAssertEqual(sent, #"{"cmd":"time","epoch":1767225600}"#)
+    }
+
+    // MARK: - Pairing
+
+    func testPairingTakesTheClosestDock() {
+        let here = UUID(), there = UUID()
+        XCTAssertEqual(Box.closest([here: -41, there: -66]), here)
+    }
+
+    /// A dock across the room, or next door, is not the one whose tag was read.
+    func testPairingTakesNothingFarAway() {
+        XCTAssertNil(Box.closest([UUID(): -82]))
+        XCTAssertNil(Box.closest([:]))
     }
 
     // MARK: - Was it this phone?
