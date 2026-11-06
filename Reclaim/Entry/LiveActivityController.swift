@@ -37,12 +37,40 @@ enum LiveActivityController {
         }
     }
 
+    /// Each running activity's own token, as iOS hands it out, for the server
+    /// to push the ring's steps to (`charge-live-activities`). Activities a
+    /// push started arrive through `activityUpdates` — iOS wakes the app for
+    /// them — and the ones the app starts itself are watched from `start`.
+    static func watchActivityTokens(
+        _ save: @escaping @MainActor (_ gathering: UUID, _ token: String, _ state: String) async -> Void
+    ) {
+        saveToken = save
+        for activity in Activity<ReclaimActivityAttributes>.activities { watch(activity) }
+        Task { @MainActor in
+            for await activity in Activity<ReclaimActivityAttributes>.activityUpdates { watch(activity) }
+        }
+    }
+
+    private static var saveToken: (@MainActor (UUID, String, String) async -> Void)?
+    private static var watched: Set<String> = []
+
+    private static func watch(_ activity: Activity<ReclaimActivityAttributes>) {
+        guard watched.insert(activity.id).inserted else { return }
+        Task { @MainActor in
+            for await token in activity.pushTokenUpdates {
+                guard let state = try? RemoteActivity.stateJSON(activity.content.state) else { continue }
+                await saveToken?(activity.attributes.gatheringId, RemoteActivity.hex(token), state)
+            }
+        }
+    }
+
     /// Reuses the activity already showing for this gathering, if the app was
     /// relaunched under it, rather than ending it and starting an identical one.
     static func start(gatheringId: UUID, startedAt: Date, memberCount: Int, placeName: String?) async {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
         let state = ReclaimActivityAttributes.ContentState(
-            startedAt: startedAt, memberCount: memberCount, placeName: placeName)
+            startedAt: startedAt, memberCount: memberCount, placeName: placeName,
+            stage: EveningCharge.stage(since: startedAt))
         if let running = Activity<ReclaimActivityAttributes>.activities
             .first(where: { $0.attributes.gatheringId == gatheringId }) {
             current = running
@@ -50,9 +78,15 @@ enum LiveActivityController {
             return
         }
         await end()
-        current = try? Activity.request(
+        // `.token`, so the server can step the ring while the phone sleeps.
+        // Without a push token it still shows; it just doesn't charge.
+        current = (try? Activity.request(
             attributes: ReclaimActivityAttributes(gatheringId: gatheringId),
-            content: .init(state: state, staleDate: nil))
+            content: .init(state: state, staleDate: nil), pushType: .token))
+            ?? (try? Activity.request(
+                attributes: ReclaimActivityAttributes(gatheringId: gatheringId),
+                content: .init(state: state, staleDate: nil)))
+        if let current { watch(current) }
     }
 
     static func update(startedAt: Date, memberCount: Int, placeName: String?) async {
@@ -60,7 +94,8 @@ enum LiveActivityController {
         else { return }
         Self.current = current
         await current.update(.init(
-            state: .init(startedAt: startedAt, memberCount: memberCount, placeName: placeName),
+            state: .init(startedAt: startedAt, memberCount: memberCount, placeName: placeName,
+                         stage: EveningCharge.stage(since: startedAt)),
             staleDate: nil))
     }
 

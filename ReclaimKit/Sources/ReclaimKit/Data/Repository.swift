@@ -77,6 +77,9 @@ public protocol Repository: Sendable {
     /// Asks the server to show this evening's Live Activity, which the phone
     /// couldn't do itself in the background. `body` is `RemoteActivity.startBody`.
     func startActivityRemotely(body: Data) async throws
+    /// A running Live Activity's own token, so the server can push the ring's
+    /// steps to it (migration 0016). `state` is `RemoteActivity.stateJSON`.
+    func saveLiveActivity(token: String, gatheringId: UUID, environment: String, state: String) async throws
 }
 
 public extension Repository {

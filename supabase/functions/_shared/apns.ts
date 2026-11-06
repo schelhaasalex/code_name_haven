@@ -1,5 +1,6 @@
 // Talking to Apple's push service: the signed token that says who's asking,
-// and the push that starts a Live Activity.
+// and the pushes that start, step and end a Live Activity. Shared by
+// start-live-activity and charge-live-activities.
 //
 // Web standards only — crypto.subtle, fetch, TextEncoder — so it runs the same
 // in Supabase's Deno and in Node, where `apns.test.ts` checks it against a key
@@ -87,6 +88,35 @@ export function startRequest(
         "content-type": "application/json",
       },
       body: JSON.stringify(payload),
+    },
+  };
+}
+
+/**
+ * A change to a Live Activity already showing, sent to that activity's own
+ * token: the next step of the ring, a light for someone who joined, or the
+ * end. No alert — nothing buzzes during an evening.
+ */
+export function changeRequest(
+  bundleId: string, event: "update" | "end", contentState: unknown,
+  token: string, environment: Environment, bearer: string,
+  now = Math.floor(Date.now() / 1000),
+): { url: string; init: RequestInit } {
+  const aps: Record<string, unknown> = { timestamp: now, event, "content-state": contentState };
+  // Ended means gone: an evening that's over doesn't linger on the lock screen.
+  if (event === "end") aps["dismissal-date"] = now;
+  return {
+    url: `${host[environment]}/3/device/${token}`,
+    init: {
+      method: "POST",
+      headers: {
+        authorization: `bearer ${bearer}`,
+        "apns-topic": `${bundleId}.push-type.liveactivity`,
+        "apns-push-type": "liveactivity",
+        "apns-priority": "10",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ aps }),
     },
   };
 }

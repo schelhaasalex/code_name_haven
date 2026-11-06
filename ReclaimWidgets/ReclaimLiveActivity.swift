@@ -19,7 +19,7 @@ struct ReclaimLiveActivity: Widget {
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    RingMark(startedAt: context.state.startedAt, size: 34)
+                    RingMark(stage: context.state.stage, memberCount: context.state.memberCount, size: 34)
                 }
                 DynamicIslandExpandedRegion(.center) {
                     VStack(alignment: .leading, spacing: 4) {
@@ -43,7 +43,7 @@ struct ReclaimLiveActivity: Widget {
                     .tint(Palette.edge)
                 }
             } compactLeading: {
-                RingMark(startedAt: context.state.startedAt, size: 16)
+                RingMark(stage: context.state.stage, size: 16)
             } compactTrailing: {
                 // Together, how many; alone, nothing. Never digits that tick.
                 if context.state.memberCount > 1 {
@@ -52,7 +52,7 @@ struct ReclaimLiveActivity: Widget {
                         .foregroundStyle(Palette.ember)
                 }
             } minimal: {
-                RingMark(startedAt: context.state.startedAt, size: 16)
+                RingMark(stage: context.state.stage, size: 16)
             }
         }
     }
@@ -74,7 +74,7 @@ struct ReclaimLiveActivity: Widget {
     private func lockScreen(_ state: ReclaimActivityAttributes.ContentState) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 16) {
-                RingMark(startedAt: state.startedAt, size: 44)
+                RingMark(stage: state.stage, memberCount: state.memberCount, size: 44)
                 VStack(alignment: .leading, spacing: 5) {
                     Text(headline(state.memberCount))
                         .font(Type.display(22))

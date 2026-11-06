@@ -131,6 +131,8 @@
   "lockscreen.end": "End",
   "lockscreen.note": "Ending the session never asks you to unlock.",
   "wrist.since": "Since {time}",
+  "wrist.together": "{count} · since {time}",
+  "wrist.stage": ["Settling in.", "Tonight counts.", "Unwinding.", "Present.", "Recharged."],
 
   "starttap.banner.title": "Docked at {place}",
   "starttap.banner.body": "See you in a bit.",

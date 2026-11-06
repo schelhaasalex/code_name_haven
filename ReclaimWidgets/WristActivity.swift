@@ -6,25 +6,25 @@ import ReclaimKit
 /// down, in a pocket. The Watch shows it in the Smart Stack; nothing about it
 /// is set up on the Watch.
 ///
-/// The lock screen's rules, smaller. No ticking digits: a wrist is glanced at
-/// far more often than a face-down phone is picked up, so a counter here would
-/// be the clock the evening was meant to put away. So nothing moves at all:
-/// the mark is drawn full, not filling as it does on the lock screen — glanced
-/// at this often, a ring creeping round is a timer without digits. No End button — the wrist is for
-/// looking, and the lock screen and the app still end the evening.
+/// The evening charges here: the ring steps through its four segments and
+/// the headline with it — Settling in, Tonight counts, Unwinding, Present,
+/// Recharged — each pushed by the server as it's reached. No ticking digits,
+/// and nothing that creeps: four changes in an evening is a mark, not a timer.
+/// No End button — the wrist is for looking, and the lock screen and the app
+/// still end the evening.
 struct WristActivity: View {
     let state: ReclaimActivityAttributes.ContentState
 
     var body: some View {
         HStack(spacing: 10) {
-            RingMark(startedAt: state.startedAt, size: 30, still: true)
+            RingMark(stage: state.stage, memberCount: state.memberCount, size: 30)
             VStack(alignment: .leading, spacing: 2) {
                 Text(headline)
                     .font(Type.display(16))
                     .foregroundStyle(Palette.cream)
                     .lineLimit(2)
                     .minimumScaleFactor(0.8)
-                Text(t("wrist.since", "time", Say.time(state.startedAt)))
+                Text(since)
                     .font(.system(size: 12))
                     .foregroundStyle(Palette.dust)
                     .lineLimit(1)
@@ -35,9 +35,15 @@ struct WristActivity: View {
         .padding(.vertical, 10)
     }
 
-    /// The same headline as everywhere else the evening shows.
+    /// Where the evening has got to. The count moves to the line below.
     private var headline: String {
-        state.memberCount <= 1 ? t("lockscreen.solo")
-                               : t("lockscreen.together", "count", Say.count(state.memberCount))
+        let stages = Copy.list("wrist.stage")
+        return stages.isEmpty ? "" : stages[min(max(state.stage, 0), stages.count - 1)]
+    }
+
+    private var since: String {
+        let time = Say.time(state.startedAt)
+        return state.memberCount <= 1 ? t("wrist.since", "time", time)
+                                      : t("wrist.together", "count", Say.count(state.memberCount), "time", time)
     }
 }
