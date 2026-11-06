@@ -9,9 +9,10 @@ around you do the same, and the place you did it in slowly becomes something.
 > (copy); links go through `LINK_DOMAIN`, for now a Vercel testing address.
 > Module and target names (`ReclaimKit`, `Reclaim/`) stay — nobody sees them.
 
-Read `VISION.md` for why, `BRIEF.md` for what, `docs/APP-SPEC.md` for how.
-**`docs/SIMPLER.md` is the plan the app is being cut down to** — where it and
-the spec disagree, the plan is where things are going.
+Read `VISION.md` for why, `docs/APP-SPEC.md` for what is built and how, and
+`docs/DOCK.md` for the box. `BRIEF.md` is the brief for the first, 21-screen
+app; since 2026-11-06 the app is the box's, and where they differ the spec is
+current.
 `docs/SCHEMA-REVIEW.md` records fourteen bugs found before any of this shipped
 and is worth skimming before touching the database.
 
@@ -25,9 +26,9 @@ matter of taste.
 **1. The client never reads another person's rows.** `sessions` and `profiles`
 are own-rows-only at the database. Everything crossing a person boundary goes
 through an RPC that returns an aggregate. If a view needs someone else's data
-and there's no RPC for it, write a new RPC — do not widen a policy. Screen 10
-promises *"they see that you were there, never how often you weren't"*, and RLS
-cannot express "aggregate but not enumerable", so this rule is the promise.
+and there's no RPC for it, write a new RPC — do not widen a policy. What a box has kept is everyone's evenings added
+up, and the promise is that nobody sees how often anyone else wasn't there.
+RLS cannot express "aggregate but not enumerable", so this rule is the promise.
 
 **2. No user-facing string is hardcoded.** Everything lives in
 `copy/strings.json`, keyed `screen.element`, read through `Copy["home.headline"]`.
@@ -88,13 +89,13 @@ copy/          strings.json — every user-facing string
 supabase/      migrations/ (applied, tested), functions/ (Edge Functions) and tests/
 scripts/       shape.sh — the style rules, as a check rather than a hope
                generate.sh — the project, with a build number nobody has to remember
-               dock-tags.sh — the four slot links for a new box
-prototype/     ceremony.html — the web rehearsal of the five-phone moment
+               dock-tags.sh — a new box's four slot links and its printed code
+prototype/     splash.html — the three splash screens, side by side
 firmware/      box/box.ino — the box's Bluetooth radio and slot sensors (ESP32)
-ReclaimKit/    shared Swift package: models, data, ceremony, copy, design
+ReclaimKit/    shared Swift package: models, data, the box, copy, design
                — and Tests/, which is where anything testable belongs
 Reclaim/       the app target
-ReclaimWidgets/ Live Activity, widget, Control Center control
+ReclaimWidgets/ the Live Activity, on the lock screen and the wrist
 project.yml    XcodeGen manifest — the project file is generated, not committed
 ```
 
@@ -153,8 +154,9 @@ would override the generated one silently. `scripts/shape.sh` checks that.
 
 Two schemes: **Reclaim** is the real app against Supabase. **Reclaim (Sample
 data)** runs the whole app against the canvas household (`PreviewRepository`),
-in memory, already signed in, no network — debug builds only. It's how to see
-the app before Sign in with Apple can work.
+in memory, with its box, no network — debug builds only. It's how to see the
+app without a box; `xcrun simctl openurl booted reclaim://d/any/1` puts a phone
+in it.
 Adding a target, capability or dependency means editing `project.yml` and
 regenerating.
 
@@ -167,7 +169,7 @@ it still doesn't belong in git.
 ## The database
 
 ```sh
-supabase/tests/run.sh      # 171 assertions, in 29 blocks, on a scratch Postgres
+supabase/tests/run.sh      # 177 assertions, in 30 blocks, on a scratch Postgres
 node --test supabase/tests/apns.test.ts   # the Live Activity push, signed and checked offline
 ```
 
@@ -192,7 +194,7 @@ against hosted Supabase.
 
 - iOS 17 minimum. `@Observable`, not `ObservableObject`.
 - One `AppState` on the environment. No Composable Architecture, no DI
-  container, no Redux. At 21 screens they are all overhead. Resist.
+  container, no Redux. At a handful of screens they are all overhead. Resist.
 - `supabase-swift` is the only dependency. Keep it that way.
 - Colors and type come from `ReclaimKit/Design`. No literal colors in views.
 - Every screen builds in an Xcode preview against `PreviewRepository` with no
@@ -224,19 +226,18 @@ scripts/shape.sh      # about a second, no toolchain, no network
 | `Reclaim/Components/` never mentions `AppState` | It's what keeps a component previewable and behaviour-free |
 | No `Text("…")` outside a `#Preview` | Rule 2 — a baked string can't be changed without a release |
 | No literal colours outside `Design/` | A hex in a view drifts from the one beside it |
-| Every view has a `#Preview` | Screens 13, 14 and 20 are unreachable at runtime |
+| Every view has a `#Preview` | Screen 13 is unreachable at runtime without an evening the server closed |
 | Every `t("key")` is in `strings.json` | A missing key is `⟨key⟩` in dev and empty to a person |
 | The bundled `strings.json` matches `copy/` | Same file, two places; keeping them equal is the job |
 | `LaunchBone` matches `Palette.bone` | UIKit reads `Info.plist` before any Swift runs, so the launch colour genuinely is the same fact twice |
-| Siri phrases live in the app target | App Shortcuts declared in ReclaimKit built fine and were never registered |
 | Links use `LINK_DOMAIN` | There's no real domain yet; a host written into Swift is one the rename misses |
-| The App Group is the same everywhere | Two entitlements and `SessionFlag` name it; if they differ, Control Centre shows "off" forever |
-| A phone that is down keeps talking | Without `bluetooth-peripheral` the advertisement stops a second after the phone is set down, and without `bluetooth-central` the box's news never reaches a phone that's locked — nothing says so either way |
+| A phone in the box keeps listening | Without `bluetooth-central` the box's news never reaches a phone that's locked — and nothing says so |
 | Every sheet has something that opens it | Screen 17's "Name them" was a word printed on a card: the sheet was wired, nothing set the flag, and it built and previewed fine |
 | The build number is not written into the project | A setting in `project.yml` beats the xcconfig it comes from, so every upload after the first would carry the same number — refused at the end of an archive, not the start |
 | The box's lights can be found | iOS won't browse for a Bonjour service missing from `NSBonjourServices`, and says nothing — the box just never lights |
 | A Live Activity can be started by push | Without `aps-environment`, iOS never hands out a push-to-start token, and an evening the box started shows nothing on the lock screen |
 | The ring charges the same on the phone and the server | The phone steps the ring while it's awake and the server after; two lists of steps that differ make it jump back a segment |
+| Only the box starts an evening | Rule 4. A button, face-down, a motion guess, a nearby phone and Siri were each one call to `setItDown` from somewhere new |
 | Every link the app makes opens it | The site claims every path but the home page. Phones cache `apple-app-site-association` for days, apart from the app, and a path added later (`/d/`, the slot links' first home) opened Safari until that cache refreshed |
 
 It runs in CI on every pull request, and from a `Stop` hook in
@@ -251,7 +252,7 @@ suggestion.** Write the check, and make it fail before you make it pass.
 the outside for each (in scope since 2026-10-22). It ships with the app, so
 putting a phone in it has to be enough. `docs/DOCK.md` has how it works.
 
-**Out** (since 2026-11-06, see `docs/SIMPLER.md`): every way of starting an
+**Out** (since 2026-11-06): every way of starting an
 evening but the box — face-down, retroactive credit, phone-to-phone proximity,
 Siri and Control Centre, cards and invites.
 

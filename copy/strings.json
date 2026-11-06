@@ -1,7 +1,7 @@
 {
   "app.name": "Reclaim",
 
-  "_": "Reclaim's voice, keyed screen.element. This is the primary brand asset — it is the bundled fallback, and the Supabase copy table overrides it so the voice can change without an App Store release. Every line here was written against the three rules in BRIEF.md: zero setup, the Caregiver voice test, and the knowledge test (what does the app actually know, and when did it learn it). Never show what was missed. Never compare people. Never name someone who hasn't acted.",
+  "_": "Reclaim's voice, keyed screen.element, bundled with the app. Every line here was written against the rules in CLAUDE.md: zero setup, the Caregiver voice, and the knowledge test (what does the app actually know, and when did it learn it). Never show what was missed. Never compare people. Never name someone who hasn't acted.",
 
   "say.count": ["Nobody", "Just you", "Two of you", "Three of you", "Four of you", "Five of you", "Six of you", "Seven of you", "Eight of you", "Nine of you"],
   "say.count.more": "{count} of you",

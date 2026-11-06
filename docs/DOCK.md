@@ -1,88 +1,84 @@
 # The box
 
-Four slots in a drawer. Each slot has a MagSafe-style charging pad, an NFC tag
-under where the top of the phone lands, and a light on the outside of the box.
-Putting your phone in the box **is** the confirmation: it starts the evening,
-and taking it out ends it, fifteen seconds later (`Box.outGrace`) unless it's
-back by then.
+Four slots in a drawer. Each slot has a MagSafe-style charging pad, a sensor,
+an NFC tag under where the top of the phone lands, and a light on the outside.
+The box has a small Bluetooth radio, and a code printed on it.
 
-This is the first version, where the phone reads a tag. The version where the
-box notices the phone itself is at the bottom.
+Putting your phone in the box **is** the evening starting, and taking it out
+is the evening ending — fifteen seconds later (`Box.outGrace`), unless it's
+back by then. Nothing else starts or ends one.
 
 ## What happens
 
-1. The phone goes into a slot and snaps onto the pad. On the way in it reads
-   the slot's tag: `https://<LINK_DOMAIN>/p/<box secret>/<slot>`.
-2. iOS shows a banner. One tap opens the app. (With the optional "NFC tag
-   scanned" automation, there is no tap.)
-3. The app turns that slot's light on (`DockLight`, never waited on). Then it
-   finds or makes the box's place (`dock_place`, migration 0013) and starts the
-   evening there, or moves an evening that's already running there.
-4. The phone comes out. With the optional "charger disconnected" automation
-   running **Take my phone out of the box** (`UndockIntent`), the light goes
-   off at once. Without it, the light goes off when the evening ends, or the
-   next time the app opens and the phone isn't charging.
+1. **Meeting it, once.** Point the camera at the box's code, or hold the phone
+   to any slot's tag. The app finds or makes the box's place, makes you one of
+   its people, asks about Bluetooth, and keeps the dock it's closest to as its
+   box. The code starts nothing; a tag is read with the phone going in, so it
+   starts the evening too.
+2. **In.** A phone lands on a pad. The box lights the slot and tells every
+   connected phone. The one that just started charging, with the box right
+   beside it, starts its evening — locked, in the background, nobody touching
+   anything. The Live Activity arrives by push.
+3. **Out.** A slot empties. Fifteen seconds later the phone that still isn't
+   charging ends its evening, and its Live Activity goes. Back within the
+   fifteen and nothing changed.
 
 A box with no lights, a declined Local Network prompt, or a controller on
 another Wi-Fi: the light stays off and the evening counts all the same.
 
 ## The box's place
 
-All four tags carry one secret, and it works like a card's secret: it is the
-join credential. The box has no owner until someone uses it. The first phone
-set into it makes its place, and every phone after that lands in the same
-place. The secret is unique in the database, so two phones going in at the same
-moment still make one place.
+The tags and the code carry one secret: the box's join credential. The box has
+no owner until someone reads it. The first phone to read it makes its place,
+and every phone after that is one of its people (`dock_place`, migrations 0013
+and 0017). The secret is unique in the database, so two phones going in at the
+same moment still make one place. Whoever made it can name it, in Settings.
 
 ## Building one
 
-**Tags.** `scripts/dock-tags.sh` prints four links under a fresh secret. Write
-each one onto its slot's tag as a URL record (NFC Tools does this). Use one
-secret per box, and **never lock the tags**: the domain is a testing address
-until there is a real one. Put each tag where the top of the phone's back sits
-on the pad, a few centimetres toward the top edge from the coil. A tag on top
-of the coil either doesn't read or gets warm.
+**Tags and code.** `scripts/dock-tags.sh` prints four slot links and the box's
+code under a fresh secret, and draws the code as `box-code.png` to print and
+stick on the box. Write each slot link onto its slot's tag as a URL record (NFC
+Tools does this). Use one secret per box, and **never lock the tags**: the
+domain is a testing address until there is a real one. Put each tag where the
+top of the phone's back sits on the pad, a few centimetres toward the top edge
+from the coil. A tag on top of the coil either doesn't read or gets warm.
 
-**Lights.** A WLED controller on the home Wi-Fi, with four segments of two LEDs
-each. Slot 1 is segment 0, through to slot 4 as segment 3. Set the segments up
-once in WLED's LED settings. The app only switches a segment on or off. It
-turns on the controller as a whole when lighting a slot, and never turns it off.
+**Lights.** Either the box's own strip, on the radio's `LIGHT_PIN`, or a WLED
+controller on the home Wi-Fi with four segments of two LEDs each — slot 1 is
+segment 0, through to slot 4 as segment 3. With WLED the app switches a slot's
+segment on when its tag is read, and never turns the controller off.
 
-**Links live under `/p/`, beside the cards.** A card is `/p/<secret>`; a slot
-is `/p/<secret>/<slot>`. They were `/d/` at first, and a phone installed before
-`/d/` existed kept sending them to Safari: iOS caches the site's
-`apple-app-site-association` for days, separately from the app, and neither
-reinstalling nor restarting reliably refreshes it. The site now claims every
-path except the home page, so the next new link type won't wait on that cache.
-Old `/d/` tags still read.
+**Links live under `/p/`.** A slot is `/p/<secret>/<slot>`; the box's code is
+`/p/<secret>`, the shape the first printed cards had, so every phone that
+ever opened one already opens it. Slot links were `/d/` at first, and a phone
+installed before `/d/` existed kept sending them to Safari: iOS caches the
+site's `apple-app-site-association` for days, separately from the app. The site
+now claims every path except the home page. Old `/d/` tags still read.
 
-**Site.** `links/` must be deployed for these links to open the app. Apple
-caches `apple-app-site-association`, so a phone may need the app reinstalled
-before it notices a new path.
+**Site.** `links/` must be deployed for these links to open the app.
 
 ## Trying it without a box
 
-- Any NTAG sticker holding one of the four links, plus a WLED board on the same
-  Wi-Fi, is a whole slot.
-- On the simulator: `xcrun simctl openurl booted reclaim://d/<anything>/2`.
-  There is no light there and no tag, but the evening starts.
+- On the simulator, with the **Reclaim (Sample data)** scheme:
+  `xcrun simctl openurl booted reclaim://d/<anything>/2` is a phone going into
+  slot 2, and `reclaim://d/<anything>` is the box's code.
+- On a desk: the radio's serial monitor takes `1`–`4` to fill or empty a slot
+  with no sensor wired.
 
 ## Known gaps
 
 - **More than one WLED in the house.** The first controller found gets used.
-- **A force-quit app** still opens from the tag's banner. It can't be woken any
-  other way.
-- **A phone that comes out** without the charger automation keeps its slot lit
-  until the evening ends or the app next opens. The box can show one phone too
-  many, but never one too few.
+- **A force-quit app** can't be woken over Bluetooth until it's opened again.
+  The tag still opens it.
 
-## The box notices (Bluetooth)
+## The radio
 
-The tag needs a tap. To remove it, the box gets a sensor under each slot and a
-small Bluetooth radio (`firmware/box/box.ino`). The phone pairs with its box
-once, from the first tag it reads there: the dock it's closest to at that
-moment is its box (`Box.closest`, -75 or stronger). After that it stays connected
-whenever it's in range, and iOS wakes the app when the box reports a change.
+A sensor under each slot and a small Bluetooth radio (`firmware/box/box.ino`).
+The phone pairs with its box once, when it first reads the box's code or a
+tag: the dock it's closest to at that moment is its box (`Box.closest`, -75 or
+stronger). After that it stays connected whenever it's in range, and iOS
+wakes the app when the box reports a change.
 
 1. A phone lands. The slot's sensor changes, and the box lights that slot
    itself and tells every connected phone — its slot state and a `docked`
@@ -162,8 +158,8 @@ as charging, and leaves `mA` and `V` out of its events.
 ### Testing it
 
 1. Build the app to the phone, and open it once.
-2. Put the phone in a slot and tap the tag's banner. That pairs the phone with
-   the box, and asks about Bluetooth.
+2. Scan the box's code with the camera, or hold the phone to a slot's tag and
+   tap its banner. That pairs the phone with the box, and asks about Bluetooth.
 3. Take the phone out. Fifteen seconds later the evening ends, and its Live
    Activity with it. Put it back within the fifteen and nothing changes.
 4. Lock the phone and put it back. The evening should start with no tap, and

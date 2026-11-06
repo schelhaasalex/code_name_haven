@@ -1,5 +1,11 @@
 # Reclaim — Project Brief (v2, software-only)
 
+> **Since 2026-11-06 the app is the box's.** This brief is for the first,
+> 21-screen app: most of what it describes — the button on Home, face-down,
+> rhythms, places, cards, invites, the ceremony — has been taken out.
+> `docs/APP-SPEC.md` describes what is built, and where the two differ, the
+> spec is current. The voice and the rules hold.
+
 A phone-free ritual app. You set your phone down, the people around you do
 the same, and the place you did it in slowly becomes something. **V1 has no
 hardware.** The BLE/NFC puck is v2 and out of scope until asked for.

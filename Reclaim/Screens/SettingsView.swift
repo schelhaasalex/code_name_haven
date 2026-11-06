@@ -73,9 +73,8 @@ struct SettingsView: View {
                     .font(Type.body(16)).foregroundStyle(Palette.ink)
                     .submitLabel(.done)
                     .onSubmit {
-                        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                        guard !trimmed.isEmpty else { return }
-                        Task { await state.renameBox(to: trimmed) }
+                        guard !name.trimmed.isEmpty else { return }
+                        Task { await state.renameBox(to: name.trimmed) }
                     }
                     .paperCard()
             } else {
