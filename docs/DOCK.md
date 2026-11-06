@@ -3,8 +3,8 @@
 Four slots in a drawer. Each slot has a MagSafe-style charging pad, an NFC tag
 under where the top of the phone lands, and a light on the outside of the box.
 Putting your phone in the box **is** the confirmation: it starts the evening,
-the way setting it down does. Taking it out turns its light off and nothing
-else, because only the person ends an evening.
+and taking it out ends it, fifteen seconds later (`Box.outGrace`) unless it's
+back by then.
 
 This is the first version, where the phone reads a tag. The version where the
 box notices the phone itself is at the bottom.
@@ -135,9 +135,11 @@ the way in.
 1. Build the app to the phone, and open it once.
 2. Put the phone in a slot and tap the tag's banner. That pairs the phone with
    the box, and asks about Bluetooth.
-3. Take the phone out, lock it, and put it back. The evening should start with
-   no tap, and the app opens on it the next time you look.
-4. Try a second phone already on another charger nearby: it shouldn't start.
+3. Take the phone out. Fifteen seconds later the evening ends, and its Live
+   Activity with it. Put it back within the fifteen and nothing changes.
+4. Lock the phone and put it back. The evening should start with no tap, and
+   the app opens on it the next time you look.
+5. Try a second phone already on another charger nearby: it shouldn't start.
 
 ### Known gaps in this version
 

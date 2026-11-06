@@ -7,7 +7,7 @@ import ReclaimKit
 /// Putting your phone in the box IS the confirmation — the same act as setting
 /// it down, with a drawer around it. So a slot's tag starts the evening the way
 /// a card does, at the box's place, and its light comes on. Taking the phone
-/// out only puts the light out: nobody but the person ends an evening.
+/// out ends it (`leftBox`).
 @MainActor
 extension AppState {
 
@@ -37,11 +37,11 @@ extension AppState {
 
     /// Catching up with the box on every return to the foreground.
     ///
-    /// The light of a phone that has quietly left the box. iOS doesn't wake
-    /// the app when a phone comes off the pad unless the person added the
-    /// charger automation, so every return to the foreground checks. A slot
-    /// can stay lit for a phone that's gone; it never goes dark under one
-    /// that's there.
+    /// A phone that left the box without the box's word reaching it — out of
+    /// range, or the wake missed. Every return to the foreground checks, and
+    /// a phone in the hand that isn't charging has left: its evening ends.
+    /// The grace after docking is for the pad, which starts charging a moment
+    /// after the phone lands.
     func checkDock() async {
         // An evening the box started while the app was asleep has no Live
         // Activity — iOS won't let a background wake start one. The first look
@@ -58,7 +58,7 @@ extension AppState {
         device.isBatteryMonitoringEnabled = true
         let charging = device.batteryState == .charging || device.batteryState == .full
         if DockSlot.hasLeft(since: DockSlot.since, charging: charging) {
-            await DockSlot.undock()
+            await leftBox()
         }
     }
 

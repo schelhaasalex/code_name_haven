@@ -8,8 +8,8 @@ import ReclaimKit
 /// The box tells every phone connected to it that a slot filled; each phone
 /// asks itself whether that was it (`Box.isThisPhone`), and the one that just
 /// started charging, with the box right beside it, starts the evening at the
-/// box's place. Putting your phone in the box is the confirmation (rule 4).
-/// Taking it out ends nothing.
+/// box's place. Taking it out ends it, `Box.outGrace` later, unless it's back
+/// by then (rule 4).
 ///
 /// All of this happens with the app woken in the background for a few
 /// seconds. The tag still works whatever happens here (rule 7).
@@ -98,12 +98,21 @@ extension AppState {
         try? await repo.startActivityRemotely(body: body)
     }
 
-    /// Somebody's phone came out. Give this one's charger a moment to say
-    /// whether it was this one.
+    /// Somebody's phone came out. If it was this one and it isn't back once
+    /// the grace is up, its evening is over.
     private func maybeOut() async {
-        try? await Task.sleep(for: .seconds(2))
+        try? await Task.sleep(for: .seconds(Box.outGrace))
         if Box.hasLeft(docked: DockSlot.current != nil, charging: ChargingWatch.shared.isCharging) {
-            await DockSlot.undock()
+            await leftBox()
         }
+    }
+
+    /// Out of the box and not back: the evening ends, and the slot goes dark.
+    /// The Live Activity goes with it, from here, and the server's next
+    /// minute ends it on any phone this one couldn't reach.
+    func leftBox() async {
+        if phase != .ready { await load() }
+        if isLive { await end() }
+        await DockSlot.undock()
     }
 }
