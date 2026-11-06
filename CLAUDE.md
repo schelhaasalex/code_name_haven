@@ -10,6 +10,8 @@ around you do the same, and the place you did it in slowly becomes something.
 > Module and target names (`ReclaimKit`, `Reclaim/`) stay — nobody sees them.
 
 Read `VISION.md` for why, `BRIEF.md` for what, `docs/APP-SPEC.md` for how.
+**`docs/SIMPLER.md` is the plan the app is being cut down to** — where it and
+the spec disagree, the plan is where things are going.
 `docs/SCHEMA-REVIEW.md` records fourteen bugs found before any of this shipped
 and is worth skimming before touching the database.
 
@@ -37,25 +39,24 @@ only a list of who joined. Show presence, never absence. Never name someone who
 hasn't put their phone down. A screen that does is both impossible to build
 honestly and the exact nagging instrument this product replaces.
 
-**4. Sensors may only ever offer.** Face-down detection, proximity, motion
-history — all of it proposes, a human confirms. A false negative (telling
-someone they weren't there when they obviously were) is the worst failure this
-product can have and is unrecoverable tonally. The one act that confirms by
-itself is putting your phone in the box: that is the person deciding, with a
-drawer around it. Taking it out ends nothing — only the person does.
+**4. The box is the only switch.** Putting your phone in a slot starts the
+evening — that is the person deciding, with a drawer around it. Taking it out
+ends it, fifteen seconds later. Nothing else starts one: not face-down
+detection, not motion history, not proximity, not a button. A sensor that
+guesses is how a product tells someone they weren't there when they were.
 
 **5. Zero required setup.** Never design a feature as "the user must configure
-this first". Default it. The only optional setup in the product is screen 20,
-it appears after five evenings, and declining it costs nothing.
+this first". Default it. The only setup in the product is pairing with the
+box, once — a tap on its tag or a scan of its code.
 
 **6. Apply the knowledge test to every string you write.** *What does the app
 actually know, and when did it learn it?* This caught three real bugs during
 design: a home screen implying it knew your location, a ceremony screen naming
 people who hadn't acted, and a roster of names nobody had entered.
 
-**7. Never gate the ritual on a sensor, a permission, or a network call.**
-A session counts whether the phone is face down, in a pocket, or face up and
-ignored; whether the place is named or "Somewhere"; whether anyone else joined.
+**7. Never gate the evening on a network call or a permission prompt.**
+The box decides; the server is told after. An evening counts whether or not
+the network was there when the phone went in, and whether anyone else joined.
 
 ---
 
@@ -246,13 +247,13 @@ suggestion.** Write the check, and make it fail before you make it pass.
 
 ## Scope
 
-**In:** phone-to-phone proximity — joining the evening of the phone face down
-on the table without a card or a link (in scope since 2026-09-22). It is the
-puck's software rehearsal.
-
 **In:** the box — a drawer with four charging slots, an NFC tag and a light on
 the outside for each (in scope since 2026-10-22). It ships with the app, so
 putting a phone in it has to be enough. `docs/DOCK.md` has how it works.
+
+**Out** (since 2026-11-06, see `docs/SIMPLER.md`): every way of starting an
+evening but the box — face-down, retroactive credit, phone-to-phone proximity,
+Siri and Control Centre, cards and invites.
 
 **Out until explicitly asked for:** geofencing,
 Android, office/B2B mode, parent mode, payments of any kind. The app is free;
