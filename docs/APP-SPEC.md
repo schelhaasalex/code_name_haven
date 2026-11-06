@@ -263,6 +263,23 @@ moves is the mark's ring, filling once over the first fifteen minutes — a
 moment without the app running. Dynamic Island: the mark, and the count when
 there's company; expanded mirrors the lock screen.
 
+**The evening charges.** The mark's ring is four segments, full at fifteen
+minutes, half an hour, an hour and an hour and a half, and then it holds. A
+light joins the ring for each person who has put their phone down, and the
+mark warms from the hour. It only fills: an evening that ends early is a ring
+partly full, never one with a gap marked missing. Nothing creeps — the ring
+changes four times in an evening, each step pushed by the server
+(`charge-live-activities`, once a minute, migration 0016), because the phone
+is asleep in the box when it happens. Without a network the ring stays where
+it was; the evening counts the same (rule 7).
+
+Watch (iOS 18 and watchOS 11, nothing to set up): the same activity in the
+Smart Stack, in the small family — the ring, a headline for the step it's
+reached (*"Settling in."*, *"Tonight counts."*, *"Unwinding."*, *"Present."*,
+*"Recharged."*) and *"Three of you · since 7:27"*. No End button: the wrist is
+for looking while the phone is in the box or face down. On iOS 17 there is no
+Watch face; nothing else changes.
+
 In the app the same rule holds. Screens 3, 6 and 12 say *"Since 7:27"*, never
 elapsed time, and screen 6 draws your evenings behind the headline, tonight's
 dot an outline that fills at fifteen minutes. The length of the evening

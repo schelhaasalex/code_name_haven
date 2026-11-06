@@ -16,7 +16,7 @@
 // SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY Supabase provides itself.
 
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
-import { apnsToken, type Environment, outcome, startRequest } from "./apns.ts";
+import { apnsToken, type Environment, outcome, startRequest } from "../_shared/apns.ts";
 
 const env = (name: string) => {
   const value = Deno.env.get(name);

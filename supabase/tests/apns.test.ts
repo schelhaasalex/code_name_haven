@@ -10,7 +10,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { apnsToken, outcome, startRequest } from "../functions/start-live-activity/apns.ts";
+import { apnsToken, changeRequest, outcome, startRequest } from "../functions/_shared/apns.ts";
 
 const dir = mkdtempSync(join(tmpdir(), "apns-"));
 execFileSync("openssl", ["genpkey", "-algorithm", "EC", "-pkeyopt", "ec_paramgen_curve:P-256",
@@ -71,4 +71,22 @@ test("a token Apple no longer knows is forgotten; other failures are reported", 
   assert.equal(outcome(400, "BadDeviceToken"), "forget");
   assert.equal(outcome(403, "InvalidProviderToken"), "failed");
   assert.equal(outcome(500), "failed");
+});
+
+test("a step of the ring is an update to the activity's own token, silent", () => {
+  const { url, init } = changeRequest("com.alexschelhaas.reclaim", "update",
+    { startedAt: 783_000_000, memberCount: 2, placeName: null, stage: 1 }, "beef", "production", "B", 1_800_000_000);
+  assert.equal(url, "https://api.push.apple.com/3/device/beef");
+  assert.equal((init.headers as Record<string, string>)["apns-topic"], "com.alexschelhaas.reclaim.push-type.liveactivity");
+  const aps = JSON.parse(init.body as string).aps;
+  assert.equal(aps.event, "update");
+  assert.equal(aps["content-state"].stage, 1);
+  assert.equal(aps.alert, undefined, "a step never alerts");
+  assert.equal(aps["dismissal-date"], undefined, "and dismisses nothing");
+});
+
+test("an end dismisses at once", () => {
+  const aps = JSON.parse(changeRequest("b", "end", {}, "ff", "sandbox", "x", 1_800_000_000).init.body as string).aps;
+  assert.equal(aps.event, "end");
+  assert.equal(aps["dismissal-date"], 1_800_000_000);
 });

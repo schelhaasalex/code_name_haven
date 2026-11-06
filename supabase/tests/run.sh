@@ -15,7 +15,9 @@ psql -q -d "$DB" -c "do \$\$ begin
   if not exists (select 1 from pg_roles where rolname='authenticated')
   then create role authenticated nologin; end if;
   if not exists (select 1 from pg_roles where rolname='anon')
-  then create role anon nologin; end if; end \$\$;"
+  then create role anon nologin; end if;
+  if not exists (select 1 from pg_roles where rolname='service_role')
+  then create role service_role nologin; end if; end \$\$;"
 
 # Every migration, in order. Leaving the last two out would mean the public
 # wrappers the client actually calls are the least-tested thing in the project.
@@ -36,6 +38,7 @@ psql -v ON_ERROR_STOP=1 -q -d "$DB" \
   -f "$ROOT/supabase/migrations/0012_retroactive_cap.sql" \
   -f "$ROOT/supabase/migrations/0013_dock_place.sql" \
   -f "$ROOT/supabase/migrations/0014_rejoin.sql" \
-  -f "$ROOT/supabase/migrations/0015_activity_tokens.sql"
+  -f "$ROOT/supabase/migrations/0015_activity_tokens.sql" \
+  -f "$ROOT/supabase/migrations/0016_live_activity_charge.sql"
 
 psql -v ON_ERROR_STOP=1 -q -d "$DB" -f "$ROOT/supabase/tests/01_schema_test.sql"

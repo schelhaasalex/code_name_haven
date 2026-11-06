@@ -261,6 +261,18 @@ if grep -q 'pushToStartTokenUpdates' $ALL_SWIFT 2>/dev/null; then
     || bad "The app waits for a push-to-start token, and Reclaim.entitlements has no aps-environment"
 fi
 
+# 20. The ring's four steps are decided twice: on the phone, for an activity it
+#     starts while it's awake, and on the server, for every step after, while
+#     the phone is in the box. If the two lists differ, the ring jumps back a
+#     segment the next time the app opens — the one thing it must never do.
+note "The ring charges the same on the phone and the server"
+swift_steps=$(sed -n 's/.*static let minutes = \[\([0-9, ]*\)\].*/\1/p' ReclaimKit/Sources/ReclaimKit/Activity/EveningCharge.swift | tr -d ' ')
+sql_steps=$(sed -n 's/.*unnest(array\[\([0-9, ]*\)\]).*/\1/p' supabase/migrations/*_live_activity_charge.sql | tail -1 | tr -d ' ')
+[ -n "$swift_steps" ] || bad "couldn't read EveningCharge.minutes"
+[ -n "$sql_steps" ] || bad "couldn't read app.charge_stage's steps"
+[ "$swift_steps" = "$sql_steps" ] \
+  || bad "EveningCharge.minutes is [$swift_steps] and app.charge_stage counts [$sql_steps]"
+
 echo
 if [ "$FAIL" -eq 0 ]; then
   echo "Shape is fine."

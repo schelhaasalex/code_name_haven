@@ -13,13 +13,13 @@ import ReclaimKit
 struct ReclaimLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: ReclaimActivityAttributes.self) { context in
-            lockScreen(context.state)
+            face(context.state)
                 .activityBackgroundTint(Palette.nightCard)
                 .activitySystemActionForegroundColor(Palette.cream)
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    RingMark(startedAt: context.state.startedAt, size: 34)
+                    RingMark(stage: context.state.stage, memberCount: context.state.memberCount, size: 34)
                 }
                 DynamicIslandExpandedRegion(.center) {
                     VStack(alignment: .leading, spacing: 4) {
@@ -43,7 +43,7 @@ struct ReclaimLiveActivity: Widget {
                     .tint(Palette.edge)
                 }
             } compactLeading: {
-                RingMark(startedAt: context.state.startedAt, size: 16)
+                RingMark(stage: context.state.stage, size: 16)
             } compactTrailing: {
                 // Together, how many; alone, nothing. Never digits that tick.
                 if context.state.memberCount > 1 {
@@ -52,8 +52,19 @@ struct ReclaimLiveActivity: Widget {
                         .foregroundStyle(Palette.ember)
                 }
             } minimal: {
-                RingMark(startedAt: context.state.startedAt, size: 16)
+                RingMark(stage: context.state.stage, size: 16)
             }
+        }
+    }
+
+    /// On iOS 18 the same activity can show on a paired Watch, where it asks
+    /// for the small family. Before 18 there is no family to ask about.
+    @ViewBuilder
+    private func face(_ state: ReclaimActivityAttributes.ContentState) -> some View {
+        if #available(iOS 18.0, *) {
+            ActivityFace(lockScreen: lockScreen(state), wrist: WristActivity(state: state))
+        } else {
+            lockScreen(state)
         }
     }
 
@@ -63,7 +74,7 @@ struct ReclaimLiveActivity: Widget {
     private func lockScreen(_ state: ReclaimActivityAttributes.ContentState) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 16) {
-                RingMark(startedAt: state.startedAt, size: 44)
+                RingMark(stage: state.stage, memberCount: state.memberCount, size: 44)
                 VStack(alignment: .leading, spacing: 5) {
                     Text(headline(state.memberCount))
                         .font(Type.display(22))
@@ -99,38 +110,5 @@ struct ReclaimLiveActivity: Widget {
     private func since(_ state: ReclaimActivityAttributes.ContentState) -> String {
         t("lockscreen.since", "place", state.placeName ?? t("docked.where.unnamed"),
           "time", Say.time(state.startedAt))
-    }
-}
-
-/// The brand's ring and dot, the ring filling over the first fifteen minutes
-/// — tonight's evening becoming one that counts.
-///
-/// The system draws the fill on its own clock. A Live Activity can't be
-/// changed at a moment in the future without the app running or a push, so a
-/// progress view over a fixed interval is the one way for the lock screen to
-/// show the evening start to count. It moves once, slowly, and then stops.
-///
-/// The widget target can't see the app target, so the mark lives here.
-private struct RingMark: View {
-    let startedAt: Date
-    var size: CGFloat
-
-    private var counting: ClosedRange<Date> {
-        startedAt...startedAt.addingTimeInterval(Double(EveningLanding.qualifyingMinutes * 60))
-    }
-
-    var body: some View {
-        ZStack {
-            ProgressView(timerInterval: counting, countsDown: false) {
-                EmptyView()
-            } currentValueLabel: {
-                EmptyView()
-            }
-            .progressViewStyle(.circular)
-            .tint(Palette.ember)
-            .frame(width: size * 0.84, height: size * 0.84)
-            Circle().fill(Palette.ember).frame(width: size * 0.3, height: size * 0.3)
-        }
-        .frame(width: size, height: size)
     }
 }

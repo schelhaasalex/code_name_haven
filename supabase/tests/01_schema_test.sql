@@ -419,7 +419,7 @@ begin
       'name_somewhere', 'merge_places', 'move_evening',
       'create_invite', 'accept_invite', 'has_company',
       'open_nearby', 'nearby_offer', 'join_nearby', 'my_evenings',
-      'dock_place', 'save_activity_token']) as name
+      'dock_place', 'save_activity_token', 'save_live_activity']) as name
     where not exists (
       select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'public' and p.proname = name)
@@ -431,7 +431,7 @@ begin
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public'
      and has_function_privilege('authenticated', p.oid, 'execute');
-  assert v_wrapped = 20, format('expected 20 callable wrappers, found %s', v_wrapped);
+  assert v_wrapped = 21, format('expected 21 callable wrappers, found %s', v_wrapped);
 
   -- The scheduler's job is not a client's to call: nine hours of
   -- phone-on-the-side becoming 180 minutes has to happen TO you, not by you.
@@ -1117,6 +1117,105 @@ begin
   assert v_failed, 'signed out, nothing is filed';
 
   raise notice 'PASS 25  a phone files its own Live Activity token, and nobody reads one';
+end $$;
+
+-- ============================================================ 26
+-- The evening charges (0016). Each running Live Activity is filed with its
+-- own token; once a minute claim_charges hands back what each should show
+-- that it isn't showing yet: the next segment, a light for someone who
+-- joined, or 'end' for an evening the person has left. Each step once.
+
+do $$
+declare
+  v_a uuid := 'abababab-1616-1616-1616-161616161601';
+  v_b uuid := 'abababab-1616-1616-1616-161616161602';
+  v_tok text := repeat('cd', 32);
+  v_place uuid; v_session uuid; v_theirs uuid; v_gathering uuid;
+  v_start double precision;
+  v_failed boolean; r record; v_n integer;
+begin
+  insert into auth.users (id, email) values (v_a, 'charge-a@example.test'), (v_b, 'charge-b@example.test');
+  insert into profiles (id, display_name) values (v_a, 'A'), (v_b, 'B');
+
+  assert app.charge_stage(0) = 0 and app.charge_stage(14.9) = 0, 'nothing full before fifteen minutes';
+  assert app.charge_stage(15) = 1 and app.charge_stage(30) = 2, 'a segment at fifteen, another at thirty';
+  assert app.charge_stage(60) = 3 and app.charge_stage(90) = 4, 'three at the hour, four at an hour and a half';
+  assert app.charge_stage(600) = 4, 'and then it holds';
+
+  perform auth.login(v_a);
+  v_place := app.create_place('charge-moth', 'charge-secret', null);
+  v_session := app.start_or_join(v_place, 'tag', 'UTC');
+  select gathering_id into v_gathering from sessions where id = v_session;
+
+  -- Started ten minutes ago, in ActivityKit's seconds since 2001.
+  v_start := extract(epoch from now() - interval '10 minutes') - 978307200;
+  perform app.save_live_activity(upper(v_tok), v_gathering, 'production',
+    jsonb_build_object('startedAt', v_start, 'memberCount', 1, 'placeName', 'Kitchen', 'stage', 0)::text);
+  assert (select profile_id from live_activities where token = v_tok) = v_a, 'filed as yours, lowercase';
+
+  perform auth.logout();
+  select count(*) into v_n from app.claim_charges();
+  assert v_n = 0, 'nothing new to show at ten minutes, alone';
+
+  -- Someone else puts their phone down.
+  perform auth.login(v_b);
+  insert into place_people (place_id, profile_id) values (v_place, v_b);
+  v_theirs := app.start_or_join(v_place, 'tag', 'UTC');
+  perform auth.logout();
+
+  select * into r from app.claim_charges();
+  assert r.event = 'update' and (r.state ->> 'memberCount')::int = 2, 'a light joins the ring';
+  assert (r.state ->> 'stage')::int = 0, 'the stage is still the first';
+  assert (r.state ->> 'startedAt')::double precision = v_start and r.state ->> 'placeName' = 'Kitchen',
+    'and everything else is what the phone wrote';
+  select count(*) into v_n from app.claim_charges();
+  assert v_n = 0, 'once: the next minute has nothing new';
+
+  -- Sixty-one minutes in: one push carries every step since.
+  select count(*) into v_n from app.claim_charges(now() + interval '51 minutes');
+  select stage_sent into v_n from live_activities where token = v_tok;
+  assert v_n = 3, 'three segments at the hour, in one push';
+
+  -- B goes home. The light stays: the count goes up, never down.
+  perform auth.login(v_b);
+  perform app.end_session(v_theirs);
+  perform auth.logout();
+  select count(*) into v_n from app.claim_charges(now() + interval '52 minutes');
+  assert v_n = 0, 'someone leaving takes no light away';
+
+  -- A ends the evening.
+  perform auth.login(v_a);
+  perform app.end_session(v_session);
+  perform auth.logout();
+  select * into r from app.claim_charges();
+  assert r.event = 'end', 'an evening you have left ends its Live Activity';
+  assert not exists (select 1 from live_activities where token = v_tok), 'and is forgotten';
+
+  -- Filing needs you to be in the evening.
+  perform auth.login(v_b);
+  delete from sessions where profile_id = v_b;
+  v_failed := false;
+  begin
+    perform app.save_live_activity(v_tok, v_gathering, 'production', '{"startedAt": 1}');
+  exception when others then v_failed := true; end;
+  assert v_failed, 'not for an evening you were never in';
+
+  perform auth.login(v_a);
+  v_failed := false;
+  begin
+    perform app.save_live_activity(v_tok, v_gathering, 'production', '{"placeName": "x"}');
+  exception when check_violation then v_failed := true; end;
+  assert v_failed, 'a state with no start time is refused';
+
+  assert not has_table_privilege('authenticated', 'public.live_activities', 'select'),
+    'no phone reads the tokens';
+  assert not has_function_privilege('authenticated', 'public.claim_charges(text)', 'execute'),
+    'and none can claim the pushes';
+  assert has_function_privilege('service_role', 'public.claim_charges(text)', 'execute'),
+    'the Edge Function can';
+
+  perform auth.logout();
+  raise notice 'PASS 26  the evening charges in four steps, a light per person, each sent once';
 end $$;
 
 do $$ begin raise notice '--- all assertions held ---'; end $$;

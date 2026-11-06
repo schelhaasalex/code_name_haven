@@ -22,6 +22,10 @@ extension AppState {
         LiveActivityController.watchPushToStartTokens { [weak self] token in
             try? await self?.repo.saveActivityToken(token, environment: LiveActivityController.pushEnvironment)
         }
+        LiveActivityController.watchActivityTokens { [weak self] gathering, token, state in
+            try? await self?.repo.saveLiveActivity(token: token, gatheringId: gathering,
+                                                   environment: LiveActivityController.pushEnvironment, state: state)
+        }
         boxLink.resume { [weak self] now, before, rssi in
             guard let self else { return }
             Task { await self.boxChanged(now, before: before, rssi: rssi) }
@@ -84,7 +88,8 @@ extension AppState {
     private func showOnLockScreen() async {
         guard isLive, !LiveActivityController.showing, let s = session else { return }
         let state = ReclaimActivityAttributes.ContentState(
-            startedAt: startedAt ?? s.startedAt, memberCount: max(1, members.count), placeName: placeName)
+            startedAt: startedAt ?? s.startedAt, memberCount: max(1, members.count), placeName: placeName,
+            stage: EveningCharge.stage(since: startedAt ?? s.startedAt))
         let place = placeName ?? t("docked.where.unnamed")
         guard let body = try? RemoteActivity.startBody(
             gatheringId: s.gatheringId, state: state,

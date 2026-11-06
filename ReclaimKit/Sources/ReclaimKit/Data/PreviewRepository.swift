@@ -138,6 +138,7 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
     /// The sample household has no server and no lock screen to push to.
     public func saveActivityToken(_ token: String, environment: String) async throws {}
     public func startActivityRemotely(body: Data) async throws {}
+    public func saveLiveActivity(token: String, gatheringId: UUID, environment: String, state: String) async throws {}
 
     public func joinNearby(key: String) async throws -> UUID {
         _ = try await startOrJoin(place: Self.kitchenTable, source: .nearby)

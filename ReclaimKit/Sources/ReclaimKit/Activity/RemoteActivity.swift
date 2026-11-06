@@ -27,6 +27,13 @@ public enum RemoteActivity {
         return try JSONSerialization.data(withJSONObject: request)
     }
 
+    /// A running activity's state, for `save_live_activity`: the server keeps
+    /// it as written and changes only the stage and the count, so the date
+    /// in it stays one ActivityKit decodes.
+    public static func stateJSON(_ state: ReclaimActivityAttributes.ContentState) throws -> String {
+        String(decoding: try JSONEncoder().encode(state), as: UTF8.self)
+    }
+
     /// The token iOS hands out, as Apple's push service wants it.
     public static func hex(_ token: Data) -> String {
         token.map { String(format: "%02x", $0) }.joined()
