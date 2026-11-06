@@ -27,7 +27,7 @@ extension AppState {
             return
         }
         PlaceSecrets.save(link.secret, for: place)
-        pairBox(secret: link.secret, place: place)
+        pairBox(place: place)
         if isLive {
             await moveHere(place)
         } else {

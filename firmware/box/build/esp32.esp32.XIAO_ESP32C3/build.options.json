@@ -1,0 +1,9 @@
+{
+  "additionalFiles": "",
+  "compiler.optimization_flags": "-Os",
+  "customBuildProperties": "",
+  "fqbn": "esp32:esp32:XIAO_ESP32C3",
+  "hardwareFolders": "/Users/alexschelhaas/Library/Arduino15/packages/esp32/hardware/esp32/3.3.12,/Users/alexschelhaas/Library/Arduino15/packages/esp32/hardware/esp32/3.3.12",
+  "otherLibrariesFolders": "/Users/alexschelhaas/Documents/Arduino/libraries",
+  "sketchLocation": "/Users/alexschelhaas/Documents/code_name_haven/firmware/box"
+}

@@ -20,7 +20,8 @@ extension BoxLink: CBCentralManagerDelegate {
     nonisolated public func centralManager(_ manager: CBCentralManager,
                                            didDiscover peripheral: CBPeripheral,
                                            advertisementData: [String: Any], rssi: NSNumber) {
-        Task { @MainActor in self.discoveredCandidate(peripheral) }
+        let strength = rssi.intValue
+        Task { @MainActor in self.discoveredCandidate(peripheral, rssi: strength) }
     }
 
     nonisolated public func centralManager(_ manager: CBCentralManager,

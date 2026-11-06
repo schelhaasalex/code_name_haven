@@ -11,7 +11,7 @@ import CoreBluetooth
 /// drawer is shut, with nobody touching anything.
 ///
 /// The one thing that defeats it is the person swiping the app away. Then iOS
-/// won't relaunch it for Bluetooth, and the slot's tag is the way in (rule 7).
+/// won't relaunch it for Bluetooth until the app is next opened.
 ///
 /// No box paired, no radio: the manager is only created once there is a box
 /// to talk to, so nobody without one is ever asked about Bluetooth for it.
@@ -23,6 +23,10 @@ public final class BoxLink: NSObject {
     public typealias Changed = @MainActor (_ now: Box.Slots, _ before: Box.Slots, _ rssi: Int?) -> Void
 
     private static let restoreID = "reclaim.box"
+    /// How long pairing listens before taking the closest dock, and how long
+    /// it waits for one at all.
+    private static let listen: Duration = .seconds(3)
+    private static let giveUp: Duration = .seconds(12)
 
     private var manager: CBCentralManager?
     private var box: CBPeripheral?
@@ -31,10 +35,9 @@ public final class BoxLink: NSObject {
     /// A slot change waiting on its signal strength.
     private var pending: Box.Slots?
 
-    /// Pairing: the id being looked for, what it calls back with, and the
-    /// candidates connected to while their ids are read.
-    private var seeking: Data?
+    /// Pairing: what it calls back with, and every dock heard meanwhile.
     private var paired: (@MainActor (UUID?) -> Void)?
+    private var heard: [UUID: Int] = [:]
     private var candidates: [UUID: CBPeripheral] = [:]
 
     public override init() { super.init() }
@@ -46,15 +49,23 @@ public final class BoxLink: NSObject {
         start()
     }
 
-    /// Finds the box whose id this is, among the boxes in range, and keeps it.
-    /// Called with the tag's secret in hand, in the foreground, so a box that
-    /// can't be found (no radio yet, Bluetooth off) is simply not paired.
-    public func pair(id: Data, then done: @escaping @MainActor (UUID?) -> Void) {
-        seeking = id
+    /// Keeps the dock this phone is closest to. Called the moment a box's tag
+    /// or code is read, in the foreground and at the box — so a box that
+    /// can't be heard (no radio yet, Bluetooth off) is simply not paired.
+    public func pair(then done: @escaping @MainActor (UUID?) -> Void) {
         paired = done
+        heard = [:]
         start()
         Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .seconds(12))
+            let began = ContinuousClock.now
+            while ContinuousClock.now - began < Self.giveUp {
+                try? await Task.sleep(for: .seconds(1))
+                guard let self, self.paired != nil else { return }
+                if ContinuousClock.now - began >= Self.listen, let closest = Box.closest(self.heard) {
+                    self.finishPairing(self.candidates[closest])
+                    return
+                }
+            }
             self?.finishPairing(nil)
         }
     }
@@ -70,7 +81,7 @@ public final class BoxLink: NSObject {
 
     private func ready(_ manager: CBCentralManager) {
         guard manager.state == .poweredOn else { return }
-        if seeking != nil, !manager.isScanning {
+        if paired != nil, !manager.isScanning {
             manager.scanForPeripherals(withServices: [CBUUID(string: Box.service)])
         }
         guard box == nil, let pairing = BoxPairing.current,
@@ -88,41 +99,41 @@ public final class BoxLink: NSObject {
     }
 
     private func finishPairing(_ peripheral: CBPeripheral?) {
-        guard seeking != nil else { return }
-        seeking = nil
+        guard let done = paired else { return }
+        paired = nil
         manager?.stopScan()
-        for candidate in candidates.values where candidate !== peripheral {
-            manager?.cancelPeripheralConnection(candidate)
-        }
+        heard = [:]
         candidates = [:]
         if let peripheral, let manager {
             if let old = box, old !== peripheral { manager.cancelPeripheralConnection(old) }
             box = nil
+            slots = Box.Slots(bits: 0)
             hold(peripheral, with: manager)
         }
-        let done = paired
-        paired = nil
-        done?(peripheral?.identifier)
+        done(peripheral?.identifier)
     }
 
-    /// A value off the box. Its id, while pairing; its slots, the rest of the time.
+    /// A value off the box: its slots, or one of its events. Both say the
+    /// same change, and whichever arrives first is the one acted on.
     func read(_ characteristic: CBCharacteristic, of peripheral: CBPeripheral) {
+        guard peripheral === box else { return }
         switch characteristic.uuid {
-        case CBUUID(string: Box.idCharacteristic):
-            guard let seeking, characteristic.value == seeking else {
-                if candidates[peripheral.identifier] != nil { manager?.cancelPeripheralConnection(peripheral) }
-                candidates[peripheral.identifier] = nil
-                return
+        case CBUUID(string: Box.slotStateCharacteristic):
+            if let now = Box.Slots(state: characteristic.value) { apply(now, from: peripheral) }
+        case CBUUID(string: Box.eventCharacteristic):
+            if let event = Box.Event(characteristic.value) {
+                apply((pending ?? slots).after(event), from: peripheral)
             }
-            candidates[peripheral.identifier] = nil
-            finishPairing(peripheral)
-        case CBUUID(string: Box.slotsCharacteristic):
-            guard peripheral === box, let now = Box.Slots(characteristic.value), now != slots else { return }
-            pending = now
-            peripheral.readRSSI()
         default:
             break
         }
+    }
+
+    private func apply(_ now: Box.Slots, from peripheral: CBPeripheral) {
+        guard now != (pending ?? slots) else { return }
+        let measuring = pending != nil
+        pending = now
+        if !measuring { peripheral.readRSSI() }
     }
 
     func measured(_ rssi: Int?) {
@@ -139,28 +150,39 @@ public final class BoxLink: NSObject {
     }
 
     func discovered(_ service: CBService, of peripheral: CBPeripheral) {
-        // A candidate only needs its id; the box, its slots.
-        let wanted = peripheral === box ? Box.slotsCharacteristic : Box.idCharacteristic
-        peripheral.discoverCharacteristics([CBUUID(string: wanted)], for: service)
+        guard peripheral === box else { return }
+        peripheral.discoverCharacteristics(
+            [Box.slotStateCharacteristic, Box.eventCharacteristic, Box.commandCharacteristic].map(CBUUID.init),
+            for: service)
     }
 
+    /// Subscribe to the slots and the events, read the slots once to catch
+    /// up, and tell the dock the time.
     func found(_ characteristic: CBCharacteristic, of peripheral: CBPeripheral) {
-        if characteristic.uuid == CBUUID(string: Box.slotsCharacteristic) {
+        switch characteristic.uuid {
+        case CBUUID(string: Box.slotStateCharacteristic):
             peripheral.setNotifyValue(true, for: characteristic)
+            peripheral.readValue(for: characteristic)
+        case CBUUID(string: Box.eventCharacteristic):
+            peripheral.setNotifyValue(true, for: characteristic)
+        case CBUUID(string: Box.commandCharacteristic):
+            let type: CBCharacteristicWriteType =
+                characteristic.properties.contains(.write) ? .withResponse : .withoutResponse
+            peripheral.writeValue(Box.timeCommand(), for: characteristic, type: type)
+        default:
+            break
         }
-        peripheral.readValue(for: characteristic)
     }
 
     func lost(_ peripheral: CBPeripheral) {
         if peripheral === box, let manager { manager.connect(peripheral) }   // wait for it to come back
-        candidates[peripheral.identifier] = nil
     }
 
-    func discoveredCandidate(_ peripheral: CBPeripheral) {
-        guard seeking != nil, candidates[peripheral.identifier] == nil, peripheral !== box else { return }
+    func discoveredCandidate(_ peripheral: CBPeripheral, rssi: Int) {
+        // 127 is Core Bluetooth's "couldn't measure".
+        guard paired != nil, rssi != 127 else { return }
         candidates[peripheral.identifier] = peripheral
-        peripheral.delegate = self
-        manager?.connect(peripheral)
+        heard[peripheral.identifier] = max(rssi, heard[peripheral.identifier] ?? .min)
     }
 
     func restored(_ peripherals: [CBPeripheral]) {
