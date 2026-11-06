@@ -5,11 +5,6 @@ import SwiftUI
 struct ReclaimWidgetBundle: WidgetBundle {
     var body: some Widget {
         liveActivity
-        // Controls arrived in iOS 18. The app's floor is 17, so this is the
-        // one thing in the bundle that isn't always there.
-        if #available(iOS 18.0, *) {
-            SetItDownControl()
-        }
     }
 
     /// One activity either way: on 18 it also has a face for the Watch. Not an

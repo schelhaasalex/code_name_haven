@@ -1,20 +1,24 @@
 import Foundation
 
-/// The one box this phone belongs to: which radio it is, and which place.
+/// The one box this phone belongs to: which place it is, and which radio.
 ///
-/// Learned once — the closest dock when the box's tag or code was read — and
-/// kept on this phone only. Reading another box's re-learns: the newest box
+/// The place is learned the moment the box's tag or code is read; the radio a
+/// few seconds later — the dock the phone is closest to right then — and only
+/// if Bluetooth is there to find it. Without one the box is still this
+/// phone's, and its tags still work.
+///
+/// Kept on this phone only. Reading another box's re-learns: the newest box
 /// wins, because the box this phone was put in most recently is the one it
-/// lives in. (A pairing saved by an earlier version also carried the box's id;
-/// it decodes the same without it.)
+/// lives in. (A pairing saved by an earlier version also carried the box's
+/// id; it decodes the same without it.)
 public struct BoxPairing: Codable, Equatable, Sendable {
+    public let place: UUID
     /// Core Bluetooth's name for the box on this phone. Not the box's own id:
     /// iOS gives every phone a different one for the same device.
-    public let peripheral: UUID
-    public let place: UUID
+    public var peripheral: UUID?
 
-    public init(peripheral: UUID, place: UUID) {
-        self.peripheral = peripheral; self.place = place
+    public init(place: UUID, peripheral: UUID? = nil) {
+        self.place = place; self.peripheral = peripheral
     }
 
     private static let key = "dock.box"

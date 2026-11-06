@@ -8,27 +8,16 @@ struct ReclaimApp: App {
     init() {
         #if DEBUG
         // The "Reclaim (Sample data)" scheme: the whole app against the canvas
-        // household, in memory, signed in, no network. Not in a release build.
+        // household and its box, in memory, no network. Not in a release build.
+        // `xcrun simctl openurl booted reclaim://d/any/1` puts a phone in it.
         if ProcessInfo.processInfo.arguments.contains("-sample-data") {
-            let repo = PreviewRepository.sampleHousehold()
-            let state = AppState(repo: repo)
-            _state = State(initialValue: state)
-            IntentEnvironment.repository = repo
-            IntentEnvironment.onSessionChanged = { await state.load() }
+            _state = State(initialValue: AppState(repo: PreviewRepository.sampleHousehold(),
+                                                 boxPlace: PreviewRepository.kitchenTable))
             return
         }
         #endif
-        let repo = SupabaseRepository()
-        let transport = SupabaseCeremonyTransport(client: repo.client)
-        let state = AppState(repo: repo, transport: transport)
+        let state = AppState(repo: SupabaseRepository())
         _state = State(initialValue: state)
-
-        // So Siri, the Action Button, a Shortcut and the Live Activity's End
-        // button work without booting the SwiftUI stack — and so what they did
-        // reaches the app: `load()` reconciles against the database, adopting
-        // an evening started elsewhere or ending one ended elsewhere.
-        IntentEnvironment.repository = repo
-        IntentEnvironment.onSessionChanged = { await state.load() }
         // Here, not in a view: when the box relaunches the app in the
         // background there is no view, and the connection iOS kept open has
         // to be claimed before launch finishes.
@@ -39,10 +28,7 @@ struct ReclaimApp: App {
         WindowGroup {
             RootView()
                 .environment(state)
-                .task {
-                    await state.load()
-                    await state.computeInterruption()
-                }
+                .task { await state.load() }
                 .onOpenURL { url in
                     Task { await URLRouter.handle(url, state: state) }
                 }

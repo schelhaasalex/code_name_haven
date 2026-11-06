@@ -39,6 +39,7 @@ psql -v ON_ERROR_STOP=1 -q -d "$DB" \
   -f "$ROOT/supabase/migrations/0013_dock_place.sql" \
   -f "$ROOT/supabase/migrations/0014_rejoin.sql" \
   -f "$ROOT/supabase/migrations/0015_activity_tokens.sql" \
-  -f "$ROOT/supabase/migrations/0016_live_activity_charge.sql"
+  -f "$ROOT/supabase/migrations/0016_live_activity_charge.sql" \
+  -f "$ROOT/supabase/migrations/0017_box_people.sql"
 
 psql -v ON_ERROR_STOP=1 -q -d "$DB" -f "$ROOT/supabase/tests/01_schema_test.sql"

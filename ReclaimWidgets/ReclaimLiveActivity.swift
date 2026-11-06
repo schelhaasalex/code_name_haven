@@ -1,15 +1,13 @@
 import SwiftUI
 import WidgetKit
 import ActivityKit
-import AppIntents
 import ReclaimKit
 
-/// Screens 7 and 19 — the reason the deployment target is iOS 17.
+/// Screen 7 — the evening on the lock screen, started by the box (by push,
+/// when the box woke the app in the background) and stepped by the server.
 ///
-/// The End button is an App Intent running IN the widget. Before iOS 17 a Live
-/// Activity could only be looked at, and ending a session meant unlocking the
-/// phone you had just deliberately put down — which is the whole problem this
-/// product is trying to solve, reappearing at the last step.
+/// Nothing to press. The box is the only switch: taking the phone out ends
+/// the evening, and the activity with it.
 struct ReclaimLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: ReclaimActivityAttributes.self) { context in
@@ -33,14 +31,6 @@ struct ReclaimLiveActivity: Widget {
                             .lineLimit(1)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                DynamicIslandExpandedRegion(.bottom) {
-                    Button(intent: EndSessionIntent()) {
-                        Text(t("lockscreen.end"))
-                            .font(.system(size: 15, weight: .medium))
-                            .frame(maxWidth: .infinity, minHeight: 40)
-                    }
-                    .tint(Palette.edge)
                 }
             } compactLeading: {
                 RingMark(stage: context.state.stage, size: 16)
@@ -72,30 +62,19 @@ struct ReclaimLiveActivity: Widget {
     /// a timer on the lock screen undid everything the session screen stopped
     /// doing. It says what you're doing, where, and since when.
     private func lockScreen(_ state: ReclaimActivityAttributes.ContentState) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 16) {
-                RingMark(stage: state.stage, memberCount: state.memberCount, size: 44)
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(headline(state.memberCount))
-                        .font(Type.display(22))
-                        .foregroundStyle(Palette.cream)
-                        .lineLimit(2)
-                    Text(since(state))
-                        .font(.system(size: 13))
-                        .foregroundStyle(Palette.dust)
-                        .lineLimit(1)
-                }
-                Spacer(minLength: 0)
-            }
-
-            Button(intent: EndSessionIntent()) {
-                Text(t("lockscreen.end"))
-                    .font(.system(size: 15, weight: .medium))
-                    .frame(maxWidth: .infinity, minHeight: 44)
+        HStack(spacing: 16) {
+            RingMark(stage: state.stage, memberCount: state.memberCount, size: 44)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(headline(state.memberCount))
+                    .font(Type.display(22))
                     .foregroundStyle(Palette.cream)
+                    .lineLimit(2)
+                Text(since(state))
+                    .font(.system(size: 13))
+                    .foregroundStyle(Palette.dust)
+                    .lineLimit(1)
             }
-            .buttonStyle(.plain)
-            .overlay { Capsule().stroke(Palette.edge, lineWidth: 1) }
+            Spacer(minLength: 0)
         }
         .padding(20)
     }
@@ -108,7 +87,7 @@ struct ReclaimLiveActivity: Widget {
     }
 
     private func since(_ state: ReclaimActivityAttributes.ContentState) -> String {
-        t("lockscreen.since", "place", state.placeName ?? t("docked.where.unnamed"),
+        t("lockscreen.since", "place", state.placeName ?? t("box.unnamed"),
           "time", Say.time(state.startedAt))
     }
 }

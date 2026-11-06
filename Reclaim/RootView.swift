@@ -1,9 +1,9 @@
 import SwiftUI
 import ReclaimKit
 
-/// What the window shows: the ritual if one is running, Home if not, Welcome if
-/// nobody is signed in. There is no tab bar and no back button out of a
-/// session — the shape of the app is this switch.
+/// What the window shows: the evening if one is running, Home if not. There is
+/// no tab bar, no sign-in and no back button out of an evening — the shape of
+/// the app is this switch.
 struct RootView: View {
     @Environment(AppState.self) private var state
     @Environment(\.scenePhase) private var scenePhase
@@ -14,13 +14,13 @@ struct RootView: View {
             switch state.phase {
             case .loading:
                 ZStack { Palette.bone.ignoresSafeArea() }
-            case .signedOut:
-                WelcomeView()
+            case .unreachable:
+                UnreachableView()
             case .ready:
                 if let ended = state.justEnded {
                     SessionEndView(ended: ended)
                 } else if state.isLive {
-                    SessionFlowView()
+                    SessionView()
                 } else {
                     HomeView()
                 }
@@ -36,29 +36,15 @@ struct RootView: View {
                 SplashView { splashDone = true }
             }
         }
-        // An invitation cuts the splash short rather than waiting it out. It is
-        // the one thing in the product that interrupts, it is worth interrupting
-        // for, and two seconds of branding is two seconds of someone across the
-        // table having already put theirs down.
-        .onChange(of: state.invitation != nil) { _, arrived in
-            if arrived { splashDone = true }
-        }
-        // Screen 4 covers whatever you were looking at, because the whole
-        // point is that it reaches you across the room.
-        .sheet(item: Binding(get: { state.joinedPlace },
-                             set: { _ in state.joinedPlace = nil })) {
-            JoinedPlaceView(joined: $0)
-        }
-        .fullScreenCover(item: Binding(get: { state.invitation },
-                                       set: { _ in state.dismissInvitation() })) {
-            JoinInviteView(invitation: $0)
+        // Screen 13, the one thing that waits over Home: an evening the server
+        // closed for you.
+        .sheet(item: Binding(get: { state.isLive ? nil : state.closedForYou },
+                             set: { _ in state.dismissClosedForYou() })) {
+            AutoClosedView(session: $0)
         }
         .onChange(of: scenePhase) { _, phase in
-            guard phase == .active, state.phase == .ready else { return }
-            Task {
-                await state.load()
-                await state.computeInterruption()
-            }
+            guard phase == .active, state.phase != .loading else { return }
+            Task { await state.load() }
         }
     }
 }

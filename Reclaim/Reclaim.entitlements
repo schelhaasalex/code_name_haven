@@ -2,26 +2,17 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>com.apple.developer.applesignin</key>
-  <array><string>Default</string></array>
-  <!-- TAG, not NDEF: App Store Connect refuses an iOS 26 SDK build that asks
-       for NDEF ("NDEF is disallowed … TAG is missing", error 90778). The tags
-       still hold NDEF; TagSession connects to the tag and asks it for one. -->
-  <key>com.apple.developer.nfc.readersession.formats</key>
-  <array><string>TAG</string></array>
-  <!-- The tag by the door, the card's QR and an invite all carry an https
-       link, so the system can open the app with it closed. LINK_DOMAIN is set
-       in project.yml; that site serves the apple-app-site-association
-       (links/). -->
+  <!-- The box's tags and its code carry an https link, so the system can
+       open the app with it closed. LINK_DOMAIN is set in project.yml; that
+       site serves the apple-app-site-association (links/). -->
   <key>com.apple.developer.associated-domains</key>
   <array><string>applinks:$(LINK_DOMAIN)</string></array>
-  <!-- Push, for one thing only: the server starting the Live Activity of an
+  <!-- Push, for the Live Activity only: the server starting the one for an
        evening the box started in the background, where iOS won't let the
-       app start it (start-live-activity). Automatic signing turns this into
+       app start it (start-live-activity), and stepping its ring after
+       (charge-live-activities). Automatic signing turns this into
        production for an App Store or TestFlight build. -->
   <key>aps-environment</key>
   <string>development</string>
-  <key>com.apple.security.application-groups</key>
-  <array><string>group.com.alexschelhaas.reclaim</string></array>
 </dict>
 </plist>

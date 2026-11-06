@@ -45,7 +45,7 @@ public final class BoxLink: NSObject {
     /// At every launch — background ones included, which is when it matters.
     public func resume(_ changed: @escaping Changed) {
         self.changed = changed
-        guard BoxPairing.current != nil else { return }
+        guard BoxPairing.current?.peripheral != nil else { return }
         start()
     }
 
@@ -84,8 +84,8 @@ public final class BoxLink: NSObject {
         if paired != nil, !manager.isScanning {
             manager.scanForPeripherals(withServices: [CBUUID(string: Box.service)])
         }
-        guard box == nil, let pairing = BoxPairing.current,
-              let found = manager.retrievePeripherals(withIdentifiers: [pairing.peripheral]).first
+        guard box == nil, let paired = BoxPairing.current?.peripheral,
+              let found = manager.retrievePeripherals(withIdentifiers: [paired]).first
         else { return }
         hold(found, with: manager)
     }
@@ -186,8 +186,8 @@ public final class BoxLink: NSObject {
     }
 
     func restored(_ peripherals: [CBPeripheral]) {
-        guard let pairing = BoxPairing.current,
-              let found = peripherals.first(where: { $0.identifier == pairing.peripheral })
+        guard let paired = BoxPairing.current?.peripheral,
+              let found = peripherals.first(where: { $0.identifier == paired })
         else { return }
         box = found
         found.delegate = self

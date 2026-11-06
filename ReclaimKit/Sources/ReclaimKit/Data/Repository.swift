@@ -9,75 +9,45 @@ import Foundation
 /// answer is a new RPC, not a wider policy.
 public protocol Repository: Sendable {
 
-    // ---- your own rows, read directly ----
+    // ---- who you are ----
+    /// An account made silently on first launch — no sign-in screen. Does
+    /// nothing if there is one already.
+    func signInAnonymously() async throws
     func myProfile() async throws -> Profile?
-    func upsertProfile(displayName: String?) async throws -> Profile
-    func updateProfile(nudgeEnabled: Bool, nudgeHour: Int) async throws
     func deleteAccount() async throws
-    func signOut() async throws
 
+    // ---- your own rows, read directly ----
     func myPlaces() async throws -> [Place]
-    func place(_ id: UUID) async throws -> Place?
     func rename(place id: UUID, to name: String) async throws
 
     func liveSession() async throws -> Session?
     func gathering(_ id: UUID) async throws -> Gathering?
-    /// The gatherings behind your own sessions, in one query.
-    ///
-    /// A gathering is a shared object rather than a person's row — you may read
-    /// the ones you were in — so this stays inside the rule: it says WHERE your
-    /// own evenings happened, and nothing about whose they were.
-    func gatherings(ids: [UUID]) async throws -> [Gathering]
     func mySessions(since: Date) async throws -> [Session]
     func delete(session id: UUID) async throws
 
     // ---- anything involving anyone else: RPC only ----
     func startOrJoin(place: UUID?, source: SessionSource) async throws -> UUID
     @discardableResult func endSession(_ id: UUID?) async throws -> Int?
-    /// Scanning a card, or picking a place, after the phone is already down.
-    /// Joins the evening open there, or makes yours the place's. Returns the
-    /// gathering you are now in. Migration 0007.
-    func moveEvening(to place: UUID) async throws -> UUID
     func members(of gathering: UUID) async throws -> [Member]
+    /// The box's whole life: every evening anyone has had at it, and how long
+    /// it was gathered. An aggregate — never whose.
     func summary(of place: UUID) async throws -> PlaceSummary
-    func myRhythm() async throws -> Rhythm
     /// Every evening you've had, and the first (migration 0011). Your own
     /// rows only, counted as days.
     func myEvenings() async throws -> EveningTotal
-    func resolvePlace(secret: String) async throws -> UUID?
-    func createPlace(handle: String, secret: String, name: String?) async throws -> UUID
-    /// A box's place, made by whoever is first into it (migration 0013). Nil
-    /// means the handle was taken: draw another and ask again.
+    /// A box's place, found or made by whoever reads its tag or code first
+    /// (migrations 0013, 0017), and you one of its people. Nil means the
+    /// handle was taken: draw another and ask again.
     func dockPlace(secret: String, handle: String) async throws -> UUID?
-    func nameSomewhere(handle: String, secret: String, name: String) async throws -> UUID
-    func mergePlaces(from: UUID, into: UUID) async throws
-    /// A week-long link into one of your places (migration 0008). Joins the
-    /// place; starts nothing.
-    func createInvite(place: UUID) async throws -> String
-    func acceptInvite(token: String) async throws -> InviteAcceptance
-    /// Whether anyone else shares one of your places. One boolean — never
-    /// who, never how many (migration 0009).
-    func hasCompany() async throws -> Bool
 
-    // ---- the radio (migration 0010) ----
-    /// A key for the phone that is down to hand to the phones around it. Nil
-    /// when there is nothing to find: no evening, or one at no place.
-    func openNearby() async throws -> String?
-    /// What a key picked up off the air is worth. Nil when that evening is
-    /// over, or when you are already in it.
-    func nearbyOffer(key: String) async throws -> Invitation?
-    /// Join the evening that key belongs to. The key becomes a place on the
-    /// server and never leaves it as one. Returns the gathering.
-    func joinNearby(key: String) async throws -> UUID
-
-    // ---- the lock screen (migration 0015) ----
+    // ---- the lock screen (migrations 0015, 0016) ----
     /// This device's push-to-start token, filed as yours.
     func saveActivityToken(_ token: String, environment: String) async throws
     /// Asks the server to show this evening's Live Activity, which the phone
     /// couldn't do itself in the background. `body` is `RemoteActivity.startBody`.
     func startActivityRemotely(body: Data) async throws
     /// A running Live Activity's own token, so the server can push the ring's
-    /// steps to it (migration 0016). `state` is `RemoteActivity.stateJSON`.
+    /// steps to it. `state` is `RemoteActivity.stateJSON`.
     func saveLiveActivity(token: String, gatheringId: UUID, environment: String, state: String) async throws
 }
 
@@ -96,7 +66,7 @@ public enum ReclaimError: LocalizedError {
         switch self {
         case .notAuthenticated: "You're signed out."
         case .noLiveSession:    "Nothing is running right now."
-        case .placeNotFound:    "That card doesn't match a place."
+        case .placeNotFound:    "That box isn't one we know."
         }
     }
 }

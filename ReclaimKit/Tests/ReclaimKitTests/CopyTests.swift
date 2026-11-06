@@ -72,8 +72,7 @@ final class CopyTests: XCTestCase {
     // MARK: - Lookup
 
     func testKnownKeyReadsFromTheBundle() {
-        XCTAssertEqual(Copy["welcome.headline"],
-                       "Set your phone down. We'll take it from here.")
+        XCTAssertEqual(Copy["pair.headline"], "Meet your box.")
     }
 
     func testMissingKeyIsVisibleInDevelopment() {
@@ -85,27 +84,24 @@ final class CopyTests: XCTestCase {
     }
 
     func testListReadsAnArrayAndNeverThrows() {
-        XCTAssertFalse(Copy.list("naming.suggestions").isEmpty)
-        XCTAssertTrue(Copy.list("welcome.headline").isEmpty)   // a string, not a list
+        XCTAssertEqual(Copy.list("wrist.stage").count, 5)
+        XCTAssertTrue(Copy.list("pair.headline").isEmpty)   // a string, not a list
         XCTAssertTrue(Copy.list("nope.not.a.key").isEmpty)
     }
 
     // MARK: - Substitution
 
-    func testSubstitutionReplacesEveryOccurrence() {
-        // rhythmended.body names {count} twice — once opening the sentence,
-        // where it's capitalised, and once in the middle, where it isn't.
-        let out = t("rhythmended.body", "count", "eleven")
-        XCTAssertFalse(out.contains("{count}"))
-        XCTAssertTrue(out.hasPrefix("Eleven days"))
-        XCTAssertEqual(out.components(separatedBy: "eleven").count - 1, 1)
+    func testSubstitutionLeavesNoTokenBehind() {
+        let out = t("home.kept", "duration", "forty hours", "count", "twenty-six")
+        XCTAssertFalse(out.contains("{"))
+        XCTAssertEqual(out, "Forty hours together, over twenty-six evenings.")
     }
 
     func testSubstitutionTakesPairsAndIgnoresAStray() {
-        XCTAssertEqual(t("places.row.body", "stage", "A regular", "count", "9"),
-                       "A regular · 9 evenings")
-        XCTAssertEqual(t("places.row.body", "stage", "A regular", "count"),
-                       "A regular · {count} evenings")
+        XCTAssertEqual(t("end.place", "count", "nine", "place", "the box"),
+                       "Nine evenings at the box.")
+        XCTAssertEqual(t("end.place", "count", "nine", "place"),
+                       "Nine evenings at {place}.")
     }
 
     func testAnUnknownTokenLeavesTheLineAlone() {

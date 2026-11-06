@@ -19,16 +19,16 @@ final class DockTests: XCTestCase {
         XCTAssertEqual(Dock.link(from: url, domain: domain), Dock.Link(secret: "box", slot: 2))
     }
 
-    /// A card and a slot share `/p/`. One more part is the whole difference,
-    /// and it has to hold both ways.
-    func testACardIsNeverASlotAndASlotIsNeverACard() {
-        let card = Handle.cardURL(secret: "box", domain: domain)
-        XCTAssertNil(Dock.link(from: card, domain: domain))
-        XCTAssertNotNil(Handle.secret(fromCardURL: card))
-
-        let slot = Dock.url(secret: "box", slot: 1, domain: domain)
-        XCTAssertNotNil(Dock.link(from: slot, domain: domain))
-        XCTAssertNil(Handle.secret(fromCardURL: slot))
+    /// The box's code is the box with no slot: it pairs, and starts nothing.
+    /// A trailing slash is still the code.
+    func testTheCodeIsTheBoxWithNoSlot() {
+        XCTAssertEqual(Dock.link(from: URL(string: "https://links.example/p/box/")!, domain: domain),
+                       Dock.Link(secret: "box", slot: nil))
+        let code = Dock.url(secret: "box", domain: domain)
+        XCTAssertEqual(code.absoluteString, "https://links.example/p/box")
+        XCTAssertEqual(Dock.link(from: code, domain: domain), Dock.Link(secret: "box", slot: nil))
+        XCTAssertEqual(Dock.link(from: URL(string: "reclaim://d/box")!, domain: domain),
+                       Dock.Link(secret: "box", slot: nil))
     }
 
     /// The simulator can't read a tag, so the app's own scheme stands in.
@@ -40,26 +40,24 @@ final class DockTests: XCTestCase {
     /// A box has four slots. A tag saying anything else is not one of ours,
     /// and lighting segment 4 or -1 would light somebody's shelf.
     func testOnlyTheFourSlotsAreSlots() {
-        for bad in ["0", "5", "-1", "two", ""] {
+        for bad in ["0", "5", "-1", "two"] {
             for path in ["p", "d"] {
                 XCTAssertNil(Dock.link(from: URL(string: "https://links.example/\(path)/box/\(bad)")!, domain: domain), bad)
             }
         }
     }
 
-    /// A card is `/p/`, an invite `/i/`; neither may be taken for a box —
-    /// and a box on someone else's domain is not a box.
+    /// An invite was `/i/`; nothing but `/p/` and `/d/` is a box — and a box
+    /// on someone else's domain is not a box.
     func testNothingElseIsADock() {
-        for text in ["https://links.example/p/secret",
-                     "https://links.example/i/token",
+        for text in ["https://links.example/i/token",
                      "https://links.example/i/box/1",
-                     "https://links.example/d/box",
+                     "https://links.example/p",
                      "https://elsewhere.example/p/box/1",
                      "http://links.example/p/box/1",
                      "https://links.example/p/box/1/extra"] {
             XCTAssertNil(Dock.link(from: URL(string: text)!, domain: domain), text)
         }
-        XCTAssertNil(Handle.secret(fromCardURL: Dock.url(secret: "box", slot: 1, domain: domain)))
     }
 
     func testSlotsCountFromOneAndSegmentsFromZero() {

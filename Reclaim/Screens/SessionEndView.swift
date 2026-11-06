@@ -14,12 +14,9 @@ struct SessionEndView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let ended: AppState.Ended
 
-    /// The notification question, asked here — after an evening, when the
-    /// nudge has something to be for — and never at first launch.
-    @State private var offeringNudge = false
     @State private var landed = false
-    /// The place's own total, from `place_summary`. Until it arrives — or if
-    /// it never does — the line just names the place. Nothing waits on it.
+    /// The box's own total, from `place_summary`. Until it arrives — or if
+    /// it never does — the line just names the box. Nothing waits on it.
     @State private var placeEvenings: Int?
 
     private var landing: EveningLanding { ended.landing }
@@ -32,16 +29,11 @@ struct SessionEndView: View {
             Spacer(minLength: 24)
             VStack(spacing: 22) {
                 evenings
-                if offeringNudge { nudgeOffer }
                 PrimaryButton(title: t("end.done")) { state.justEnded = nil }
             }
         }
         .ground()
         .task { await land() }
-        .task {
-            let unasked = await Notifications.canOffer()
-            offeringNudge = unasked && state.profile?.nudgeEnabled == true
-        }
         .task {
             guard let id = ended.placeId else { return }
             placeEvenings = try? await state.repo.summary(of: id).evenings
@@ -98,7 +90,7 @@ struct SessionEndView: View {
     }
 
     private var whereLine: String {
-        guard let place = ended.place else { return t("end.where.unnamed") }
+        let place = ended.place ?? t("box.unnamed")
         switch placeEvenings {
         case .some(1):                return t("end.place.first", "place", place)
         case .some(let n) where n > 1: return t("end.place", "count", Say.number(n), "place", place)
@@ -128,30 +120,6 @@ struct SessionEndView: View {
         guard !reduceMotion else { landed = true; return }
         guard (try? await Task.sleep(for: .seconds(EveningLanding.pause))) != nil else { return }
         withAnimation(.spring(response: 0.55, dampingFraction: 0.6)) { landed = true }
-        if landing.known, landing.lands { Sensation.landed() }
-    }
-
-    /// Yes asks the system; no turns the nudge off, so it's never offered again.
-    /// Either way it can be changed in Settings.
-    private var nudgeOffer: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(t("end.nudge.title")).font(Type.body(16, weight: .medium)).foregroundStyle(Palette.ink)
-            Text(t("end.nudge.body", "time", Say.hour(state.profile?.nudgeHour ?? 19)))
-                .font(Type.note).foregroundStyle(Palette.muted).lineSpacing(2)
-            HStack(spacing: 20) {
-                TextAction(title: t("end.nudge.yes"), tint: Palette.ink) { answerNudge(true) }
-                    .fixedSize()
-                TextAction(title: t("end.nudge.no")) { answerNudge(false) }
-                    .fixedSize()
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .paperCard()
-    }
-
-    private func answerNudge(_ yes: Bool) {
-        offeringNudge = false
-        Task { await state.setNudge(on: yes) }
     }
 }
 

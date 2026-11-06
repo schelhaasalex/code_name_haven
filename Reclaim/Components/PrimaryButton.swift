@@ -2,7 +2,7 @@ import SwiftUI
 import ReclaimKit
 
 /// The heavy one. There is at most one per screen — if a screen seems to need
-/// two, one of them is a `QuietButton`.
+/// two, one of them is a `TextAction`.
 struct PrimaryButton: View {
     let title: String
     var night: Bool = false

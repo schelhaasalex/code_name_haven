@@ -41,18 +41,16 @@ The current set:
 |---|---|
 | `Brand` | The ring-and-dot mark |
 | `Eyebrow` | Mark + letterspaced caps, the header on nearly every screen |
-| `PhoneSlab` | One phone at the table; fills on join, turns over on face-down |
-| `PrimaryButton` / `QuietButton` | The two button weights, paper or night |
+| `PrimaryButton` / `TextAction` | The two weights of thing to press |
 | `PaperCard` | The bordered off-white block |
-| `NightCard` | Its dark counterpart |
-| `LabelledSection` | Eyebrow + a stack, used throughout settings and places |
+| `LabelledSection` | Eyebrow + a stack, used in Settings |
 | `StatRow` | Label on the left, a display-face number on the right |
-| `DotWeek` | The week of dots on Home's footer |
+| `DotWeek` | The week of dots on Home |
 | `EveningMark` | One dot per evening you've had, tonight's among them — behind the session, and on screen 8 |
 | `Ground` | The paper or night ground, gutters, safe area |
 
-**A component takes data, not `AppState`.** `PhoneSlab(name:isMe:isDown:)`, not
-`PhoneSlab(member:state:)`. Screens read state; components render what they're
+**A component takes data, not `AppState`.** `DotWeek(days:)`, not
+`DotWeek(state:)`. Screens read state; components render what they're
 handed. This is what makes every component previewable in isolation and keeps
 them from quietly acquiring behaviour.
 
@@ -62,7 +60,7 @@ that isn't on the scale in `Type` is either a mistake or belongs on the scale.
 ## State
 
 One `@Observable AppState` on the environment. No Composable Architecture, no DI
-container, no view models per screen — at 21 screens each is more machinery than
+container, no view models per screen — at a handful of screens each is more machinery than
 the thing it manages.
 
 A screen may hold `@State` for something only it cares about (a text field, a
@@ -105,11 +103,11 @@ So what's left to test in Swift is thin, and it's all pure:
   constraint violation nobody will connect to the generator.
 - **Dates.** `EveningCalendar` — the dot week and the four-week grid. Week
   boundaries, month boundaries, "distinct dates" behaviour.
-- **Interruption precedence.** Which of the three surfaces when several qualify.
+- **Auto-closed.** Which closed evening screen 13 explains.
 
 **Extract pure logic so it can be tested.** If a piece of reasoning is worth a
 test and lives inside a view or behind a framework, move it to `ReclaimKit` as a
-function over plain values. That's how `EveningCalendar` and `Interruption.first`
+function over plain values. That's how `EveningCalendar` and `AutoClosed.latest`
 came to exist — date arithmetic inside two `View`s, and a precedence order
 buried in an `AppState` method that needed a network and a signed-in person
 to reach.

@@ -4,6 +4,8 @@ import Foundation
 // decoding strategy, so a column rename fails loudly at the one place that
 // names it rather than silently decoding nil.
 
+/// How an evening started. Only the box starts one now; the rest are kept
+/// because evenings from before still say them.
 public enum SessionSource: String, Codable, Sendable {
     case app, tag, control, siri, shortcut, retroactive, nearby
 }
@@ -166,38 +168,4 @@ public struct PlaceSummary: Codable, Hashable, Sendable {
         self.personMinutes = personMinutes; self.stage = stage
         self.since = since; self.liveNow = liveNow
     }
-}
-
-/// A state, not a rank. You are in a rhythm or between rhythms.
-public struct Rhythm: Codable, Hashable, Sendable {
-    public enum State: String, Codable, Sendable {
-        case inRhythm = "in_rhythm"
-        case between
-    }
-
-    public let state: State
-    public let currentRunDays: Int
-    public let longestRunDays: Int
-    public let lastQualifyingDate: String?
-    public let restDayAvailable: Bool
-
-    enum CodingKeys: String, CodingKey {
-        case state
-        case currentRunDays = "current_run_days"
-        case longestRunDays = "longest_run_days"
-        case lastQualifyingDate = "last_qualifying_date"
-        case restDayAvailable = "rest_day_available"
-    }
-
-    public init(state: State, currentRunDays: Int, longestRunDays: Int,
-                lastQualifyingDate: String?, restDayAvailable: Bool) {
-        self.state = state; self.currentRunDays = currentRunDays
-        self.longestRunDays = longestRunDays
-        self.lastQualifyingDate = lastQualifyingDate
-        self.restDayAvailable = restDayAvailable
-    }
-
-    public static let empty = Rhythm(state: .between, currentRunDays: 0,
-                                     longestRunDays: 0, lastQualifyingDate: nil,
-                                     restDayAvailable: true)
 }
