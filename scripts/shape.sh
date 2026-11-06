@@ -136,27 +136,7 @@ else
   fi
 fi
 
-# 10. App Shortcuts are only read from the app target. Declared in ReclaimKit,
-#     the intents were registered but the Siri phrases never were — the build
-#     succeeded and `autoShortcuts` in the app's metadata came out empty.
-note "Siri phrases live in the app target"
-elsewhere=$(grep -l 'AppShortcutsProvider' $(find ReclaimKit/Sources ReclaimWidgets -name '*.swift') 2>/dev/null)
-for f in $elsewhere; do
-  bad "$f declares an AppShortcutsProvider — only one in Reclaim/ is ever read"
-done
-[ "$(grep -l ': AppShortcutsProvider' $(find Reclaim -name '*.swift') 2>/dev/null | wc -l | tr -d ' ')" = "1" ] \
-  || bad "Reclaim/ should declare exactly one AppShortcutsProvider"
-
-# 11. The App Group is one name written three times: two entitlements files and
-#     SessionFlag. If they disagree, the Control Centre toggle reads a store
-#     nothing writes to, and shows "off" forever — no error anywhere.
-note "The App Group is the same everywhere"
-groups=$( { grep -ho 'group\.[A-Za-z0-9.-]*' Reclaim/Reclaim.entitlements ReclaimWidgets/ReclaimWidgets.entitlements
-            grep -ho '"group\.[A-Za-z0-9.-]*"' ReclaimKit/Sources/ReclaimKit/Activity/SessionFlag.swift | tr -d '"'; } | sort -u)
-[ "$(printf '%s\n' "$groups" | grep -c .)" = "1" ] \
-  || bad "App Group differs between the entitlements and SessionFlag: $(echo $groups)"
-
-# 12. One domain, set once. Links are printed onto cards and sent in messages,
+# 12. One domain, set once. Links are written onto tags and printed as codes,
 #     and there's no real domain yet — a host written into Swift is one the
 #     rename will miss. They go through `Links.domain` (LINK_DOMAIN in
 #     project.yml), and so does the entitlement that lets them open the app.
@@ -174,27 +154,17 @@ note "Places are read by named columns"
 bare=$(grep -nE 'from\("places"\)[[:space:]]*\.select\(\)' $ALL_SWIFT 2>/dev/null)
 [ -n "$bare" ] && bad "A bare select() on places is refused by the database — use Place.readableColumns: $(echo "$bare" | head -1)"
 
-# 14. The phone that is DOWN is the one that has to keep talking, and it does
-#     that with the screen off. Without `bluetooth-peripheral` in
-#     UIBackgroundModes iOS stops the advertisement the moment the app leaves
-#     the foreground — which is one second after the person sets the phone
-#     down, and is the entire feature. Nothing errors; the other phones simply
-#     never hear it. The usage string is the other half: its absence is not a
-#     silent failure but a crash on first use.
-note "A phone that is down keeps talking"
-if grep -lq 'CBPeripheralManager' $ALL_SWIFT 2>/dev/null; then
-  grep -q 'bluetooth-peripheral' project.yml \
-    || bad "Something advertises over Bluetooth, but UIBackgroundModes has no bluetooth-peripheral"
-  grep -q 'NSBluetoothAlwaysUsageDescription' project.yml \
-    || bad "Bluetooth is used with no NSBluetoothAlwaysUsageDescription — the app crashes on first use"
-fi
-# The same, for the phone in the box: a central that asks iOS to restore it is
-# one that expects to be woken in the background, and only bluetooth-central
-# lets that happen. Without it the connection to the box goes quiet the moment
-# the screen does — which is the moment the phone is put in.
+# 14. The phone in the box has to keep listening. A central that asks iOS to
+#     restore it is one that expects to be woken in the background, and only
+#     bluetooth-central lets that happen. Without it the connection to the box
+#     goes quiet the moment the screen does — which is the moment the phone is
+#     put in — and nothing says so.
+note "A phone in the box keeps listening"
 if grep -q 'CBCentralManagerOptionRestoreIdentifierKey' $ALL_SWIFT 2>/dev/null; then
   grep -qE 'UIBackgroundModes:.*bluetooth-central' project.yml \
     || bad "Something restores a Bluetooth central, but UIBackgroundModes has no bluetooth-central"
+  grep -q 'NSBluetoothAlwaysUsageDescription' project.yml \
+    || bad "Bluetooth is used with no NSBluetoothAlwaysUsageDescription — the app crashes on first use"
 fi
 
 # 15. A sheet nothing opens. `@State private var naming = false` and
@@ -272,6 +242,22 @@ sql_steps=$(sed -n 's/.*unnest(array\[\([0-9, ]*\)\]).*/\1/p' supabase/migration
 [ -n "$sql_steps" ] || bad "couldn't read app.charge_stage's steps"
 [ "$swift_steps" = "$sql_steps" ] \
   || bad "EveningCharge.minutes is [$swift_steps] and app.charge_stage counts [$sql_steps]"
+
+# 21. Only the box starts an evening (CLAUDE.md rule 4). Every other way in —
+#     a button, a face-down phone, a guess from motion, a nearby phone, Siri —
+#     was built once and taken out, and each was one call to `setItDown` from
+#     somewhere new. So the evening starts in AppState+Evening, and is asked
+#     to only from the box's two doors: its radio and its tags.
+note "Only the box starts an evening"
+for f in $(grep -l 'startOrJoin(' $(find Reclaim ReclaimWidgets -name '*.swift') 2>/dev/null); do
+  [ "$f" = "Reclaim/AppState+Evening.swift" ] || bad "$f starts an evening — only the box does (AppState+Evening)"
+done
+for f in $(grep -l 'setItDown(' $(find Reclaim ReclaimWidgets -name '*.swift') 2>/dev/null); do
+  case "$f" in
+    Reclaim/AppState+Evening.swift|Reclaim/AppState+Box.swift|Reclaim/AppState+Dock.swift) ;;
+    *) bad "$f sets an evening going — only the box's radio and tags do" ;;
+  esac
+done
 
 echo
 if [ "$FAIL" -eq 0 ]; then

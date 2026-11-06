@@ -121,13 +121,13 @@ final class FormattingTests: XCTestCase {
     /// Six screens opened a sentence with "three evenings…" in lowercase.
     func testASentenceOpeningWithACountStartsWithACapital() {
         XCTAssertEqual(t("home.footer", "count", Say.number(3)), "Three evenings this week.")
-        XCTAssertEqual(t("rhythm.subhead", "count", Say.number(9)), "Nine days of it so far.")
+        XCTAssertEqual(t("session.together", "count", Say.count(3)), "Three of you so far.")
     }
 
     /// Mid-sentence it stays lowercase, and a name stays how its owner wrote it.
     func testOnlyAnOpeningCountIsCapitalised() {
         XCTAssertTrue(t("end.receipt", "duration", "an hour", "count", Say.number(3)).contains("the three of you"))
-        XCTAssertTrue(t("join.headline", "name", "maya", "place", "the porch").hasPrefix("maya"))
+        XCTAssertEqual(t("end.where", "place", "the porch"), "At the porch.")
     }
 
     /// The nudge hour, in the phone's own style — not a fixed "7:00pm".

@@ -1218,4 +1218,42 @@ begin
   raise notice 'PASS 26  the evening charges in four steps, a light per person, each sent once';
 end $$;
 
+-- ============================================================ 27
+-- Reading a box makes you one of its people (0017). A phone that pairs by the
+-- box's code starts no evening, and still has to see the box it paired with.
+
+do $$
+declare
+  v_maker  uuid := 'b7b7b7b7-b7b7-b7b7-b7b7-b7b7b7b7b701';
+  v_reader uuid := 'b7b7b7b7-b7b7-b7b7-b7b7-b7b7b7b7b702';
+  v_box    uuid;
+begin
+  insert into auth.users (id, email) values
+    (v_maker, 'maker@example.test'), (v_reader, 'reader@example.test');
+  insert into profiles (id) values (v_maker), (v_reader);
+
+  perform auth.login(v_maker);
+  v_box := app.dock_place('a-box-read-by-its-code', 'clear-wren');
+
+  perform auth.login(v_reader);
+  assert app.dock_place('a-box-read-by-its-code', 'open-pike') = v_box, 'the same box';
+  assert exists (select 1 from place_people
+                  where place_id = v_box and profile_id = v_reader and left_at is null),
+    'reading it is joining it, with no evening';
+  assert not exists (select 1 from sessions where profile_id = v_reader), 'and starts nothing';
+  assert (select evenings from app.place_summary(v_box)) = 0,
+    'so its summary is theirs to read';
+
+  update place_people set left_at = now() where place_id = v_box and profile_id = v_reader;
+  perform app.dock_place('a-box-read-by-its-code', 'open-pike');
+  assert exists (select 1 from place_people
+                  where place_id = v_box and profile_id = v_reader and left_at is null),
+    'someone who had left and reads it again is back';
+  assert (select count(*) from place_people where place_id = v_box and profile_id = v_reader) = 1,
+    'once, not twice';
+
+  perform auth.logout();
+  raise notice 'PASS 27  reading a box makes you one of its people, and starts nothing';
+end $$;
+
 do $$ begin raise notice '--- all assertions held ---'; end $$;

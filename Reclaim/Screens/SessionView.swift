@@ -3,6 +3,11 @@ import ReclaimKit
 
 /// Screens 6 and 12. In session — with five people, or with one.
 ///
+/// Rarely seen: the phone is in the box, and a phone in a hand that isn't
+/// charging has left it, so opening the app mostly ends the evening and shows
+/// its receipt. This is for a drawer pulled open to look. There is no End:
+/// the box is the only switch.
+///
 /// Solo is deliberately the SAME view rather than a degraded variant: the
 /// parallel construction is the statement. Most evenings are alone, even for
 /// the most social person, so alone has to be whole on its own.
@@ -14,9 +19,6 @@ import ReclaimKit
 /// The only thing that moves is tonight's dot, once, at fifteen minutes.
 struct SessionView: View {
     @Environment(AppState.self) private var state
-    let onEnd: () -> Void
-
-    @State private var choosing = false
 
     private var solo: Bool { state.members.count <= 1 }
 
@@ -28,7 +30,7 @@ struct SessionView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Eyebrow(text: state.placeName ?? t("docked.where.unnamed"),
+            Eyebrow(text: state.placeName ?? t("box.unnamed"),
                     mark: Palette.ember, tint: Palette.dust)
 
             Spacer(minLength: 20)
@@ -50,18 +52,11 @@ struct SessionView: View {
 
             Spacer(minLength: 28)
 
-            VStack(alignment: .leading, spacing: 22) {
-                // For as long as it's Somewhere, saying where stays one tap
-                // away — the friend who arrives at nine can still find you.
-                if state.placeName == nil {
-                    TextAction(title: t("session.where"), tint: Palette.dust) { choosing = true }
-                }
-                QuietButton(title: t("session.end"), night: true, action: onEnd)
-            }
+            Text(t("session.out"))
+                .font(Type.note).foregroundStyle(Palette.dim).lineSpacing(2)
         }
         .ground(night: true)
         .background { mark }
-        .sheet(isPresented: $choosing) { WhereSheet().environment(state) }
     }
 
     /// Your evenings, behind everything. Looked at once a minute, so tonight's
@@ -94,10 +89,10 @@ struct SessionView: View {
 }
 
 #Preview("Together") {
-    SessionView(onEnd: {}).environment(AppState(repo: PreviewRepository()))
+    SessionView().environment(AppState(repo: PreviewRepository()))
 }
 
 #Preview("Just you") {
-    SessionView(onEnd: {}).environment(AppState(repo: PreviewRepository(
+    SessionView().environment(AppState(repo: PreviewRepository(
         members: [Member(profileId: PreviewRepository.me, displayName: "Alex", stillLive: true)])))
 }

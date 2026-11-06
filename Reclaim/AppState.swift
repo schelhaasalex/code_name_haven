@@ -4,60 +4,46 @@ import Observation
 import ReclaimKit
 
 /// One store on the environment. No Composable Architecture, no DI container,
-/// no Redux — at 21 screens they are all overhead.
+/// no Redux — at a handful of screens they are all overhead.
+///
+/// The app is the box's: putting a phone in it starts the evening, taking it
+/// out ends it (`AppState+Box`), and everything here is what that leaves to
+/// show — the evening while it runs, and what the box has become.
 @MainActor
 @Observable
 public final class AppState {
 
     public enum Phase: Equatable {
         case loading
-        case signedOut
+        /// No account, and none could be made: the first launch needs the
+        /// network once. Retried on every return to the foreground.
+        case unreachable
         case ready
     }
 
-    /// The four screens that surface OVER Home rather than being navigated to.
-    /// The enum and the order they arrive in live in `ReclaimKit`, so the
-    /// precedence can be tested without a phone; the typealias keeps them
-    /// spelled `AppState.Interruption` at the call sites.
-    public typealias Interruption = ReclaimKit.Interruption
-
     let repo: any Repository
-    let transport: any CeremonyTransport
-    /// Joining, announcing and watching, queued off to the side so none of it
-    /// holds up the evening (rule 7). Sends mid-evening go to `transport`.
-    let link: CeremonyLink
 
     public var phase: Phase = .loading
     public var profile: Profile?
     public var places: [Place] = []
-    public var rhythm: Rhythm = .empty
-    /// Distinct qualifying local_dates. A Set because a five-person dinner is
-    /// ONE evening — counting sessions would scale every number with household size.
+    /// This phone's box, the moment its tag or code was read — whether or not
+    /// Bluetooth found its radio. Nil until then, and Home asks for one.
+    public var boxPlace: UUID?
+    /// What the box has become: every evening anyone has had at it. Nil until
+    /// the database has said, and nothing claims a number before then.
+    public var boxSummary: PlaceSummary?
+    /// Distinct qualifying local_dates of your own, for this week's dots. A
+    /// Set because a five-person dinner is ONE evening.
     public var evenings: Set<String> = []
-    /// All of them, not just the last five weeks: the mark behind the session
-    /// and the number on screen 8 (migration 0011).
-    ///
-    /// Nil until the database has answered, and it stays nil if the answer
-    /// never comes. Not `.none`: "we haven't been told" and "you have had
-    /// none" are different things, and only one of them is safe to say out
-    /// loud on the screen that congratulates you.
+    /// All of them (migration 0011). Nil until the database has answered:
+    /// "we haven't been told" and "you have had none" are different things.
     public var eveningTotal: EveningTotal?
-    public var pending: Interruption?
+    /// Screen 13: an evening the server had to close, said once.
+    public var closedForYou: Session?
     public var banner: String?
-    /// Screen 4. Someone set theirs down at a place you know — the only thing
-    /// in the product that interrupts, and only ever to say someone is there.
-    public var invitation: Invitation?
     /// Screen 8, held here rather than in the session view: ending clears
     /// `session`, which takes the session view off screen with it.
     public var justEnded: Ended?
-    /// You've just accepted an invite: the welcome that says where you're in.
-    public var joinedPlace: InviteAcceptance?
-    /// An invite opened while signed out, kept until sign-in finishes.
-    var pendingInvite: String?
-    /// Someone else shares one of your places. Until then Home keeps offering
-    /// an invite; after, it has done its job. A failed read keeps what was
-    /// known, like everything else `load()` asks.
-    public var hasCompany = false
 
     public struct Ended: Equatable {
         public let startedAt: Date
@@ -70,146 +56,120 @@ public final class AppState {
         /// screen 8 can show tonight's dot fill in without waiting on a reload.
         public let landing: EveningLanding
     }
-    /// Your own recent sessions and the gatherings they belong to, kept so a
-    /// screen can ask where your evenings happened without a round trip each.
-    public private(set) var recent: [Session] = []
-    /// Not private: `AppState+Places` is a different file, and Swift's
-    /// `private` stops at the file edge.
-    var gatherings: [UUID: Gathering] = [:]
 
-    // the live session
+    // the live evening
     public var session: Session?
     public var gathering: Gathering?
     public var members: [Member] = []
     public var startedAt: Date?
-    public var iAmFaceDown = false
 
-    let faceDown = FaceDownSensor()
-    /// The radio. The beacon talks while your phone is down — including in
-    /// the background, which is the whole point of it — and the scanner
-    /// listens only while you're holding the phone with nothing running.
-    /// `AppState+Nearby` has the shape of it.
-    let beacon = NearbyBeacon()
-    let scanner = NearbyScanner()
     /// The box, if this phone has one: a standing connection that wakes the
-    /// app when a slot fills (`AppState+Box`).
+    /// app when a slot fills or empties (`AppState+Box`).
     let boxLink = BoxLink()
-    /// Asked once per table, never twice (`NearbyOffers`).
-    var offers = NearbyOffers()
-    var pump: Task<Void, Never>?
-    var invitePump: Task<Void, Never>?
-    /// The places being listened at, so a return to the foreground doesn't
-    /// resubscribe every one of them.
-    var watching: [UUID] = []
+    /// Explained already, so a dismissed screen 13 doesn't come back on the
+    /// next launch. This phone's own note; nothing is sent.
+    private static let explainedKey = "reclaim.autoclosed.explained"
 
-    public init(repo: any Repository, transport: any CeremonyTransport = LocalCeremonyTransport()) {
+    /// `boxPlace` is for previews and the sample household, which have a box
+    /// nobody read.
+    public init(repo: any Repository, boxPlace: UUID? = BoxPairing.current?.place) {
         self.repo = repo
-        self.transport = transport
-        self.link = CeremonyLink(transport: transport)
+        self.boxPlace = boxPlace
     }
 
     public var isLive: Bool { session?.isLive == true }
+
+    public var box: Place? { places.first { $0.id == boxPlace } }
 
     public var placeName: String? {
         guard let id = gathering?.placeId else { return nil }
         return places.first { $0.id == id }?.name
     }
 
-    /// The suggestion on Home. A guess from history, NOT from location —
-    /// nothing in this app reads where you are. Nil when your recent evenings
-    /// weren't at any place, and then Home suggests nothing.
-    public var usualPlace: Place? {
-        UsualPlace.among(recent, gatherings: gatherings, places: places)
-    }
-
     // MARK: - Lifecycle
 
     /// Runs at launch and on every return to the foreground. A failed read
-    /// keeps what was already known — offline is not signed out, and not
-    /// "nothing is running".
+    /// keeps what was already known — offline is not "nothing is running".
     public func load() async {
-        let p: Profile?
-        do {
-            p = try await repo.myProfile()
-        } catch ReclaimError.notAuthenticated {
-            phase = .signedOut; return
-        } catch {
-            if phase == .loading { phase = .signedOut }
+        guard let p = await account() else {
+            if phase != .ready { phase = .unreachable }
             return
         }
-        guard let p else { phase = .signedOut; return }
         profile = p
         phase = .ready
         async let places = repo.myPlaces()
-        async let rhythm = repo.myRhythm()
         async let live = repo.liveSession()
         self.places = (try? await places) ?? self.places
-        self.rhythm = (try? await rhythm) ?? self.rhythm
         await loadEvenings()
-        hasCompany = (try? await repo.hasCompany()) ?? hasCompany
         let found: Result<Session?, any Error>
         do { found = .success(try await live) } catch { found = .failure(error) }
         await reconcile(Reconciliation.between(running: session, database: found))
         await checkDock()
-        if let token = pendingInvite {
-            pendingInvite = nil
-            await accept(inviteToken: token)
-        }
-        // Every launch and return to the foreground lines up the next few
-        // weeks afresh — the fade only works if it's scheduled in advance.
-        await rescheduleNudges()
     }
 
-    /// The qualifying days behind the dot week on Home and the grid on screen 10.
-    /// Distinct local_dates, because a five-person dinner is one evening.
-    ///
-    /// Also pulls the gatherings those sessions belong to, in one query, which
-    /// is what lets a screen ask where YOUR evenings happened. The place's own
-    /// totals never come from here — those are `place_summary`, an aggregate
-    /// over everyone, because the client may not read another person's rows.
+    /// Yours, or a new one made silently. There is no sign-in screen.
+    private func account() async -> Profile? {
+        if let p = try? await repo.myProfile() { return p }
+        do {
+            try await repo.signInAnonymously()
+            return try await repo.myProfile()
+        } catch {
+            return nil
+        }
+    }
+
+    /// Your own evenings, for the dots and the count — and the box's, which
+    /// are everyone's and come only as `place_summary`'s aggregate.
     func loadEvenings() async {
         let since = Calendar.current.date(byAdding: .day, value: -35, to: .now) ?? .now
-        recent = (try? await repo.mySessions(since: since)) ?? recent
+        let recent = (try? await repo.mySessions(since: since)) ?? []
         evenings = Set(recent.filter(\.qualifying).map(\.localDate))
         eveningTotal = (try? await repo.myEvenings()) ?? eveningTotal
+        if let boxPlace { boxSummary = (try? await repo.summary(of: boxPlace)) ?? boxSummary }
 
-        let ids = Array(Set(recent.map(\.gatheringId)))
-        guard let found = try? await repo.gatherings(ids: ids) else { return }
-        gatherings = Dictionary(found.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        let lately = recent.filter { $0.startedAt > .now.addingTimeInterval(-AutoClosed.window) }
+        if closedForYou == nil, let closed = AutoClosed.latest(in: lately),
+           UserDefaults.standard.string(forKey: Self.explainedKey) != closed.id.uuidString {
+            closedForYou = closed
+        }
     }
 
-    // MARK: - Interruptions
-    // At most one per launch, in this order. None of them is a notification:
-    // they wait on Home until the person next looks.
-
-    public func computeInterruption() async {
-        guard pending == nil, phase == .ready else { return }
-        let lately = (try? await repo.mySessions(since: .now.addingTimeInterval(-60 * 60 * 36))) ?? []
-        pending = Interruption.first(
-            recent: lately,
-            rhythm: rhythm,
-            // Distinct dates over the last five weeks, not sessions in the last
-            // day and a half: screen 20 arrives after five EVENINGS.
-            evenings: evenings.count,
-            oneTapOffered: OneTapOffer.hasBeenOffered)
+    public func dismissClosedForYou() {
+        if let closed = closedForYou {
+            UserDefaults.standard.set(closed.id.uuidString, forKey: Self.explainedKey)
+        }
+        closedForYou = nil
     }
 
-    public func dismissInterruption() { pending = nil }
+    // MARK: - The box and the account
 
+    /// Only whoever's phone first read the box can name it (`places_update_owner`).
+    public var canRenameBox: Bool { box?.createdBy != nil && box?.createdBy == profile?.id }
 
-    /// Signing out has to reach the screen, not just the server: `load()` then
-    /// finds nobody and shows Welcome. It used to call the auth client directly
-    /// and leave the app looking signed in.
-    public func signOut() async {
+    public func renameBox(to name: String) async {
+        guard let id = boxPlace else { return }
         do {
-            try await repo.signOut()
-            profile = nil
-            await load()
+            try await repo.rename(place: id, to: name)
+            places = (try? await repo.myPlaces()) ?? places
         } catch {
             banner = t("error.retry")
         }
     }
 
-    public func dismissInvitation() { invitation = nil }
+    /// This phone stops being the box's. The box, and everything it kept,
+    /// stays; reading its tag or code again brings this phone back.
+    public func forgetBox() {
+        BoxPairing.current = nil
+        boxPlace = nil
+        boxSummary = nil
+    }
 
+    /// App Store guideline 5.1.1(v). Your evenings go; a new, empty account
+    /// takes this one's place on the next load.
+    public func deleteAccount() async {
+        try? await repo.deleteAccount()
+        session = nil; gathering = nil; members = []; startedAt = nil
+        evenings = []; eveningTotal = nil
+        await load()
+    }
 }

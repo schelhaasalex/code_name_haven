@@ -2,35 +2,39 @@ import Foundation
 import UIKit
 import ReclaimKit
 
-/// The box half of `AppState`: a phone set into a slot, and taken out again.
+/// The box's links: a slot's tag, read with the phone going in, and the box's
+/// code, read with the phone in a hand.
 ///
-/// Putting your phone in the box IS the confirmation — the same act as setting
-/// it down, with a drawer around it. So a slot's tag starts the evening the way
-/// a card does, at the box's place, and its light comes on. Taking the phone
-/// out ends it (`leftBox`).
+/// The tag is the phone going into the box, so it starts the evening the way
+/// the box's radio does, and lights its slot — the way in when the app was
+/// swiped away and Bluetooth can't wake it. The code only pairs. Either one,
+/// read first, makes the box this phone's. Taking the phone out ends the
+/// evening (`leftBox`).
 @MainActor
 extension AppState {
 
-    /// A slot's tag was read. The light first, because it is the instant
+    /// A tag or the code was read. The light first, because it is the instant
     /// answer to "did it take?" — and it is never waited on (rule 7).
     public func dock(_ link: Dock.Link) async {
-        // Moved from one slot to another: the one it left goes dark.
-        if let left = DockSlot.current, left != link.slot {
-            DockLight.shared.set(slot: left, on: false)
+        if let slot = link.slot {
+            // Moved from one slot to another: the one it left goes dark.
+            if let left = DockSlot.current, left != slot {
+                DockLight.shared.set(slot: left, on: false)
+            }
+            DockSlot.docked(in: slot)
+            DockLight.shared.set(slot: slot, on: true)
         }
-        DockSlot.docked(in: link.slot)
-        DockLight.shared.set(slot: link.slot, on: true)
 
+        if phase != .ready { await load() }
         guard let place = await boxPlace(secret: link.secret) else {
-            // Not knowing the box's place is no reason not to count tonight.
-            if !isLive { await setItDown(source: .tag) }
+            banner = t("error.retry")
             return
         }
-        PlaceSecrets.save(link.secret, for: place)
+        boxPlace = place
         pairBox(place: place)
-        if isLive {
-            await moveHere(place)
-        } else {
+        places = (try? await repo.myPlaces()) ?? places
+        boxSummary = (try? await repo.summary(of: place)) ?? boxSummary
+        if link.slot != nil, !isLive {
             await setItDown(place: place, source: .tag)
         }
     }
@@ -62,7 +66,7 @@ extension AppState {
         }
     }
 
-    /// Found, or made by this phone, being the first into the box. A handle
+    /// Found, or made by this phone, being the first to read the box. A handle
     /// someone else drew comes back nil; three draws from 256 is plenty.
     private func boxPlace(secret: String) async -> UUID? {
         for _ in 0..<3 {

@@ -19,10 +19,10 @@ settings:
     # `app.name` in copy/strings.json. Target and module names stay: nobody
     # sees them.
     APP_DISPLAY_NAME: Reclaim
-    # Where card, invite and tag links point, and the site whose
+    # Where the box's tag and code links point, and the site whose
     # apple-app-site-association lets them open the app (links/). A testing
-    # address until there is a real domain; cards printed against it stop
-    # working when it changes, invites expire anyway.
+    # address until there is a real domain; tags written and codes printed
+    # against it stop working when it changes.
     LINK_DOMAIN: haven-links-lime.vercel.app
     # The version people see. The BUILD number is deliberately not here: a
     # setting in this file wins over an xcconfig, so it would override the
@@ -75,8 +75,8 @@ targets:
       # Apple-silicon Mac counts, as "My Mac (Designed for iPhone)".
     # Every Info.plist key lives here. INFOPLIST_KEY_* build settings only
     # apply when Xcode generates the plist, and XcodeGen writes this one — so
-    # they were silently dropped, and the app ran letterboxed with no motion
-    # or NFC usage strings and Live Activities switched off.
+    # they were silently dropped, and the app ran letterboxed with its usage
+    # strings missing and Live Activities switched off.
     info:
       path: Reclaim/Info.plist
       properties:
@@ -102,17 +102,9 @@ targets:
         # Portrait only, and full screen: a session is one quiet screen, never
         # a split view. Declared, so the upload check doesn't ask.
         UIRequiresFullScreen: true
-        NSCameraUsageDescription: >-
-          $(APP_DISPLAY_NAME) reads the code on a place's card, so you can join the
-          evening there. Nothing else is looked at, and nothing is kept.
-        NFCReaderUsageDescription: >-
-          $(APP_DISPLAY_NAME) writes the card for a place onto a tag, and reads one when
-          you'd rather scan than type.
         NSBluetoothAlwaysUsageDescription: >-
-          When you set your phone down, $(APP_DISPLAY_NAME) lets the phones at the same
-          table find this evening, so the people around you can join it without
-          scanning anything. With a box, it hears when your phone goes in. It is
-          never used to work out where you are.
+          $(APP_DISPLAY_NAME) listens to your box, so it hears when your phone goes in
+          and comes out. It is never used to work out where you are.
         # The box's lights. Its controller is found by name on the home Wi-Fi
         # and told which slot to light — nothing leaves the house. Declining
         # leaves the box dark and changes nothing else (rule 7). iOS refuses to
@@ -124,15 +116,11 @@ targets:
         NSSupportsLiveActivities: true
         SUPABASE_URL: $(SUPABASE_URL)
         SUPABASE_PUBLISHABLE_KEY: $(SUPABASE_PUBLISHABLE_KEY)
-        # The phone that is DOWN keeps saying so while the screen is off —
-        # that is the whole evening. The phone still in a hand listens for
-        # tables in the foreground only (NearbyScanner).
-        #
-        # `bluetooth-central` is for the box alone: the standing connection
-        # that lets a slot filling wake the app and start the evening with
-        # nobody touching the phone (BoxLink). Without it iOS never delivers
-        # the box's news to an app in the background, and nothing says so.
-        UIBackgroundModes: [bluetooth-peripheral, bluetooth-central]
+        # The standing connection to the box, which lets a slot filling or
+        # emptying wake the app and start or end the evening with nobody
+        # touching the phone (BoxLink). Without it iOS never delivers the
+        # box's news to an app in the background, and nothing says so.
+        UIBackgroundModes: [bluetooth-central]
         CFBundleURLTypes:
           - CFBundleURLSchemes: [reclaim]
 

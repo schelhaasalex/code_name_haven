@@ -1,6 +1,6 @@
 import Foundation
 
-/// The session half of the fixtures: starting, ending and naming, following
+/// The session half of the fixtures: starting and ending, following
 /// the same rules the database does, in memory.
 ///
 /// Not a second implementation of the product's logic to be trusted — the
@@ -26,10 +26,6 @@ extension PreviewRepository {
 
     public func gathering(_ id: UUID) async throws -> Gathering? {
         gatheringsById[id] ?? gatheringNow
-    }
-
-    public func gatherings(ids: [UUID]) async throws -> [Gathering] {
-        ids.compactMap { gatheringsById[$0] ?? gatheringNow }
     }
 
     public func mySessions(since: Date) async throws -> [Session] {
@@ -66,52 +62,15 @@ extension PreviewRepository {
         return minutes
     }
 
-    /// Nobody else is ever at the sample household's places, so there is never
-    /// an evening open there to join: yours simply becomes the place's.
-    public func moveEvening(to place: UUID) async throws -> UUID {
-        guard let s = live, let g = gatheringsById[s.gatheringId] else {
-            throw ReclaimError.noLiveSession
-        }
-        let moved = Gathering(id: g.id, placeId: place, startedBy: g.startedBy,
-                              startedAt: g.startedAt, endedAt: g.endedAt)
-        gatheringsById[g.id] = moved
-        gatheringNow = moved
-        return g.id
-    }
-
-    public func createPlace(handle: String, secret: String, name: String?) async throws -> UUID {
-        let p = Place(id: UUID(), name: name, handle: handle, createdBy: profile.id)
-        places.insert(p, at: 0)
-        return p.id
-    }
-
     /// The sample household's box is its kitchen table.
     public func dockPlace(secret: String, handle: String) async throws -> UUID? {
         places.first?.id
     }
 
-    /// Like the RPC, every placeless evening of yours moves onto the new place.
-    public func nameSomewhere(handle: String, secret: String, name: String) async throws -> UUID {
-        let id = try await createPlace(handle: handle, secret: secret, name: name)
-        for (gid, g) in gatheringsById where g.placeId == nil {
-            gatheringsById[gid] = Gathering(id: g.id, placeId: id, startedBy: g.startedBy,
-                                            startedAt: g.startedAt, endedAt: g.endedAt)
-        }
-        return id
-    }
-
-    public func mergePlaces(from: UUID, into: UUID) async throws {
-        guard let i = places.firstIndex(where: { $0.id == from }) else { return }
-        let p = places[i]
-        places[i] = Place(id: p.id, name: p.name, handle: p.handle,
-                          createdBy: p.createdBy, mergedInto: into)
-    }
-
     // MARK: - Seeding
 
-    /// A believable few weeks: most evenings at the kitchen table, a couple
-    /// somewhere unnamed, some days missed. Never today — the demo is for
-    /// starting one.
+    /// A believable few weeks at the kitchen table, some days missed. Never
+    /// today — the demo is for starting one.
     func seedHistory(now: Date, calendar: Calendar) {
         let daysAgo = [1, 2, 4, 5, 7, 8, 9, 12, 14, 15, 19, 21, 22, 26]
         for (n, ago) in daysAgo.enumerated() {
@@ -119,8 +78,7 @@ extension PreviewRepository {
                   let start = calendar.date(bySettingHour: 19, minute: 20 + n, second: 0, of: day)
             else { continue }
             let minutes = 70 + (n * 17) % 90
-            let place: UUID? = n % 5 == 3 ? nil : Self.kitchenTable
-            let g = Gathering(id: UUID(), placeId: place, startedBy: profile.id, startedAt: start,
+            let g = Gathering(id: UUID(), placeId: Self.kitchenTable, startedBy: profile.id, startedAt: start,
                               endedAt: start.addingTimeInterval(TimeInterval(minutes * 60)))
             gatheringsById[g.id] = g
             let s = Session(id: UUID(), profileId: profile.id, gatheringId: g.id, startedAt: start,

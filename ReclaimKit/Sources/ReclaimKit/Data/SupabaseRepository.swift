@@ -7,9 +7,6 @@ import Supabase
 /// function in `app` — PostgREST only serves exposed schemas, and `app` is
 /// deliberately not one.
 ///
-/// NOTE FOR THE FIRST BUILD: this file and CeremonyEngine are the two most
-/// likely to need small adjustments against the installed supabase-swift
-/// version. Everything else is plain SwiftUI and Foundation.
 public final class SupabaseRepository: Repository, @unchecked Sendable {
 
     public let client: SupabaseClient
@@ -32,6 +29,20 @@ public final class SupabaseRepository: Repository, @unchecked Sendable {
         return id
     }
 
+    // MARK: - Who you are
+
+    /// Anonymous sign-ins have to be allowed in the project's Auth settings.
+    /// The profile row is this app's to make — nothing in the database does —
+    /// with no name, because nothing here asks for one.
+    public func signInAnonymously() async throws {
+        if client.auth.currentUser == nil {
+            try await client.auth.signInAnonymously()
+        }
+        let me = try requireUser()
+        struct Row: Encodable { let id: UUID }
+        try await client.from("profiles").upsert(Row(id: me), ignoreDuplicates: true).execute()
+    }
+
     // MARK: - Own rows
 
     public func myProfile() async throws -> Profile? {
@@ -42,37 +53,12 @@ public final class SupabaseRepository: Repository, @unchecked Sendable {
         return rows.first
     }
 
-    public func upsertProfile(displayName: String?) async throws -> Profile {
-        let me = try requireUser()
-        struct Row: Encodable { let id: UUID; let display_name: String? }
-        let rows: [Profile] = try await client
-            .from("profiles")
-            .upsert(Row(id: me, display_name: displayName))
-            .select()
-            .execute().value
-        guard let p = rows.first else { throw ReclaimError.notAuthenticated }
-        return p
-    }
-
-    public func updateProfile(nudgeEnabled: Bool, nudgeHour: Int) async throws {
-        let me = try requireUser()
-        struct Row: Encodable { let nudge_enabled: Bool; let nudge_hour: Int }
-        try await client.from("profiles")
-            .update(Row(nudge_enabled: nudgeEnabled, nudge_hour: nudgeHour))
-            .eq("id", value: me)
-            .execute()
-    }
-
     /// App Store guideline 5.1.1(v): deletion must be available in-app.
     /// Deleting the profile cascades the user's sessions; places survive and
     /// ownership moves, via the trigger in migration 0001.
     public func deleteAccount() async throws {
         let me = try requireUser()
         try await client.from("profiles").delete().eq("id", value: me).execute()
-        try await client.auth.signOut()
-    }
-
-    public func signOut() async throws {
         try await client.auth.signOut()
     }
 
@@ -88,13 +74,6 @@ public final class SupabaseRepository: Repository, @unchecked Sendable {
         let rows: [Gathering] = try await client.from("gatherings").select()
             .eq("id", value: id).limit(1).execute().value
         return rows.first
-    }
-
-    public func gatherings(ids: [UUID]) async throws -> [Gathering] {
-        guard !ids.isEmpty else { return [] }
-        return try await client.from("gatherings").select()
-            .in("id", values: ids)
-            .execute().value
     }
 
     public func mySessions(since: Date) async throws -> [Session] {
@@ -139,11 +118,6 @@ public final class SupabaseRepository: Repository, @unchecked Sendable {
             .rpc("place_summary", params: P(p_place: place)).execute().value
         guard let s = rows.first else { throw ReclaimError.placeNotFound }
         return s
-    }
-
-    public func myRhythm() async throws -> Rhythm {
-        let rows: [Rhythm] = try await client.rpc("my_rhythm").execute().value
-        return rows.first ?? .empty
     }
 
     public func myEvenings() async throws -> EveningTotal {

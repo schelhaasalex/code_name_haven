@@ -52,28 +52,12 @@ final class PreviewRepositoryTests: XCTestCase {
         let sessions = try await repo.mySessions(since: now.addingTimeInterval(-35 * 86_400))
         XCTAssertGreaterThan(sessions.filter(\.qualifying).count, 5)
         XCTAssertFalse(sessions.contains { $0.localDate == PreviewRepository.localDate(now) })
-        XCTAssertFalse(repo.profile.nudgeEnabled, "a demo shouldn't open with a permission prompt")
     }
 
-    func testMovingAnEveningGivesItThePlace() async throws {
+    /// The sample household's box is its kitchen table, whatever is read.
+    func testEveryBoxIsTheKitchenTable() async throws {
         let repo = PreviewRepository.sampleHousehold()
-        _ = try await repo.startOrJoin(place: nil, source: .app)
-        let gathering = try await repo.moveEvening(to: PreviewRepository.kitchenTable)
-        let moved = try await repo.gathering(gathering)
-        XCTAssertEqual(moved?.placeId, PreviewRepository.kitchenTable)
-        let live = try await repo.liveSession()
-        XCTAssertEqual(live?.gatheringId, gathering, "still the same evening, now somewhere")
-    }
-
-    /// Like `name_somewhere`: your unnamed evenings move onto the new place.
-    func testNamingSomewhereAdoptsThePlacelessEvenings() async throws {
-        let repo = PreviewRepository.sampleHousehold()
-        let before = try await repo.gatherings(ids: repo.history.map(\.gatheringId))
-        XCTAssertTrue(before.contains { $0.placeId == nil })
-
-        let id = try await repo.nameSomewhere(handle: "still-lantern", secret: "s", name: "The Porch")
-        let after = try await repo.gatherings(ids: repo.history.map(\.gatheringId))
-        XCTAssertFalse(after.contains { $0.placeId == nil })
-        XCTAssertTrue(after.contains { $0.placeId == id })
+        let place = try await repo.dockPlace(secret: "any", handle: "amber-otter")
+        XCTAssertEqual(place, PreviewRepository.kitchenTable)
     }
 }

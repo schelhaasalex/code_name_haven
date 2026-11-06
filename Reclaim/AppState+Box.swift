@@ -12,7 +12,7 @@ import ReclaimKit
 /// by then (rule 4).
 ///
 /// All of this happens with the app woken in the background for a few
-/// seconds. The tag still works whatever happens here (rule 7).
+/// seconds. The slot's tag still works whatever happens here.
 @MainActor
 extension AppState {
 
@@ -33,13 +33,16 @@ extension AppState {
     }
 
     /// The first read of a box's tag or code teaches this phone which box is
-    /// its own: the dock it's closest to, right then. Asks about Bluetooth,
-    /// the first time — at the box, where the question makes sense.
+    /// its own — the place at once, and the radio a few seconds later: the
+    /// dock it's closest to, right then. Asks about Bluetooth, the first time
+    /// — at the box, where the question makes sense.
     func pairBox(place: UUID) {
-        guard BoxPairing.current?.place != place else { return }
+        let known = BoxPairing.current
+        guard known?.place != place || known?.peripheral == nil else { return }
+        BoxPairing.current = BoxPairing(place: place)
         boxLink.pair { peripheral in
-            guard let peripheral else { return }
-            BoxPairing.current = BoxPairing(peripheral: peripheral, place: place)
+            guard let peripheral, BoxPairing.current?.place == place else { return }
+            BoxPairing.current = BoxPairing(place: place, peripheral: peripheral)
         }
     }
 
@@ -51,7 +54,7 @@ extension AppState {
 
         let filled = now.filled(since: before)
         let emptied = now.emptied(since: before)
-        if !filled.isEmpty, DockSlot.current == nil {
+        if !filled.isEmpty, DockSlot.current == nil, !isLive {
             await maybeIn(filled, rssi: rssi)
         } else if !emptied.isEmpty, DockSlot.current != nil {
             await maybeOut()
@@ -71,12 +74,8 @@ extension AppState {
         DockSlot.docked(in: filled.min() ?? 1)
         // Woken in the background, the app may not have looked at anything yet.
         if phase != .ready { await load() }
-        guard phase == .ready else { return }
-        if isLive {
-            await moveHere(place)
-        } else {
-            await setItDown(place: place, source: .tag)
-        }
+        guard phase == .ready, !isLive else { return }
+        await setItDown(place: place, source: .tag)
         await showOnLockScreen()
     }
 
@@ -89,7 +88,7 @@ extension AppState {
         let state = ReclaimActivityAttributes.ContentState(
             startedAt: startedAt ?? s.startedAt, memberCount: max(1, members.count), placeName: placeName,
             stage: EveningCharge.stage(since: startedAt ?? s.startedAt))
-        let place = placeName ?? t("docked.where.unnamed")
+        let place = placeName ?? t("box.unnamed")
         guard let body = try? RemoteActivity.startBody(
             gatheringId: s.gatheringId, state: state,
             title: t("starttap.banner.title", "place", place), body: t("starttap.banner.body"))

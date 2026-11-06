@@ -29,7 +29,7 @@ struct AutoClosedView: View {
             Text(t("autoclosed.body", "time", session.startedAt.shortTime))
                 .font(Type.lede).foregroundStyle(Palette.ink2).lineSpacing(4)
             PaperCard {
-                StatRow(title: state.placeName ?? t("docked.where.unnamed"),
+                StatRow(title: state.box?.name ?? t("box.unnamed"),
                         subtitle: t("autoclosed.capped"),
                         value: Say.duration(minutes: session.durationMinutes ?? 180))
             }
