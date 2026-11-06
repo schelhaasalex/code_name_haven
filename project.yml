@@ -102,9 +102,6 @@ targets:
         # Portrait only, and full screen: a session is one quiet screen, never
         # a split view. Declared, so the upload check doesn't ask.
         UIRequiresFullScreen: true
-        NSMotionUsageDescription: >-
-          $(APP_DISPLAY_NAME) notices when your phone has been sitting still, so it can
-          offer to count time you already spent away from it.
         NSCameraUsageDescription: >-
           $(APP_DISPLAY_NAME) reads the code on a place's card, so you can join the
           evening there. Nothing else is looked at, and nothing is kept.

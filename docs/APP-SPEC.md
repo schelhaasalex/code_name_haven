@@ -77,7 +77,6 @@ public protocol Repository {
     // anything crossing a person boundary — RPC only
     func startOrJoin(place: UUID?, source: SessionSource) async throws -> UUID
     func endSession(_ id: UUID?) async throws -> Int?
-    func recordRetroactive(from: Date, to: Date) async throws -> UUID
     func gatheringMembers(_ id: UUID) async throws -> [Member]
     func placeSummary(_ id: UUID) async throws -> PlaceSummary
     func myRhythm() async throws -> Rhythm
@@ -110,7 +109,6 @@ and a `pending: Interruption?` for the four screens that surface over Home.
 enum Interruption: Identifiable {
     case autoClosed(Session)       // 13
     case rhythmEnded(Rhythm)       // 14
-    case countThat(from: Date, to: Date)  // 18
     case makeItOneTap              // 20
 }
 ```
@@ -143,7 +141,6 @@ Home; the interruptions are presented over it.
 | 15 | The card | `CardView` (printable) | push from 9 |
 | 16 | Settings | `SettingsView` | push |
 | 17 | Your places | `PlacesView` | push |
-| 18 | Count that? | `CountThatView` | sheet |
 | 19 | Starting without unlocking | Live Activity | `ReclaimWidgets` |
 | 20 | Make it one tap | `OneTapView` | sheet, after 5 evenings |
 | 21 | Naming a place | `NamingView` | sheet |
@@ -300,20 +297,6 @@ cancel when a session starts.
 
 ---
 
-## Retroactive credit (screen 18)
-
-On foreground, query `CMMotionActivityManager.queryActivityStarting(from:to:)`
-for the last 24 hours (the framework keeps about seven days). Find stationary
-runs longer than the qualifying minimum that don't overlap an existing session.
-Offer the longest as an `Interruption.countThat`.
-
-Needs `NSMotionUsageDescription`. **No notification** — the card waits on Home
-until the user next looks. Accepting calls `recordRetroactive`, which always
-creates a solo, placeless session: nobody was broadcasting, so co-presence
-can't be reconstructed and must not be invented.
-
----
-
 ## Copy
 
 Every user-facing string lives in `copy/strings.json`, keyed `screen.element`.
@@ -341,7 +324,7 @@ Text(Copy["home.headline"])   // "Ready when you are."
 4. **Live Activity + entry points** — screens 7, 19, plus intents, Siri, NFC.
 5. **Places** — 9, 15, 17, 21, and the stage ladder.
 6. **Rhythms** — 10, 14.
-7. **The rest** — 13, 16, 18, 20.
+7. **The rest** — 13, 16, 20.
 
 ---
 
@@ -349,8 +332,7 @@ Text(Copy["home.headline"])   // "Ready when you are."
 
 Swift Testing over the repository protocol with `PreviewRepository`. The
 logic worth covering is thin, because the database owns the invariants — see
-`supabase/tests/`. Focus on: the interruption precedence order, the
-stationary-run detection for retroactive credit, and the ceremony state
+`supabase/tests/`. Focus on: the interruption precedence order and the ceremony state
 machine's handling of a `docked` broadcast arriving before the local tap
 resolves.
 

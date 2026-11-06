@@ -79,16 +79,6 @@ extension PreviewRepository {
         return g.id
     }
 
-    public func recordRetroactive(from: Date, to: Date) async throws -> UUID {
-        let g = Gathering(id: UUID(), placeId: nil, startedBy: profile.id, startedAt: from, endedAt: to)
-        gatheringsById[g.id] = g
-        let minutes = min(Self.capMinutes, Int(to.timeIntervalSince(from) / 60))
-        let s = Session(id: UUID(), profileId: profile.id, gatheringId: g.id, startedAt: from,
-                        localDate: Self.localDate(from), retroactive: true, source: .retroactive)
-        history.insert(ended(s, at: to, minutes: minutes), at: 0)
-        return s.id
-    }
-
     public func createPlace(handle: String, secret: String, name: String?) async throws -> UUID {
         let p = Place(id: UUID(), name: name, handle: handle, createdBy: profile.id)
         places.insert(p, at: 0)

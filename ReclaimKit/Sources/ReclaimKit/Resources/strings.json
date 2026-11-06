@@ -207,13 +207,6 @@
   "rhythmended.primary": "Set it down",
   "rhythmended.footer": "Your rest day comes back on Sunday.",
 
-  "countthat.eyebrow": "This evening",
-  "countthat.headline": "You were away for {duration}.",
-  "countthat.window": "{from} until {to}",
-  "countthat.body": "Your phone sat untouched from {time}. We don't know what you were up to — you tell us.",
-  "countthat.accept": "Count it",
-  "countthat.decline": "No, I was on my laptop",
-  "countthat.footer": "You never have to start one of these. We'll keep asking afterwards.",
 
   "card.instruction": "Tap your phone here, or scan the code. Then set it down.",
   "card.tag": "Tag inside",

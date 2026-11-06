@@ -59,7 +59,7 @@ over. Every evening adds to the box, and the box keeps all of it.
 
 ## What goes
 
-Retroactive credit (screen 18, `RetroactiveCredit`, `StationaryRuns`); face-down
+~~Retroactive credit (screen 18)~~ — gone, ahead of the rest; face-down
 (`FaceDownSensor`, `Sensation`); nearby (`NearbyBeacon`, `NearbyScanner`,
 `AppState+Nearby`); intents and one-tap (`SessionIntents`, `DockIntents`,
 `ReclaimShortcuts`, `OneTapView`, the Control Centre control); the ceremony and
