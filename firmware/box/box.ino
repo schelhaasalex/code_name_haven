@@ -71,7 +71,7 @@ const int LEDS_PER_SLOT = 2;
 #define COMMAND_UUID   "6e400020-b5a3-f393-e0a9-0000706f7274"
 const int PROTOCOL = 1;
 // Said in every hello, so the pilot can tell which boxes are on which build.
-const char *FIRMWARE = "0.4";
+const char *FIRMWARE = "0.5";
 
 // Slot state bytes. A presence sensor can only say "something is there", and
 // a phone drawing current is charging, so every phone in reads as charging.
