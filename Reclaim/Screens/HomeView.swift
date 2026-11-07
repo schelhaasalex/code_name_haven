@@ -1,9 +1,14 @@
 import SwiftUI
 import ReclaimKit
 
-/// Screen 2 — Home: the box, what it has kept, and your week. With no box yet,
-/// the one thing there is to do: meet it. With more than one, the box you
-/// were last at leads and the others sit beneath it, each with its own total.
+/// Screen 2 — Home: your evenings as the mark, today's dot among them; the
+/// box you were last at; what each box has kept, quietly; and your week. With
+/// no box yet, the one thing there is to do: meet it.
+///
+/// The mark is the point: today's dot waits as an outline until today has
+/// counted, and every evening that counts stays, outward from the first. The
+/// boxes' totals are tracked and said, but they're the long view, not the
+/// reason to set the phone down tonight.
 ///
 /// NO BUTTON TO START. The box is the only switch; Home is what it leaves
 /// behind. And no tab bar: a tab bar advertises that there's something to
@@ -16,11 +21,17 @@ struct HomeView: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 0) {
                 header
-                Spacer(minLength: 20)
-                if state.boxPlace == nil { pair } else { box }
-                Spacer(minLength: 20)
-                if state.boxPlace != nil { kept }
-                if !state.otherBoxes.isEmpty { others }
+                Spacer(minLength: 16)
+                if state.boxPlace == nil {
+                    pair
+                    Spacer(minLength: 16)
+                } else {
+                    box
+                    Spacer(minLength: 16)
+                    today
+                    Spacer(minLength: 16)
+                    kept
+                }
                 week
             }
             .ground()
@@ -46,11 +57,10 @@ struct HomeView: View {
     }
 
     private var box: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 10) {
             Text(Say.partOfDay(.now)).eyebrow(Palette.clay)
             Text(state.boxPlace.map(state.name(of:)) ?? t("box.unnamed"))
-                .font(Type.hero).foregroundStyle(Palette.ink)
-            Text(t("home.body")).font(Type.lede).foregroundStyle(Palette.ink2).lineSpacing(4)
+                .font(Type.display(36)).foregroundStyle(Palette.ink)
         }
     }
 
@@ -63,46 +73,71 @@ struct HomeView: View {
         }
     }
 
-    /// The total that only grows: every evening anyone has had at the box.
-    /// Nothing until the database has said — a guessed zero would be a lie.
-    @ViewBuilder private var kept: some View {
-        if let summary = state.boxSummary {
-            PaperCard {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(t(BoxStage.key(summary.stage))).eyebrow(Palette.clay)
-                    Text(keptLine(summary))
-                        .font(Type.display(22)).foregroundStyle(Palette.ink)
-                        .fixedSize(horizontal: false, vertical: true)
+    // MARK: Today
+
+    /// Every evening you've had, and today's. Nothing until the database has
+    /// said how many — a guessed mark would be a lie.
+    @ViewBuilder private var today: some View {
+        if let total = state.eveningTotal {
+            let layout = EveningMarkLayout.today(total: total.count, counted: countedToday)
+            VStack(spacing: 20) {
+                EveningMark(layout: layout, size: 200)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.65), value: layout)
+                VStack(spacing: 6) {
+                    Text(t(countedToday ? "home.counted" : "home.headline"))
+                        .font(Type.display(26)).foregroundStyle(Palette.ink)
+                    Text(eveningsLine(total))
+                        .font(Type.body(14)).foregroundStyle(Palette.muted)
                 }
+                .multilineTextAlignment(.center)
             }
+            .frame(maxWidth: .infinity)
             .accessibilityElement(children: .combine)
         }
     }
 
-    /// The house's other boxes, smaller: each one's name, stage and hours. A
-    /// tap brings it forward.
-    private var others: some View {
-        PaperCard {
-            VStack(spacing: 14) {
-                ForEach(state.otherBoxes, id: \.self) { id in
-                    Button { state.lastBox = id } label: {
-                        StatRow(title: state.name(of: id),
-                                subtitle: state.boxSummaries[id].map { t(BoxStage.key($0.stage)) },
-                                value: state.boxSummaries[id].map { Say.duration(minutes: $0.wallClockMinutes) } ?? "")
+    private var countedToday: Bool { state.evenings.contains(PlainDate.string(from: .now)) }
+
+    /// The words beside the mark carry the number; before the first evening,
+    /// what to do.
+    private func eveningsLine(_ total: EveningTotal) -> String {
+        let month = Say.month(from: total.first) ?? ""
+        switch total.count {
+        case 0:     return t("home.body")
+        case 1:     return t("home.evenings.one", "month", month)
+        case let n: return t("home.evenings", "count", Say.number(n), "month", month)
+        }
+    }
+
+    // MARK: The boxes
+
+    /// What each box has kept: every evening anyone has had at it, one quiet
+    /// line each, the box Home leads with first. A tap on another brings it
+    /// forward. Nothing until the database has said.
+    private var kept: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach([state.boxPlace].compactMap { $0 } + state.otherBoxes, id: \.self) { id in
+                if let summary = state.boxSummaries[id] {
+                    let line = Text(keptLine(summary, at: state.name(of: id)))
+                        .font(Type.body(14)).foregroundStyle(Palette.ink2)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if id == state.boxPlace {
+                        line
+                    } else {
+                        Button { state.lastBox = id } label: { line }.buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }
-        .padding(.top, 12)
     }
 
-    private func keptLine(_ summary: PlaceSummary) -> String {
+    private func keptLine(_ summary: PlaceSummary, at place: String) -> String {
         let hours = Say.spokenDuration(minutes: summary.wallClockMinutes)
         switch summary.evenings {
-        case 0:     return t("home.kept.none")
-        case 1:     return t("home.kept.one", "duration", hours)
-        case let n: return t("home.kept", "duration", hours, "count", Say.number(n))
+        case 0:     return t("home.box.none", "place", place)
+        case 1:     return t("home.box.one", "duration", hours, "place", place)
+        case let n: return t("home.box", "duration", hours, "place", place, "count", Say.number(n))
         }
     }
 
