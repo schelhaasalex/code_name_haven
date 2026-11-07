@@ -94,14 +94,14 @@ final class CopyTests: XCTestCase {
     func testSubstitutionLeavesNoTokenBehind() {
         let out = t("home.evenings", "count", "Twenty-six", "month", "March")
         XCTAssertFalse(out.contains("{"))
-        XCTAssertEqual(out, "Twenty-six evenings, since March.")
+        XCTAssertEqual(out, "Twenty-six days, since March.")
     }
 
     func testSubstitutionTakesPairsAndIgnoresAStray() {
         XCTAssertEqual(t("end.place", "count", "nine", "place", "the box"),
-                       "Nine evenings at the box.")
+                       "Nine days at the box.")
         XCTAssertEqual(t("end.place", "count", "nine", "place"),
-                       "Nine evenings at {place}.")
+                       "Nine days at {place}.")
     }
 
     func testAnUnknownTokenLeavesTheLineAlone() {
