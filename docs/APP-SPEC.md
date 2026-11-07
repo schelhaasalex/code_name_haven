@@ -122,12 +122,15 @@ There is no button that starts an evening, no tab bar, and no End: the box is
 the only switch. `scripts/shape.sh` fails any call that starts one from
 anywhere but the box's radio and its tags.
 
-**Home** leads with the box this phone was last at: its name and the part of
-the day; what it has kept — `place_summary`'s hours together and evenings,
-under its stage ("A regular table" at five evenings, "A landmark" at fifty) —
-a total that only grows; then the house's other boxes, smaller, each its
-name, stage and hours; and your week, as dots, across all of them. Nothing
-claims a number before the database has said one.
+**Home** centres on the evening mark: a dot for every evening you've had,
+outward from your first, with today's last — an outline until today has
+counted, then filled, and the line beside it goes from *Ready when you are.*
+to *Today counts.* Above it, the box this phone was last at and the part of
+the day. Below it, quietly, what each box has kept (`place_summary`'s hours
+and evenings, a line each — tracked and said, not the reason to set the phone
+down), and your week as dots. The ring is the lock screen's; the mark is
+Home's, and the receipt is where tonight's dot joins it. Nothing claims a
+number before the database has said one.
 
 An unnamed box goes by The Harbor, The Cove or The Mooring, in the order the
 house met them. The first phone to read it writes that name down, so every

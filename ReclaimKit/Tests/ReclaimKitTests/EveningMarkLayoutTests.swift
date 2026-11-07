@@ -14,6 +14,15 @@ final class EveningMarkLayoutTests: XCTestCase {
     }
 
     /// Five rings hold 91. Past that it's bounded, and the words carry the rest.
+    /// Home the morning after: today waits as an outline beside every evening
+    /// so far; once it counts, it is the newest of them, filled.
+    func testHomeShowsTodayWaitingThenCounted() {
+        XCTAssertEqual(EveningMarkLayout.today(total: 31, counted: false), .init(count: 32, tonight: .waiting))
+        XCTAssertEqual(EveningMarkLayout.today(total: 32, counted: true), .init(count: 32, tonight: .counted))
+        XCTAssertEqual(EveningMarkLayout.today(total: 0, counted: false), .init(count: 1, tonight: .waiting),
+                       "before the first evening, one dot waiting")
+    }
+
     func testTheMarkIsBounded() {
         XCTAssertEqual(EveningMarkLayout.points(200).count, EveningMarkLayout.capacity)
         XCTAssertEqual(EveningMarkLayout(count: 200, tonight: .counted).drawn, 91)

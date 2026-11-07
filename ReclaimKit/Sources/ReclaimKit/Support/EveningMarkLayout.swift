@@ -1,7 +1,7 @@
 import Foundation
 
-/// The mark behind the session screen and on the end of an evening: one dot
-/// for every evening you've had, tonight's among them.
+/// The mark at the centre of Home, behind the session screen and on the end
+/// of an evening: one dot for every evening you've had, tonight's among them.
 ///
 /// It replaced a ticking timer. A number that changes every second rewards
 /// glancing at the one screen you're meant to put down; a dot that fills once,
@@ -47,6 +47,12 @@ public struct EveningMarkLayout: Equatable, Sendable {
         if alreadyCounted { return .init(count: total, tonight: .counted) }
         let counted = elapsed >= Double(EveningLanding.qualifyingMinutes * 60)
         return .init(count: total + 1, tonight: counted ? .counted : .waiting)
+    }
+
+    /// On Home, between evenings: every evening you've had, and today's
+    /// last — filled once today has counted, an outline waiting until then.
+    public static func today(total: Int, counted: Bool) -> EveningMarkLayout {
+        counted ? .init(count: total, tonight: .counted) : .init(count: total + 1, tonight: .waiting)
     }
 
     public struct Point: Equatable, Sendable {
