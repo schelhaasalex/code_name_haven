@@ -34,6 +34,10 @@ extension BoxLink {
         guard let done = paired else { return }
         paired = nil
         manager?.stopScan()
+        // Docks connected only to be measured, and not kept, go back.
+        for (id, other) in candidates where id != peripheral?.identifier && boxes[id] == nil {
+            manager?.cancelPeripheralConnection(other)
+        }
         heard = [:]
         candidates = [:]
         if let peripheral, let manager {
@@ -41,6 +45,20 @@ extension BoxLink {
             hold(peripheral, with: manager)
         }
         done(peripheral?.identifier)
+    }
+
+    /// A dock already connected to this phone never shows up in a scan: it's
+    /// talking to the phone, not advertising to it. That's this same box on
+    /// a re-pair, or one just forgotten whose link iOS hasn't dropped yet —
+    /// and a phone listening only to the air waits for it forever. So ask iOS
+    /// which docks it's connected to, and measure each over its link.
+    func hearConnected(_ manager: CBCentralManager) {
+        let docks = manager.retrieveConnectedPeripherals(withServices: [CBUUID(string: Box.service)])
+        for dock in docks where !except.contains(dock.identifier) {
+            candidates[dock.identifier] = dock
+            dock.delegate = self
+            if dock.state == .connected { dock.readRSSI() } else { manager.connect(dock) }
+        }
     }
 
     func discoveredCandidate(_ peripheral: CBPeripheral, rssi: Int) {

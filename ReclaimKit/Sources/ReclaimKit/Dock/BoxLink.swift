@@ -39,7 +39,7 @@ public final class BoxLink: NSObject {
     var manager: CBCentralManager?
     private var connectedNow: Set<UUID> = []
     /// Every box this phone holds a connection to, by Core Bluetooth's id.
-    private var boxes: [UUID: CBPeripheral] = [:]
+    var boxes: [UUID: CBPeripheral] = [:]
     var slots: [UUID: Box.Slots] = [:]
     private var changed: Changed?
     /// A slot change waiting on its signal strength, per box.
@@ -95,6 +95,7 @@ public final class BoxLink: NSObject {
         if paired != nil, !manager.isScanning {
             manager.scanForPeripherals(withServices: [CBUUID(string: Box.service)])
         }
+        if paired != nil { hearConnected(manager) }
         let missing = BoxPairing.peripherals.filter { boxes[$0] == nil }
         for found in manager.retrievePeripherals(withIdentifiers: missing) { hold(found, with: manager) }
     }
@@ -133,6 +134,7 @@ public final class BoxLink: NSObject {
     }
 
     func measured(_ rssi: Int?, of peripheral: CBPeripheral) {
+        if let rssi { discoveredCandidate(peripheral, rssi: rssi) }
         let id = peripheral.identifier
         guard let now = pending.removeValue(forKey: id) else { return }
         let before = slots[id] ?? Box.Slots(bits: 0)
@@ -144,6 +146,7 @@ public final class BoxLink: NSObject {
         connectedNow.insert(peripheral.identifier)
         onStatus?()
         peripheral.delegate = self
+        if paired != nil, candidates[peripheral.identifier] != nil { peripheral.readRSSI() }
         peripheral.discoverServices([CBUUID(string: Box.service)])
     }
 
