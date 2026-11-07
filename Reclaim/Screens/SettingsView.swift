@@ -126,14 +126,15 @@ struct SettingsView: View {
     private var about: some View {
         VStack(alignment: .leading, spacing: 28) {
             LabelledSection(label: t("settings.how.label")) {
-                ForEach(1...3, id: \.self) { i in
+                ForEach(1...4, id: \.self) { i in
                     Text(t("settings.how.\(i)"))
                         .font(Type.body(14)).foregroundStyle(Palette.ink2).lineSpacing(2)
                 }
             }
             LabelledSection(label: t("settings.see.label")) {
-                Text(t("settings.see.body"))
-                    .font(Type.body(14)).foregroundStyle(Palette.ink2).lineSpacing(2)
+                ForEach(["settings.see.body", "settings.see.others"], id: \.self) { key in
+                    Text(t(key)).font(Type.body(14)).foregroundStyle(Palette.ink2).lineSpacing(2)
+                }
             }
         }
     }
