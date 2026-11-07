@@ -135,6 +135,8 @@
   "settings.elsewhere.stay": "Not now",
   "settings.version": "Version {version} ({build})",
   "box.name.label": "Its name",
+  "box.name.shared": "Everyone at this box sees this name.",
+  "box.name.clear": "Clear the name",
   "box.name.locked": "Named by whoever first scanned it.",
   "box.kept.label": "What it has kept",
   "box.kept.hours": "Hours together",
