@@ -36,13 +36,20 @@ extension AppState {
     /// its own — the place at once, and the radio a few seconds later: the
     /// dock it's closest to, right then. Asks about Bluetooth, the first time
     /// — at the box, where the question makes sense.
+    ///
+    /// Every read listens again, even for the box this phone already knows:
+    /// its radio can change under the same tags and code — a new board, a
+    /// reflash — and a phone that kept the old one would wait for it forever.
+    /// Until a radio is heard, the one it knew stays.
     func pairBox(place: UUID) {
         let known = BoxPairing.current
-        guard known?.place != place || known?.peripheral == nil else { return }
-        BoxPairing.current = BoxPairing(place: place)
-        boxLink.pair { peripheral in
-            guard let peripheral, BoxPairing.current?.place == place else { return }
-            BoxPairing.current = BoxPairing(place: place, peripheral: peripheral)
+        BoxPairing.current = BoxPairing(place: place,
+                                        peripheral: known?.place == place ? known?.peripheral : nil)
+        pairing = .listening
+        boxLink.pair { [weak self] peripheral in
+            guard BoxPairing.current?.place == place else { return }
+            if let peripheral { BoxPairing.current = BoxPairing(place: place, peripheral: peripheral) }
+            self?.pairing = peripheral == nil ? .notHeard : .paired
         }
     }
 

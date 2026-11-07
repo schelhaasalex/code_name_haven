@@ -105,6 +105,11 @@ targets:
         NSBluetoothAlwaysUsageDescription: >-
           $(APP_DISPLAY_NAME) listens to your box, so it hears when your phone goes in
           and comes out. It is never used to work out where you are.
+        # Asked when someone taps "Scan the card" on Home, never before. Declining
+        # leaves the Camera app, which reads the same card (rule 7).
+        NSCameraUsageDescription: >-
+          $(APP_DISPLAY_NAME) uses the camera to read the card that came with your box.
+          Nothing is recorded or kept.
         # The box's lights. Its controller is found by name on the home Wi-Fi
         # and told which slot to light — nothing leaves the house. Declining
         # leaves the box dark and changes nothing else (rule 7). iOS refuses to

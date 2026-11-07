@@ -29,6 +29,10 @@ public final class AppState {
     /// This phone's box, the moment its tag or code was read — whether or not
     /// Bluetooth found its radio. Nil until then, and Home asks for one.
     public var boxPlace: UUID?
+    /// Listening for the box's radio after its code or a tag was read, and
+    /// what came of it. Only the scanner shows it; nil until a first read.
+    public var pairing: Pairing?
+    public enum Pairing: Equatable { case listening, paired, notHeard }
     /// What the box has become: every evening anyone has had at it. Nil until
     /// the database has said, and nothing claims a number before then.
     public var boxSummary: PlaceSummary?

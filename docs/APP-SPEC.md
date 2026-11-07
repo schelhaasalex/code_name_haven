@@ -26,7 +26,8 @@ evening doesn't count.
 
 Entitlements: Associated Domains (the box's links open the app) and Push (the
 server starts and steps the Live Activity). Background mode: `bluetooth-central`
-only, for the standing connection to the box.
+only, for the standing connection to the box. The camera is asked for only
+when someone taps "Scan the card".
 
 Dependencies: **`supabase-swift` only.**
 
@@ -107,6 +108,7 @@ running".
 | 0 | Splash | `SplashView` | over everything, on its own clock |
 | 2 | Home — the box, what it has kept, your week | `HomeView` | root |
 | 2a | Meet your box | `HomeView`, no box yet | root |
+| 2b | Scan the card — the camera, then pairing | `ScanView` | full screen, from 2a |
 | 6 | In the box — with others, or alone | `SessionView` | root while live |
 | 8 | The receipt | `SessionEndView` | root, once, after an evening |
 | 13 | We closed this one for you | `AutoClosedView` | sheet over Home |
@@ -134,11 +136,17 @@ since when, and that the evening ends when the phone comes out.
 
 `docs/DOCK.md` has the hardware and the protocol. In the app:
 
-**Meeting it.** The box's code (`/p/<secret>`, printed on it) or any slot's
-tag (`/p/<secret>/<slot>`) opens the app through Associated Domains. Either,
+**Meeting it.** The box's code (`/p/<secret>`, printed on the card that comes
+with it) is read by the app's own scanner (screen 2b, "Scan the card" on
+Home), or by the Camera app, which opens the app through Associated Domains —
+as does any slot's tag (`/p/<secret>/<slot>`). With the app not installed the
+same link is a page saying to get it and scan the card from inside (`links/`). Either,
 read first, finds or makes the box's place and makes this phone one of its
 people; the app then listens for docks for three seconds and keeps the closest
-(`Box.closest`) as its radio. A tag also starts the evening: it's read with
+(`Box.closest`) as its radio — on every read, so a box whose board was
+swapped under the same card is found again. The scanner shows those seconds:
+*Found it*, *Listening for your box…*, *Paired.* — or *Not hearing it yet*
+and a retry. A tag also starts the evening: it's read with
 the phone going into the slot. The code starts nothing.
 
 **In.** The box notifies every connected phone that a slot filled. Each asks
