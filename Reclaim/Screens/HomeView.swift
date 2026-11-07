@@ -9,6 +9,7 @@ import ReclaimKit
 /// browse, which is the one thing this app shouldn't say.
 struct HomeView: View {
     @Environment(AppState.self) private var state
+    @State private var scanning = false
 
     var body: some View {
         NavigationStack {
@@ -22,6 +23,7 @@ struct HomeView: View {
             }
             .ground()
             .navigationDestination(for: Settings.self) { _ in SettingsView() }
+            .fullScreenCover(isPresented: $scanning) { ScanView() }
         }
     }
 
@@ -53,6 +55,8 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text(t("pair.headline")).font(Type.hero).foregroundStyle(Palette.ink)
             Text(t("pair.body")).font(Type.lede).foregroundStyle(Palette.ink2).lineSpacing(4)
+            PrimaryButton(title: t("pair.scan")) { scanning = true }
+                .padding(.top, 12)
         }
     }
 

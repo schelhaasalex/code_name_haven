@@ -14,8 +14,10 @@ import ReclaimKit
 extension AppState {
 
     /// A tag or the code was read. The light first, because it is the instant
-    /// answer to "did it take?" — and it is never waited on (rule 7).
-    public func dock(_ link: Dock.Link) async {
+    /// answer to "did it take?" — and it is never waited on (rule 7). False
+    /// when the box couldn't be found, which only the scanner asks.
+    @discardableResult
+    public func dock(_ link: Dock.Link) async -> Bool {
         if let slot = link.slot {
             // Moved from one slot to another: the one it left goes dark.
             if let left = DockSlot.current, left != slot {
@@ -28,7 +30,7 @@ extension AppState {
         if phase != .ready { await load() }
         guard let place = await boxPlace(secret: link.secret) else {
             banner = t("error.retry")
-            return
+            return false
         }
         boxPlace = place
         pairBox(place: place)
@@ -37,6 +39,7 @@ extension AppState {
         if link.slot != nil, !isLive {
             await setItDown(place: place, source: .tag)
         }
+        return true
     }
 
     /// Catching up with the box on every return to the foreground.
