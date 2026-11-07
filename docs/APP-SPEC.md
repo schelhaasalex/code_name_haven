@@ -5,7 +5,7 @@ built. The box itself — the drawer, its slots, its radio — is `docs/DOCK.md`
 The schema is in `supabase/migrations/`.
 
 The app is the box's. Putting your phone in it starts your evening; taking it
-out ends it, fifteen seconds later. Everyone whose phone is in the same box is
+out ends it, five seconds later. Everyone whose phone is in the same box is
 in the same evening. The lock screen and the wrist show the evening charging,
 and Home shows your evenings as a sky. Nothing else starts an evening, and
 there is nothing to set up but meeting the box once.
@@ -197,11 +197,12 @@ and the box is close), and the one that was starts the evening at the box's
 place. iOS won't let a background app start a Live Activity, so the phone
 asks the server to start it by push.
 
-**Out.** A slot empties. Every phone in the box waits `Box.outGrace` — fifteen
-seconds, room to put a slipped phone back — and the one that still isn't
-charging ends its evening. The same check runs on every return to the
-foreground, for a phone whose wake was missed: in a hand and not charging is
-out. An evening nobody ended — a phone left in overnight — is closed by the
+**Out.** A slot empties. Every phone in the box waits `Box.outGrace` — five
+seconds, room to put a slipped phone back — counting down on its lock screen
+and in the app (`AppState.leaving`, "Ending in 0:04"), and the one that still
+isn't charging ends its evening; one back in a slot before zero carries on.
+The same countdown starts on a return to the foreground, for a phone whose
+wake was missed: in a hand and not charging is out. An evening nobody ended — a phone left in overnight — is closed by the
 server at three hours, and screen 13 says so once.
 
 ---

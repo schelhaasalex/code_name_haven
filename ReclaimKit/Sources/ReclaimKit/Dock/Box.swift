@@ -154,10 +154,10 @@ public enum Box {
     }
 
     /// How long a phone that came out has to go back in before its evening
-    /// ends. Long enough for one that slipped off the pad, or was moved to the
-    /// next slot; not long enough to check a message. Inside the half minute
-    /// iOS gives a Bluetooth wake, with room left to tell the server.
-    public static let outGrace: TimeInterval = 15
+    /// ends, counted down on the lock screen and in the app. Long enough for
+    /// one that slipped off the pad, or was moved to the next slot; not long
+    /// enough to check a message. Fifteen felt like the app hadn't noticed.
+    public static let outGrace: TimeInterval = 5
 
     /// A slot emptied `outGrace` ago, and this phone was in the box. If it's
     /// charging, it was somebody else's — or this one, back already.

@@ -83,6 +83,8 @@ public final class AppState {
     public var session: Session?
     public var gathering: Gathering?
     public var members: [Member] = []
+    /// Out of the box and counting down to the evening's end (`leaving`).
+    public var leavingUntil: Date?
     public var startedAt: Date?
 
     /// The box, if this phone has one: a standing connection that wakes the

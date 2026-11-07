@@ -14,12 +14,16 @@ public struct ReclaimActivityAttributes: ActivityAttributes {
         /// How many of the ring's four segments are full (`EveningCharge`).
         /// Sent by the server as the evening goes on; the phone is asleep.
         public var stage: Int
+        /// Out of the box and counting down: the evening ends then, unless
+        /// the phone is back. Set by the phone only; the server never sends it.
+        public var endingAt: Date?
 
-        public init(startedAt: Date, memberCount: Int, placeName: String?, stage: Int = 0) {
+        public init(startedAt: Date, memberCount: Int, placeName: String?, stage: Int = 0, endingAt: Date? = nil) {
             self.startedAt = startedAt
             self.memberCount = memberCount
             self.placeName = placeName
             self.stage = stage
+            self.endingAt = endingAt
         }
 
         /// A state written before the ring charged has no stage; it decodes
@@ -31,6 +35,7 @@ public struct ReclaimActivityAttributes: ActivityAttributes {
             memberCount = try c.decode(Int.self, forKey: .memberCount)
             placeName = try c.decodeIfPresent(String.self, forKey: .placeName)
             stage = try c.decodeIfPresent(Int.self, forKey: .stage) ?? 0
+            endingAt = try c.decodeIfPresent(Date.self, forKey: .endingAt)
         }
     }
 

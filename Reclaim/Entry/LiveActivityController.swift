@@ -89,13 +89,13 @@ enum LiveActivityController {
         if let current { watch(current) }
     }
 
-    static func update(startedAt: Date, memberCount: Int, placeName: String?) async {
+    static func update(startedAt: Date, memberCount: Int, placeName: String?, endingAt: Date? = nil) async {
         guard let current = current ?? Activity<ReclaimActivityAttributes>.activities.first
         else { return }
         Self.current = current
         await current.update(.init(
             state: .init(startedAt: startedAt, memberCount: memberCount, placeName: placeName,
-                         stage: EveningCharge.stage(since: startedAt)),
+                         stage: EveningCharge.stage(since: startedAt), endingAt: endingAt),
             staleDate: nil))
     }
 

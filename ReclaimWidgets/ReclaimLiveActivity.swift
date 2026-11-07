@@ -21,11 +21,11 @@ struct ReclaimLiveActivity: Widget {
                 }
                 DynamicIslandExpandedRegion(.center) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(headline(context.state))
+                        headlineText(context.state)
                             .font(.system(size: 15, weight: .medium))
                             .foregroundStyle(Palette.cream)
                             .lineLimit(1)
-                        Text(since(context.state))
+                        Text(subline(context.state))
                             .font(.system(size: 13))
                             .foregroundStyle(Palette.dust)
                             .lineLimit(1)
@@ -60,16 +60,18 @@ struct ReclaimLiveActivity: Widget {
 
     /// No ticking digits. A face-down phone gets picked up and read here, so
     /// a timer on the lock screen undid everything the session screen stopped
-    /// doing. It says what you're doing, where, and since when.
+    /// doing. It says what you're doing, where, and since when — except for
+    /// the five seconds after the phone comes out, when the one thing worth
+    /// knowing is when it ends, and that putting it back carries on.
     private func lockScreen(_ state: ReclaimActivityAttributes.ContentState) -> some View {
         HStack(spacing: 16) {
             RingMark(stage: state.stage, memberCount: state.memberCount, size: 44)
             VStack(alignment: .leading, spacing: 5) {
-                Text(headline(state))
+                headlineText(state)
                     .font(Type.display(22))
                     .foregroundStyle(Palette.cream)
                     .lineLimit(2)
-                Text(since(state))
+                Text(subline(state))
                     .font(.system(size: 13))
                     .foregroundStyle(Palette.dust)
                     .lineLimit(1)
@@ -84,6 +86,22 @@ struct ReclaimLiveActivity: Widget {
     private func headline(_ state: ReclaimActivityAttributes.ContentState) -> String {
         state.memberCount <= 1 ? EveningCharge.line(stage: state.stage)
                                : t("lockscreen.together", "count", Say.count(state.memberCount))
+    }
+
+    /// Counting down while the phone is out; otherwise the evening's line.
+    @ViewBuilder
+    private func headlineText(_ state: ReclaimActivityAttributes.ContentState) -> some View {
+        if let end = state.endingAt, end > .now {
+            Text("\(t("leaving.headline")) \(Text(timerInterval: Date.now...end, countsDown: true))")
+                .monospacedDigit()
+        } else {
+            Text(headline(state))
+        }
+    }
+
+    private func subline(_ state: ReclaimActivityAttributes.ContentState) -> String {
+        if let end = state.endingAt, end > .now { return t("leaving.body") }
+        return since(state)
     }
 
     private func since(_ state: ReclaimActivityAttributes.ContentState) -> String {
