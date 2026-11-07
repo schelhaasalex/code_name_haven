@@ -52,6 +52,18 @@ extension AppState {
         }
     }
 
+    /// Paired with its radio, not only its place.
+    public func hasRadio(_ id: UUID) -> Bool {
+        BoxPairing.all.first { $0.place == id }?.peripheral != nil
+    }
+
+    /// What its radio is doing, for Settings. Nil before it has been paired
+    /// with one, or before Bluetooth has said anything on this launch.
+    public func radio(of id: UUID) -> BoxLink.Radio? {
+        _ = radioTick
+        return boxLink.radio(of: BoxPairing.all.first { $0.place == id }?.peripheral)
+    }
+
     /// This phone stops being the box's. The box, and everything it kept,
     /// stays; reading its card or a tag again brings this phone back.
     public func forget(_ id: UUID) {

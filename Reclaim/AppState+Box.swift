@@ -19,6 +19,7 @@ extension AppState {
     /// At launch, including the background launches the box causes.
     func watchBox() {
         _ = ChargingWatch.shared
+        boxLink.onStatus = { [weak self] in self?.radioTick += 1 }
         LiveActivityController.watchPushToStartTokens { [weak self] token in
             try? await self?.repo.saveActivityToken(token, environment: LiveActivityController.pushEnvironment)
         }

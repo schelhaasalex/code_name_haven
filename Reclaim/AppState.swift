@@ -52,6 +52,15 @@ public final class AppState {
     /// Screen 13: an evening the server had to close, said once.
     public var closedForYou: Session?
     public var banner: String?
+    /// Tied to an Apple ID, so the evenings outlive this phone. Nil until
+    /// asked (`AppState+Account`).
+    public var kept: Bool?
+    /// An Apple ID that already keeps another account: offered, not taken.
+    public var keptElsewhere: AppleToken?
+    public struct AppleToken: Equatable { let idToken: String; let nonce: String }
+    /// Ticks whenever a box's radio connects, goes or Bluetooth changes, so
+    /// what Settings says about it is read again.
+    public var radioTick = 0
     /// Screen 8, held here rather than in the session view: ending clears
     /// `session`, which takes the session view off screen with it.
     public var justEnded: Ended?
@@ -124,6 +133,7 @@ public final class AppState {
         let found: Result<Session?, any Error>
         do { found = .success(try await live) } catch { found = .failure(error) }
         await reconcile(Reconciliation.between(running: session, database: found))
+        kept = await repo.isKept()
         await checkDock()
     }
 
@@ -161,16 +171,5 @@ public final class AppState {
             UserDefaults.standard.set(closed.id.uuidString, forKey: Self.explainedKey)
         }
         closedForYou = nil
-    }
-
-    // MARK: - The account
-
-    /// App Store guideline 5.1.1(v). Your evenings go; a new, empty account
-    /// takes this one's place on the next load.
-    public func deleteAccount() async {
-        try? await repo.deleteAccount()
-        session = nil; gathering = nil; members = []; startedAt = nil
-        evenings = []; eveningTotal = nil
-        await load()
     }
 }

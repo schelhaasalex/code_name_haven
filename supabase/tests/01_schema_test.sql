@@ -419,7 +419,8 @@ begin
       'name_somewhere', 'merge_places', 'move_evening',
       'create_invite', 'accept_invite', 'has_company',
       'open_nearby', 'nearby_offer', 'join_nearby', 'my_evenings',
-      'dock_place', 'save_activity_token', 'save_live_activity']) as name
+      'dock_place', 'save_activity_token', 'save_live_activity',
+      'delete_my_account']) as name
     where not exists (
       select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'public' and p.proname = name)
@@ -431,7 +432,7 @@ begin
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public'
      and has_function_privilege('authenticated', p.oid, 'execute');
-  assert v_wrapped = 21, format('expected 21 callable wrappers, found %s', v_wrapped);
+  assert v_wrapped = 22, format('expected 22 callable wrappers, found %s', v_wrapped);
 
   -- The scheduler's job is not a client's to call: nine hours of
   -- phone-on-the-side becoming 180 minutes has to happen TO you, not by you.
@@ -444,7 +445,7 @@ begin
    where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute');
   assert v_anon = 0, format('anon can execute %s functions in public', v_anon);
 
-  raise notice 'PASS 12  twenty wrappers callable by authenticated, none by anon';
+  raise notice 'PASS 12  twenty-two wrappers callable by authenticated, none by anon';
 end $$;
 
 -- ============================================================ FINDING 15
@@ -1342,5 +1343,59 @@ begin
     'together counts once, and the hour after it too';
   perform auth.logout();
   raise notice 'PASS 29  a box''s hours are the time someone was in it';
+end $$;
+-- ============================================================ 30
+-- Deleting an account deletes the login, and the hours stay (0020). The app
+-- used to delete its profile and leave the login behind, and the profile took
+-- its evenings with it, so the box's total fell for everyone else.
+do $$
+declare
+  v_leaving uuid := 'babababa-baba-baba-baba-babababa0001';
+  v_staying uuid := 'babababa-baba-baba-baba-babababa0002';
+  v_box     uuid;
+  v_s       uuid;
+  v_g       uuid;
+  v_live    uuid;
+  v_before  integer;
+  v_failed  boolean := false;
+begin
+  insert into auth.users (id, email) values
+    (v_leaving, 'leaving@example.test'), (v_staying, 'staying@example.test');
+  insert into profiles (id) values (v_leaving), (v_staying);
+  perform auth.login(v_leaving);
+  v_box := app.dock_place('a-box-someone-leaves', 'calm-lark');
+  v_s := app.start_or_join(v_box, 'tag', 'UTC');
+  select gathering_id into v_g from sessions where id = v_s;
+  update sessions set started_at = now() - interval '1 hour' where id = v_s;
+  update gatherings set started_at = now() - interval '1 hour' where id = v_g;
+  perform app.end_session(v_s);
+  perform auth.login(v_staying);
+  perform app.dock_place('a-box-someone-leaves', 'calm-lark');
+  v_before := (select wall_clock_minutes from app.place_summary(v_box));
+  assert v_before = 60, 'the hour they spent there';
+
+  perform auth.login(v_leaving);
+  v_live := app.start_or_join(v_box, 'tag', 'UTC');
+  perform app.delete_my_account();
+  assert not exists (select 1 from auth.users where id = v_leaving), 'the login is gone';
+  assert not exists (select 1 from profiles where id = v_leaving), 'and the profile';
+  assert not exists (select 1 from place_people where profile_id = v_leaving), 'and its boxes';
+  assert (select ended_at from sessions where id = v_live) is not null, 'its running evening ended first';
+  assert (select profile_id from sessions where id = v_s) is null, 'its evenings stay, owned by nobody';
+
+  perform auth.login(v_staying);
+  assert (select wall_clock_minutes from app.place_summary(v_box)) = v_before,
+    'the box keeps the hour';
+  set local role authenticated;
+  assert not exists (select 1 from sessions where id = v_s), 'and nobody can read the row';
+  reset role;
+
+  perform auth.logout();
+  begin
+    perform app.delete_my_account();
+  exception when others then v_failed := true; end;
+  assert v_failed, 'not without an account';
+  assert not has_function_privilege('anon', 'public.delete_my_account()', 'execute'), 'anon has no door';
+  raise notice 'PASS 30  deleting an account deletes the login, and the hours stay';
 end $$;
 do $$ begin raise notice '--- all assertions held ---'; end $$;
