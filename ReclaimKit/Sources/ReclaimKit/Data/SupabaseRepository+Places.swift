@@ -13,9 +13,12 @@ extension SupabaseRepository {
             .execute().value
     }
 
+    /// Nothing back: the library's default asks for the whole row, and a
+    /// phone may not read the box's secret in it (`join_secret_hash`), so
+    /// every rename was refused — and every box went unnamed on the server.
     public func rename(place id: UUID, to name: String) async throws {
         struct Row: Encodable { let name: String }
-        try await client.from("places").update(Row(name: name))
+        try await client.from("places").update(Row(name: name), returning: .minimal)
             .eq("id", value: id).execute()
     }
 
