@@ -51,6 +51,7 @@ Reclaim/
   AppState.swift            @Observable, the one store
   AppState+Evening.swift    start, adopt, reconcile, end
   AppState+Box.swift        the radio: a slot filled, a slot emptied
+  AppState+Boxes.swift      this phone's boxes: meeting, naming, forgetting
   AppState+Dock.swift       the tag and the code; the foreground check
   Screens/                  one file per screen
   Components/               take data, never AppState
@@ -89,7 +90,8 @@ settings.** People who signed in with Apple before keep that account.
 ## State
 
 One `AppState` on the environment. It holds the evening (`session`,
-`gathering`, `members`, `startedAt`), the box (`boxPlace`, `boxSummary`), your
+`gathering`, `members`, `startedAt`), the boxes (`boxPlaces` in the order they
+were met, `lastBox`, `boxSummaries`; `boxPlace` is the one Home leads with), your
 evenings (`evenings`, `eveningTotal`), and the two things that surface over
 Home: `justEnded` (screen 8) and `closedForYou` (screen 13).
 
@@ -112,7 +114,7 @@ running".
 | 6 | In the box — with others, or alone | `SessionView` | root while live |
 | 8 | The receipt | `SessionEndView` | root, once, after an evening |
 | 13 | We closed this one for you | `AutoClosedView` | sheet over Home |
-| 16 | Settings — the box's name, forgetting it, deleting the account | `SettingsView` | push |
+| 16 | Settings — each box's name and Forget, adding another, deleting the account | `SettingsView` | push |
 | — | No network on the first launch | `UnreachableView` | root |
 | 7 | Lock screen, Dynamic Island, Watch | Live Activity | `ReclaimWidgets` |
 
@@ -120,10 +122,16 @@ There is no button that starts an evening, no tab bar, and no End: the box is
 the only switch. `scripts/shape.sh` fails any call that starts one from
 anywhere but the box's radio and its tags.
 
-**Home** is the box's name and the part of the day; what it has kept —
-`place_summary`'s hours together and evenings, under its stage ("A regular
-table" at five evenings, "A landmark" at fifty) — a total that only grows; and
-your week, as dots. Nothing claims a number before the database has said one.
+**Home** leads with the box this phone was last at: its name and the part of
+the day; what it has kept — `place_summary`'s hours together and evenings,
+under its stage ("A regular table" at five evenings, "A landmark" at fifty) —
+a total that only grows; then the house's other boxes, smaller, each its
+name, stage and hours; and your week, as dots, across all of them. Nothing
+claims a number before the database has said one.
+
+An unnamed box goes by The Harbor, The Cove or The Mooring, in the order the
+house met them. The first phone to read it writes that name down, so every
+phone calls it the same thing; renaming is Settings.
 
 **The receipt** says when, how long and with how many, then your evenings with
 tonight's landing among them. **The evening screen** is rarely seen — a phone in

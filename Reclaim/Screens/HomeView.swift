@@ -2,7 +2,8 @@ import SwiftUI
 import ReclaimKit
 
 /// Screen 2 — Home: the box, what it has kept, and your week. With no box yet,
-/// the one thing there is to do: meet it.
+/// the one thing there is to do: meet it. With more than one, the box you
+/// were last at leads and the others sit beneath it, each with its own total.
 ///
 /// NO BUTTON TO START. The box is the only switch; Home is what it leaves
 /// behind. And no tab bar: a tab bar advertises that there's something to
@@ -19,6 +20,7 @@ struct HomeView: View {
                 if state.boxPlace == nil { pair } else { box }
                 Spacer(minLength: 20)
                 if state.boxPlace != nil { kept }
+                if !state.otherBoxes.isEmpty { others }
                 week
             }
             .ground()
@@ -46,7 +48,8 @@ struct HomeView: View {
     private var box: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(Say.partOfDay(.now)).eyebrow(Palette.clay)
-            Text(state.box?.name ?? t("box.unnamed")).font(Type.hero).foregroundStyle(Palette.ink)
+            Text(state.boxPlace.map(state.name(of:)) ?? t("box.unnamed"))
+                .font(Type.hero).foregroundStyle(Palette.ink)
             Text(t("home.body")).font(Type.lede).foregroundStyle(Palette.ink2).lineSpacing(4)
         }
     }
@@ -74,6 +77,24 @@ struct HomeView: View {
             }
             .accessibilityElement(children: .combine)
         }
+    }
+
+    /// The house's other boxes, smaller: each one's name, stage and hours. A
+    /// tap brings it forward.
+    private var others: some View {
+        PaperCard {
+            VStack(spacing: 14) {
+                ForEach(state.otherBoxes, id: \.self) { id in
+                    Button { state.lastBox = id } label: {
+                        StatRow(title: state.name(of: id),
+                                subtitle: state.boxSummaries[id].map { t(BoxStage.key($0.stage)) },
+                                value: state.boxSummaries[id].map { Say.duration(minutes: $0.wallClockMinutes) } ?? "")
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(.top, 12)
     }
 
     private func keptLine(_ summary: PlaceSummary) -> String {
@@ -117,10 +138,10 @@ struct HomeView: View {
 }
 
 #Preview("Home") {
-    let state = AppState(repo: PreviewRepository(), boxPlace: PreviewRepository.kitchenTable)
+    let state = AppState(repo: PreviewRepository(), boxPlaces: [PreviewRepository.kitchenTable])
     return HomeView().environment(state).task { await state.load() }
 }
 
 #Preview("No box yet") {
-    HomeView().environment(AppState(repo: PreviewRepository(places: []), boxPlace: nil))
+    HomeView().environment(AppState(repo: PreviewRepository(places: []), boxPlaces: []))
 }

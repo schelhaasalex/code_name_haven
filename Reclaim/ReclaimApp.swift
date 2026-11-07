@@ -11,8 +11,10 @@ struct ReclaimApp: App {
         // household and its box, in memory, no network. Not in a release build.
         // `xcrun simctl openurl booted reclaim://d/any/1` puts a phone in it.
         if ProcessInfo.processInfo.arguments.contains("-sample-data") {
-            _state = State(initialValue: AppState(repo: PreviewRepository.sampleHousehold(),
-                                                 boxPlace: PreviewRepository.kitchenTable))
+            let state = AppState(repo: PreviewRepository.sampleHousehold(),
+                                 boxPlaces: [PreviewRepository.kitchenTable, PreviewRepository.bedroom])
+            state.lastBox = PreviewRepository.kitchenTable
+            _state = State(initialValue: state)
             return
         }
         #endif

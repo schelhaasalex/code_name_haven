@@ -26,16 +26,23 @@ public final class AppState {
     public var phase: Phase = .loading
     public var profile: Profile?
     public var places: [Place] = []
-    /// This phone's box, the moment its tag or code was read — whether or not
-    /// Bluetooth found its radio. Nil until then, and Home asks for one.
-    public var boxPlace: UUID?
+    /// This phone's boxes, in the order they were met — each from the moment
+    /// its card or a tag was read, whether or not Bluetooth found its radio.
+    /// Empty until then, and Home asks for one.
+    public var boxPlaces: [UUID]
+    /// The box this phone was last at, which Home leads with. This phone's
+    /// own note.
+    public var lastBox: UUID? = UserDefaults.standard.string(forKey: AppState.lastBoxKey).flatMap(UUID.init) {
+        didSet { UserDefaults.standard.set(lastBox?.uuidString, forKey: AppState.lastBoxKey) }
+    }
+    static let lastBoxKey = "reclaim.box.last"
     /// Listening for the box's radio after its code or a tag was read, and
     /// what came of it. Only the scanner shows it; nil until a first read.
     public var pairing: Pairing?
     public enum Pairing: Equatable { case listening, paired, notHeard }
-    /// What the box has become: every evening anyone has had at it. Nil until
-    /// the database has said, and nothing claims a number before then.
-    public var boxSummary: PlaceSummary?
+    /// What each box has become: every evening anyone has had at it. Missing
+    /// until the database has said, and nothing claims a number before then.
+    public var boxSummaries: [UUID: PlaceSummary] = [:]
     /// Distinct qualifying local_dates of your own, for this week's dots. A
     /// Set because a five-person dinner is ONE evening.
     public var evenings: Set<String> = []
@@ -74,21 +81,30 @@ public final class AppState {
     /// next launch. This phone's own note; nothing is sent.
     private static let explainedKey = "reclaim.autoclosed.explained"
 
-    /// `boxPlace` is for previews and the sample household, which have a box
+    /// `boxPlaces` is for previews and the sample household, which have boxes
     /// nobody read.
-    public init(repo: any Repository, boxPlace: UUID? = BoxPairing.current?.place) {
+    public init(repo: any Repository, boxPlaces: [UUID] = BoxPairing.all.map(\.place)) {
         self.repo = repo
-        self.boxPlace = boxPlace
+        self.boxPlaces = boxPlaces
     }
 
     public var isLive: Bool { session?.isLive == true }
 
-    public var box: Place? { places.first { $0.id == boxPlace } }
-
-    public var placeName: String? {
-        guard let id = gathering?.placeId else { return nil }
-        return places.first { $0.id == id }?.name
+    /// The box Home leads with: the one this phone was last at, or else the
+    /// one it met most recently.
+    public var boxPlace: UUID? {
+        if let lastBox, boxPlaces.contains(lastBox) { return lastBox }
+        return boxPlaces.last
     }
+    public var otherBoxes: [UUID] { boxPlaces.filter { $0 != boxPlace } }
+    public var box: Place? { boxPlace.flatMap(place) }
+    public var boxSummary: PlaceSummary? { boxPlace.flatMap { boxSummaries[$0] } }
+
+    public func place(_ id: UUID) -> Place? { places.first { $0.id == id } }
+
+    /// The evening's box, by name — its own, or the one it goes by until
+    /// someone names it.
+    public var placeName: String? { gathering?.placeId.map(name(of:)) }
 
     // MARK: - Lifecycle
 
@@ -129,7 +145,9 @@ public final class AppState {
         let recent = (try? await repo.mySessions(since: since)) ?? []
         evenings = Set(recent.filter(\.qualifying).map(\.localDate))
         eveningTotal = (try? await repo.myEvenings()) ?? eveningTotal
-        if let boxPlace { boxSummary = (try? await repo.summary(of: boxPlace)) ?? boxSummary }
+        for id in boxPlaces {
+            boxSummaries[id] = (try? await repo.summary(of: id)) ?? boxSummaries[id]
+        }
 
         let lately = recent.filter { $0.startedAt > .now.addingTimeInterval(-AutoClosed.window) }
         if closedForYou == nil, let closed = AutoClosed.latest(in: lately),
@@ -145,28 +163,7 @@ public final class AppState {
         closedForYou = nil
     }
 
-    // MARK: - The box and the account
-
-    /// Only whoever's phone first read the box can name it (`places_update_owner`).
-    public var canRenameBox: Bool { box?.createdBy != nil && box?.createdBy == profile?.id }
-
-    public func renameBox(to name: String) async {
-        guard let id = boxPlace else { return }
-        do {
-            try await repo.rename(place: id, to: name)
-            places = (try? await repo.myPlaces()) ?? places
-        } catch {
-            banner = t("error.retry")
-        }
-    }
-
-    /// This phone stops being the box's. The box, and everything it kept,
-    /// stays; reading its tag or code again brings this phone back.
-    public func forgetBox() {
-        BoxPairing.current = nil
-        boxPlace = nil
-        boxSummary = nil
-    }
+    // MARK: - The account
 
     /// App Store guideline 5.1.1(v). Your evenings go; a new, empty account
     /// takes this one's place on the next load.

@@ -28,6 +28,8 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
     var signedIn = true
 
     public static let kitchenTable = UUID()
+    /// The house's second box, unnamed: it goes by its default.
+    public static let bedroom = UUID()
     public static let maya = UUID()
     public static let dad  = UUID()
     public static let me   = UUID()
@@ -68,6 +70,7 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
     /// live: the demo is for putting a phone in the box.
     public static func sampleHousehold(now: Date = .now, calendar: Calendar = .current) -> PreviewRepository {
         let repo = PreviewRepository()
+        repo.places.append(Place(id: bedroom, name: nil, handle: "quiet-wren", createdBy: me))
         repo.seedHistory(now: now, calendar: calendar)
         return repo
     }
@@ -85,7 +88,11 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
         guard startedHere.contains(gathering) else { return memberList }
         return [Member(profileId: profile.id, displayName: profile.displayName, stillLive: true)]
     }
-    public func summary(of place: UUID) async throws -> PlaceSummary { summaryValue }
+    public func summary(of place: UUID) async throws -> PlaceSummary {
+        guard place == Self.bedroom else { return summaryValue }
+        return PlaceSummary(evenings: 6, wallClockMinutes: 410, personMinutes: 690,
+                            stage: "a regular table", since: "2026-10-30", liveNow: false)
+    }
 
     /// The sample household has no server and no lock screen to push to.
     public func saveActivityToken(_ token: String, environment: String) async throws {}

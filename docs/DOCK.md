@@ -75,10 +75,13 @@ now claims every path except the home page. Old `/d/` tags still read.
 ## The radio
 
 A sensor under each slot and a small Bluetooth radio (`firmware/box/box.ino`).
-The phone pairs with its box once, when it first reads the box's code or a
-tag: the dock it's closest to at that moment is its box (`Box.closest`, -75 or
-stronger). After that it stays connected whenever it's in range, and iOS
-wakes the app when the box reports a change.
+The phone pairs with a box when it reads the box's card or a tag: the dock
+it's closest to at that moment, leaving out its other boxes, is this box
+(`Box.closest`, -75 or stronger). It listens again on every read, so a board
+swapped under the same card is found. A phone can belong to several boxes —
+the kitchen's and the bedroom's — and stays connected to each whenever it's
+in range; iOS wakes the app when any of them reports a change, and the
+evening is at whichever one it was.
 
 1. A phone lands. The slot's sensor changes, and the box lights that slot
    itself and tells every connected phone — its slot state and a `docked`
@@ -188,8 +191,11 @@ current sensor is only asked whether the phone is drawing.
 - **Five phones per box.** The C3's radio holds five connections plus its
   advertisement. A sixth phone in the house can't stay connected, and uses
   the tag. An ESP32-S3 doesn't lift this; a different radio would.
-- **Two boxes side by side** can pair a phone with the wrong one: pairing goes
-  by the closest dock, and the box has no id to check it against.
+- **Two boxes side by side** can pair a phone with the wrong one when it meets
+  the first of them: pairing goes by the closest dock, and the box has no id to
+  check it against. Meeting the second is safe — the phone skips the boxes it
+  already knows. A box id the phone can read and match to the card would
+  close this; it's a small addition to the protocol, for Ryan.
 - **Two phones in the same second** both start correctly, but each may record
   the other's slot number. The box lights its own slots, so only the phone's
   note of which slot it's in can be wrong.
