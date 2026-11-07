@@ -15,6 +15,7 @@
 // docs/DOCK.md has the wiring, and how to flash it.
 
 #include <NimBLEDevice.h>
+#include <Wire.h>
 
 // The radio has a fixed number of things it can do at once — advertising is
 // one, each connected phone is another (6 in all on an ESP32-C3). NimBLE's
@@ -28,16 +29,34 @@
 #endif
 
 // ---------------------------------------------------------------- wiring
-// One digital input per slot. An IR obstacle module (FC-51 and the like)
-// pulls its output LOW when something is over it; so does a switch wired to
-// ground. Set SLOT_ACTIVE to HIGH for a sensor that does the opposite.
+// Each slot is read one of two ways, and a slot can use either.
 //
-// GPIO numbers, not the board's labels. On a XIAO ESP32-C3 these are D1–D4.
-// Not D0 (GPIO 2), D8 or D9: the chip reads those while it boots, and a phone
-// sitting in that slot at power-on could stop it starting.
+// A digital input. An IR obstacle module (FC-51 and the like) pulls its output
+// LOW when something is over it; so does a switch wired to ground. Set
+// SLOT_ACTIVE to HIGH for a sensor that does the opposite. GPIO numbers, not
+// the board's labels; on a XIAO ESP32-C3, D1–D4 are 3, 4, 5, 6. Not D0
+// (GPIO 2), D8 or D9: the chip reads those while it boots, and a phone sitting
+// in that slot at power-on could stop it starting. -1: not wired.
+//
+// Or an INA219 current sensor on the slot's charging cable, at an I2C address
+// (0x40 unless its A0/A1 pads are bridged). A phone counts as in when it is
+// drawing current — which is also what "was it me" on the phone asks. -1: none.
+//
+// As wired now (the ESP32-S3 dev board, 2026-11-07): one INA219 on slot 1,
+// SDA on GPIO 9 and SCL on GPIO 8, the other slots not yet wired.
 const int SLOTS = 4;
-const int SLOT_PINS[SLOTS] = {3, 4, 5, 6};
+const int SLOT_PINS[SLOTS] = {-1, -1, -1, -1};
 const int SLOT_ACTIVE = LOW;
+const int SLOT_INA219[SLOTS] = {0x40, -1, -1, -1};
+const int I2C_SDA = 9, I2C_SCL = 8;
+
+// The INA219's shunt is 0.1 Ω (R100) and reads in steps of 10 µV: 0.1 mA each.
+// Measured on the desk: an empty cable reads about 12 mA, with lone spikes to
+// 300; a charging iPhone, 800–900. So a slot is read as the average of the
+// last two seconds, and it takes 100 mA to come in and under 30 to go out.
+const float MA_PER_STEP = 0.1;
+const float IN_MA = 100, OUT_MA = 30;
+const int AVERAGE_OVER = 20;      // samples, one per 100 ms
 
 // The lights, if this board runs them: a strip with two LEDs per slot, slot 1
 // first. -1 leaves the lights to something else (the WLED controller).
@@ -51,8 +70,8 @@ const int LEDS_PER_SLOT = 2;
 #define COMMAND_UUID   "6e400020-b5a3-f393-e0a9-0000706f7274"
 const int PROTOCOL = 1;
 
-// Slot state bytes. A sensor can only say "something is there", so this box
-// reports every phone as charging; the dock with current sensors also says full.
+// Slot state bytes. A presence sensor can only say "something is there", and
+// a phone drawing current is charging, so every phone in reads as charging.
 const uint8_t EMPTY = 0, CHARGING = 1;
 
 // A phone being slid in rocks a sensor on and off; a slot has to say the same
@@ -176,10 +195,39 @@ void readSerial() {
   }
 }
 
-uint8_t readSlots() {
-  uint8_t bits = pretend;
+// The INA219's shunt voltage register, as a number of 10 µV steps; 0 if it
+// doesn't answer, which reads as an empty slot rather than a stuck one.
+int16_t shuntSteps(int address) {
+  Wire.beginTransmission(address);
+  Wire.write(0x01);
+  if (Wire.endTransmission() != 0 || Wire.requestFrom(address, 2) != 2) return 0;
+  return (int16_t)((Wire.read() << 8) | Wire.read());
+}
+
+float milliamps[SLOTS][AVERAGE_OVER];
+int sample = 0;
+unsigned long sampledAt = 0;
+uint8_t drawing = 0;              // the current sensors' verdict, a bit per slot
+
+void sampleCurrent() {
+  if (millis() - sampledAt < 100) return;
+  sampledAt = millis();
+  sample = (sample + 1) % AVERAGE_OVER;
   for (int i = 0; i < SLOTS; i++) {
-    if (digitalRead(SLOT_PINS[i]) == SLOT_ACTIVE) bits |= (1 << i);
+    if (SLOT_INA219[i] < 0) continue;
+    milliamps[i][sample] = shuntSteps(SLOT_INA219[i]) * MA_PER_STEP;
+    float sum = 0;
+    for (int j = 0; j < AVERAGE_OVER; j++) sum += milliamps[i][j];
+    float average = sum / AVERAGE_OVER;
+    if (average >= IN_MA) drawing |= (1 << i);
+    else if (average < OUT_MA) drawing &= ~(1 << i);
+  }
+}
+
+uint8_t readSlots() {
+  uint8_t bits = pretend | drawing;
+  for (int i = 0; i < SLOTS; i++) {
+    if (SLOT_PINS[i] >= 0 && digitalRead(SLOT_PINS[i]) == SLOT_ACTIVE) bits |= (1 << i);
   }
   return bits;
 }
@@ -192,7 +240,8 @@ void publishState() {
 
 void setup() {
   Serial.begin(115200);
-  for (int i = 0; i < SLOTS; i++) pinMode(SLOT_PINS[i], INPUT_PULLUP);
+  for (int i = 0; i < SLOTS; i++) if (SLOT_PINS[i] >= 0) pinMode(SLOT_PINS[i], INPUT_PULLUP);
+  Wire.begin(I2C_SDA, I2C_SCL);
 #if LIGHT_PIN >= 0
   strip.begin();
 #endif
@@ -235,6 +284,7 @@ void setup() {
 
 void loop() {
   readSerial();
+  sampleCurrent();
   uint8_t sensed = readSlots();
   if (sensed != seen) {
     seen = sensed;

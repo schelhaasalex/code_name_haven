@@ -114,8 +114,9 @@ stopped drawing much — at 100%, or paused at 80% — is still in. The box
 advertises as `Portside-XXXX`, the end of its radio's address. It has no id of
 its own; pairing goes by which dock is closest.
 
-This box can only tell that something is in a slot, so it reports every phone
-as charging, and leaves `mA` and `V` out of its events.
+This box reports every phone in a slot as charging, and leaves `mA` and `V`
+out of its events: a presence sensor can only say something is there, and the
+current sensor is only asked whether the phone is drawing.
 
 ### Parts to test it
 
@@ -132,6 +133,15 @@ as charging, and leaves `mA` and `V` out of its events.
   - **A push button** wired to ground: a whole slot on a desk, for proving the
     app before the drawer exists.
   - Not a magnet (Hall) sensor: the MagSafe pad's own magnets hold it on.
+  - **INA219 current sensor** on the slot's charging cable (about $3): the
+    cable's power wire cut and run through its Vin+ and Vin−. It answers the
+    question the phone asks anyway — is it charging? — so it never mistakes a
+    wallet for a phone. Wire Vcc to 3V3, Gnd to GND and SDA/SCL to the pins in
+    `I2C_SDA`/`I2C_SCL`, and put its address in `SLOT_INA219`. On the desk an
+    empty cable reads about 12 mA with lone spikes to 300, and a charging
+    iPhone 800–900; the sketch averages two seconds and needs 100 mA to count
+    a phone in. A phone that stops drawing — full, or paused at 80% — may read
+    as out; not yet seen, and worth watching.
 - **Lights (optional):** a WS2812 strip, two LEDs per slot, on `LIGHT_PIN`.
   Leave it at -1 to keep using the WLED controller.
 
@@ -149,7 +159,10 @@ as charging, and leaves `mA` and `V` out of its events.
    advertising is one of them, and asking for more crashes the board on every
    boot. The sketch refuses to compile if it's set too high.
 3. Run `scripts/dock-tags.sh` and write the four links onto the tags.
-4. Set `SLOT_PINS` for your wiring, then flash. On a XIAO ESP32-C3 the defaults are
+4. Set `SLOT_PINS` and `SLOT_INA219` for your wiring, then flash. The one on
+   the desk now is an ESP32-S3 dev board (FQBN
+   `esp32:esp32:esp32s3:CDCOnBoot=cdc`, so the serial monitor works over its
+   USB port) with one INA219 on slot 1. On a XIAO ESP32-C3 the defaults are
    D1–D4; keep sensors off D0, D8 and D9, which the chip reads at boot. Fit
    the antenna that comes with it: without it the range is a few centimetres. The serial monitor at 115200
    prints each event as it's sent, and takes `1`–`4` to fill or empty a slot
