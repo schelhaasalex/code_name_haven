@@ -26,23 +26,31 @@ public final class BoxLink: NSObject {
     private static let restoreID = "reclaim.box"
     /// How long pairing listens before taking the closest dock, and how long
     /// it waits for one at all.
-    private static let listen: Duration = .seconds(3)
-    private static let giveUp: Duration = .seconds(12)
+    static let listen: Duration = .seconds(3)
+    static let giveUp: Duration = .seconds(12)
 
-    private var manager: CBCentralManager?
+    /// What Settings says about a box's radio.
+    public enum Radio: Equatable, Sendable { case connected, away, off }
+
+    /// Something about the radios changed: a box connected or went, or
+    /// Bluetooth was turned on or off.
+    public var onStatus: (@MainActor () -> Void)?
+
+    var manager: CBCentralManager?
+    private var connectedNow: Set<UUID> = []
     /// Every box this phone holds a connection to, by Core Bluetooth's id.
     private var boxes: [UUID: CBPeripheral] = [:]
-    private var slots: [UUID: Box.Slots] = [:]
+    var slots: [UUID: Box.Slots] = [:]
     private var changed: Changed?
     /// A slot change waiting on its signal strength, per box.
     private var pending: [UUID: Box.Slots] = [:]
 
     /// Pairing: what it calls back with, the radios it mustn't take (the
     /// phone's other boxes), and every dock heard meanwhile.
-    private var paired: (@MainActor (UUID?) -> Void)?
-    private var except: Set<UUID> = []
-    private var heard: [UUID: Int] = [:]
-    private var candidates: [UUID: CBPeripheral] = [:]
+    var paired: (@MainActor (UUID?) -> Void)?
+    var except: Set<UUID> = []
+    var heard: [UUID: Int] = [:]
+    var candidates: [UUID: CBPeripheral] = [:]
 
     public override init() { super.init() }
 
@@ -53,39 +61,27 @@ public final class BoxLink: NSObject {
         start()
     }
 
-    /// Finds the dock this phone is closest to, other than `except`. Called
-    /// the moment a box's card or tag is read, in the foreground and at the
-    /// box — so a box that can't be heard (no radio yet, Bluetooth off) is
-    /// simply not paired.
-    public func pair(except known: Set<UUID> = [], then done: @escaping @MainActor (UUID?) -> Void) {
-        paired = done
-        except = known
-        heard = [:]
-        start()
-        Task { @MainActor [weak self] in
-            let began = ContinuousClock.now
-            while ContinuousClock.now - began < Self.giveUp {
-                try? await Task.sleep(for: .seconds(1))
-                guard let self, self.paired != nil else { return }
-                if ContinuousClock.now - began >= Self.listen,
-                   let closest = Box.closest(self.heard, except: self.except) {
-                    self.finishPairing(self.candidates[closest])
-                    return
-                }
-            }
-            self?.finishPairing(nil)
+    /// Nil when there's nothing to say yet: no radio paired, or Bluetooth
+    /// never started on this launch.
+    public func radio(of peripheral: UUID?) -> Radio? {
+        guard let peripheral, let manager else { return nil }
+        switch manager.state {
+        case .poweredOff, .unauthorized: return .off
+        case .poweredOn: return connectedNow.contains(peripheral) ? .connected : .away
+        default: return nil
         }
     }
 
     /// A box this phone no longer belongs to, or a radio its box replaced.
     public func letGo(of peripheral: UUID) {
+        connectedNow.remove(peripheral)
         guard let box = boxes.removeValue(forKey: peripheral) else { return }
         slots[peripheral] = nil
         pending[peripheral] = nil
         manager?.cancelPeripheralConnection(box)
     }
 
-    private func start() {
+    func start() {
         guard let manager else {
             manager = CBCentralManager(delegate: self, queue: nil,
                                        options: [CBCentralManagerOptionRestoreIdentifierKey: Self.restoreID])
@@ -104,24 +100,11 @@ public final class BoxLink: NSObject {
     }
 
     /// Never times out — that is the point of it.
-    private func hold(_ peripheral: CBPeripheral, with manager: CBCentralManager) {
+    func hold(_ peripheral: CBPeripheral, with manager: CBCentralManager) {
         boxes[peripheral.identifier] = peripheral
         peripheral.delegate = self
         if peripheral.state != .connected { manager.connect(peripheral) }
         else { peripheral.discoverServices([CBUUID(string: Box.service)]) }
-    }
-
-    private func finishPairing(_ peripheral: CBPeripheral?) {
-        guard let done = paired else { return }
-        paired = nil
-        manager?.stopScan()
-        heard = [:]
-        candidates = [:]
-        if let peripheral, let manager {
-            slots[peripheral.identifier] = Box.Slots(bits: 0)
-            hold(peripheral, with: manager)
-        }
-        done(peripheral?.identifier)
     }
 
     /// A value off a box: its slots, or one of its events. Both say the
@@ -158,6 +141,8 @@ public final class BoxLink: NSObject {
     }
 
     func connected(_ peripheral: CBPeripheral) {
+        connectedNow.insert(peripheral.identifier)
+        onStatus?()
         peripheral.delegate = self
         peripheral.discoverServices([CBUUID(string: Box.service)])
     }
@@ -188,15 +173,10 @@ public final class BoxLink: NSObject {
     }
 
     func lost(_ peripheral: CBPeripheral) {
+        connectedNow.remove(peripheral.identifier)
+        onStatus?()
         // Wait for it to come back.
         if boxes[peripheral.identifier] === peripheral, let manager { manager.connect(peripheral) }
-    }
-
-    func discoveredCandidate(_ peripheral: CBPeripheral, rssi: Int) {
-        // 127 is Core Bluetooth's "couldn't measure".
-        guard paired != nil, rssi != 127 else { return }
-        candidates[peripheral.identifier] = peripheral
-        heard[peripheral.identifier] = max(rssi, heard[peripheral.identifier] ?? .min)
     }
 
     func restored(_ peripherals: [CBPeripheral]) {
@@ -204,8 +184,13 @@ public final class BoxLink: NSObject {
         for found in peripherals where known.contains(found.identifier) {
             boxes[found.identifier] = found
             found.delegate = self
+            if found.state == .connected { connectedNow.insert(found.identifier) }
         }
     }
 
-    func stateChanged(_ manager: CBCentralManager) { ready(manager) }
+    func stateChanged(_ manager: CBCentralManager) {
+        if manager.state != .poweredOn { connectedNow = [] }
+        ready(manager)
+        onStatus?()
+    }
 }

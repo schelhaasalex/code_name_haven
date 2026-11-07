@@ -26,6 +26,8 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
     /// you are in those — nobody else's phone is here to join.
     var startedHere: Set<UUID> = []
     var signedIn = true
+    /// The sample household's account isn't kept with an Apple ID yet.
+    var kept = false
 
     public static let kitchenTable = UUID()
     /// The house's second box, unnamed: it goes by its default.
@@ -78,6 +80,9 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
     public func signInAnonymously() async throws { signedIn = true }
     public func myProfile() async throws -> Profile? { signedIn ? profile : nil }
     public func deleteAccount() async throws { signedIn = false }
+    public func isKept() async -> Bool { kept }
+    public func keep(appleIdToken: String, nonce: String) async throws { kept = true }
+    public func signIn(appleIdToken: String, nonce: String) async throws { signedIn = true; kept = true }
 
     public func myPlaces() async throws -> [Place] { places.filter { $0.mergedInto == nil } }
     public func rename(place id: UUID, to name: String) async throws {

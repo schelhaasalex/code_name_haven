@@ -53,13 +53,33 @@ public final class SupabaseRepository: Repository, @unchecked Sendable {
         return rows.first
     }
 
-    /// App Store guideline 5.1.1(v): deletion must be available in-app.
-    /// Deleting the profile cascades the user's sessions; places survive and
-    /// ownership moves, via the trigger in migration 0001.
+    /// App Store guideline 5.1.1(v): deletion must be available in-app. The
+    /// server does it (0020): the login can't be removed from a phone.
     public func deleteAccount() async throws {
-        let me = try requireUser()
-        try await client.from("profiles").delete().eq("id", value: me).execute()
-        try await client.auth.signOut()
+        _ = try requireUser()
+        try await client.rpc("delete_my_account").execute()
+        try? await client.auth.signOut()
+    }
+
+    public func isKept() async -> Bool {
+        guard let user = client.auth.currentUser else { return false }
+        return !user.isAnonymous
+    }
+
+    /// Needs "Allow manual linking" in the project's Auth settings.
+    public func keep(appleIdToken: String, nonce: String) async throws {
+        do {
+            _ = try await client.auth.linkIdentityWithIdToken(
+                credentials: .init(provider: .apple, idToken: appleIdToken, nonce: nonce))
+        } catch let error as AuthError where error.errorCode == .identityAlreadyExists {
+            throw AccountKeeping.elsewhere
+        }
+    }
+
+    public func signIn(appleIdToken: String, nonce: String) async throws {
+        try await client.auth.signInWithIdToken(
+            credentials: .init(provider: .apple, idToken: appleIdToken, nonce: nonce))
+        try await signInAnonymously()   // the profile row, if this login has none
     }
 
     public func liveSession() async throws -> Session? {

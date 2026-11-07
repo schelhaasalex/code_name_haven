@@ -14,7 +14,18 @@ public protocol Repository: Sendable {
     /// nothing if there is one already.
     func signInAnonymously() async throws
     func myProfile() async throws -> Profile?
+    /// The login, its profile and its boxes go; its evenings stay in the
+    /// boxes' totals, owned by nobody (migration 0020).
     func deleteAccount() async throws
+    /// Kept beyond this phone — tied to an Apple ID — rather than the silent
+    /// account that goes with the app.
+    func isKept() async -> Bool
+    /// Ties this account to an Apple ID, so its evenings survive a new phone
+    /// or a reinstall. Throws `AccountKeeping.elsewhere` when that Apple ID
+    /// already keeps another account.
+    func keep(appleIdToken: String, nonce: String) async throws
+    /// That other account, instead of this one: this phone signs in to it.
+    func signIn(appleIdToken: String, nonce: String) async throws
 
     // ---- your own rows, read directly ----
     func myPlaces() async throws -> [Place]
@@ -69,4 +80,11 @@ public enum ReclaimError: LocalizedError {
         case .placeNotFound:    "That box isn't one we know."
         }
     }
+}
+
+/// Why keeping an account with an Apple ID didn't happen.
+public enum AccountKeeping: Error, Equatable {
+    /// The Apple ID already keeps another account — this person's, from
+    /// another phone or an earlier install.
+    case elsewhere
 }

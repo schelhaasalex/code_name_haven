@@ -24,8 +24,9 @@ evening doesn't count.
 | **ReclaimWidgets** | Widget extension: the Live Activity, on the lock screen, the Dynamic Island and the Watch. |
 | **ReclaimKit** | Local Swift package. Models, the repository, the box's protocol and links, copy, design. Imported by both targets. Anything testable lives here. |
 
-Entitlements: Associated Domains (the box's links open the app) and Push (the
-server starts and steps the Live Activity). Background mode: `bluetooth-central`
+Entitlements: Associated Domains (the box's links open the app), Push (the
+server starts and steps the Live Activity), and Sign in with Apple (only for
+"Keep your evenings" in Settings). Background mode: `bluetooth-central`
 only, for the standing connection to the box. The camera is asked for only
 when someone taps "Scan the card".
 
@@ -73,7 +74,15 @@ you, what the box has kept — through an RPC that returns an aggregate.
 
 Accounts are made silently: `signInAnonymously()` on the first launch, and the
 profile row with it. **Anonymous sign-ins must be enabled in the project's Auth
-settings.** People who signed in with Apple before keep that account.
+settings.** An anonymous account goes with the app, so Settings offers — never
+asks — "Keep your evenings": Sign in with Apple linked to the same account
+(`keep`, which needs **Allow manual linking** on in Auth settings). An Apple ID
+that already keeps another account is offered as a switch, not taken.
+
+Deleting the account is the server's (`delete_my_account`, 0020): any evening
+running ends, the login goes and the profile with it, and the evenings stay in
+the boxes' totals owned by nobody — the hours a house spent at its box are its
+own.
 
 | Call | For |
 |---|---|
@@ -114,7 +123,8 @@ running".
 | 6 | In the box — with others, or alone | `SessionView` | root while live |
 | 8 | The receipt | `SessionEndView` | root, once, after an evening |
 | 13 | We closed this one for you | `AutoClosedView` | sheet over Home |
-| 16 | Settings — each box's name and Forget, adding another, deleting the account | `SettingsView` | push |
+| 16 | Settings — your boxes, keeping your evenings, how it works, deleting the account | `SettingsView` | push |
+| 16a | One box — its name, what it has kept, its radio, Forget | `BoxView` | push from 16 |
 | — | No network on the first launch | `UnreachableView` | root |
 | 7 | Lock screen, Dynamic Island, Watch | Live Activity | `ReclaimWidgets` |
 
