@@ -169,7 +169,7 @@ it still doesn't belong in git.
 ## The database
 
 ```sh
-supabase/tests/run.sh      # 185 assertions, in 31 blocks, on a scratch Postgres
+supabase/tests/run.sh      # 188 assertions, in 32 blocks, on a scratch Postgres
 node --test supabase/tests/apns.test.ts   # the Live Activity push, signed and checked offline
 ```
 
