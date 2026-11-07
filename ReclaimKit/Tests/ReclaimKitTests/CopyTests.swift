@@ -84,7 +84,7 @@ final class CopyTests: XCTestCase {
     }
 
     func testListReadsAnArrayAndNeverThrows() {
-        XCTAssertEqual(Copy.list("wrist.stage").count, 5)
+        XCTAssertEqual(Copy.list("evening.stage").count, 5)
         XCTAssertTrue(Copy.list("pair.headline").isEmpty)   // a string, not a list
         XCTAssertTrue(Copy.list("nope.not.a.key").isEmpty)
     }

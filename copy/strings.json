@@ -72,11 +72,10 @@
   "session.end": "End",
 
   "lockscreen.together": "{count} so far.",
-  "lockscreen.solo": "See you in a bit.",
   "lockscreen.since": "{place} · since {time}",
   "wrist.since": "Since {time}",
   "wrist.together": "{count} · since {time}",
-  "wrist.stage": ["Settling in.", "Tonight counts.", "Unwinding.", "Present.", "Recharged."],
+  "evening.stage": ["Settling in.", "Tonight counts.", "Unwinding.", "Present.", "Recharged."],
 
   "starttap.banner.title": "Docked at {place}",
   "starttap.banner.body": "See you in a bit.",

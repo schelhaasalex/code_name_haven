@@ -30,6 +30,24 @@ public enum EveningCharge {
         stage(minutes: now.timeIntervalSince(start) / 60)
     }
 
+    /// What an evening alone says, by how far it has got: a goodbye for its
+    /// first minute, while the phone is still being set down, and then the
+    /// ring's step — the same words on the phone, the lock screen and the
+    /// wrist. Never anything about the phone having been picked up.
+    public static func line(minutes elapsed: Double?) -> String {
+        let steps = Copy.list("evening.stage")
+        guard let elapsed, !steps.isEmpty else { return t("session.line.solo") }
+        if elapsed < 1 { return t("session.line.solo") }
+        return steps[min(stage(minutes: elapsed), steps.count - 1)]
+    }
+
+    /// The step's line alone, for where there's no minute to go by: the lock
+    /// screen moves only when the server pushes a step.
+    public static func line(stage: Int) -> String {
+        let steps = Copy.list("evening.stage")
+        return steps.isEmpty ? "" : steps[min(max(stage, 0), steps.count - 1)]
+    }
+
     /// A light for each person — but not for one alone: a single light on the
     /// ring would only be you, which the ring already is.
     public static func lights(memberCount: Int) -> Int {
