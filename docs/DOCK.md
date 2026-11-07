@@ -5,7 +5,7 @@ an NFC tag under where the top of the phone lands, and a light on the outside.
 The box has a small Bluetooth radio, and a code printed on it.
 
 Putting your phone in the box **is** the evening starting, and taking it out
-is the evening ending — fifteen seconds later (`Box.outGrace`), unless it's
+is the evening ending — five seconds later (`Box.outGrace`), unless it's
 back by then. Nothing else starts or ends one.
 
 ## What happens
@@ -19,9 +19,9 @@ back by then. Nothing else starts or ends one.
    connected phone. The one that just started charging, with the box right
    beside it, starts its evening — locked, in the background, nobody touching
    anything. The Live Activity arrives by push.
-3. **Out.** A slot empties. Fifteen seconds later the phone that still isn't
-   charging ends its evening, and its Live Activity goes. Back within the
-   fifteen and nothing changed.
+3. **Out.** A slot empties. The phone's lock screen counts down five seconds;
+   if it still isn't charging at zero it ends its evening, and its Live
+   Activity goes. Back within the five and nothing changed.
 
 A box with no lights, a declined Local Network prompt, or a controller on
 another Wi-Fi: the light stays off and the evening counts all the same.
@@ -91,7 +91,7 @@ evening is at whichever one it was.
    and the box's signal is strong (`Box.nearby`, -60). A phone already on the
    bedside charger, or charging in another room, is not the one.
 3. That phone starts the evening at the box's place. Nobody touches anything.
-4. A slot empties. Every phone in the box wakes, waits fifteen seconds
+4. A slot empties. Every phone in the box wakes, waits five seconds
    (`Box.outGrace`), and the one that still isn't charging ends its evening.
 
 A swiped-away app can't be woken over Bluetooth, so the tag stays as the way
@@ -142,7 +142,7 @@ current sensor is only asked whether the phone is drawing.
     wallet for a phone. Wire Vcc to 3V3, Gnd to GND and SDA/SCL to the pins in
     `I2C_SDA`/`I2C_SCL`, and put its address in `SLOT_INA219`. On the desk an
     empty cable reads about 12 mA with lone spikes to 300, and a charging
-    iPhone 800–900; the sketch averages two seconds and needs 100 mA to count
+    iPhone 800–900; the sketch averages one second and needs 100 mA to count
     a phone in. A phone that stops drawing — full, or paused at 80% — may read
     as out; not yet seen, and worth watching.
 - **Lights (optional):** a WS2812 strip, two LEDs per slot, on `LIGHT_PIN`.
@@ -176,8 +176,9 @@ current sensor is only asked whether the phone is drawing.
 1. Build the app to the phone, and open it once.
 2. Scan the box's code with the camera, or hold the phone to a slot's tag and
    tap its banner. That pairs the phone with the box, and asks about Bluetooth.
-3. Take the phone out. Fifteen seconds later the evening ends, and its Live
-   Activity with it. Put it back within the fifteen and nothing changes.
+3. Take the phone out. The lock screen counts down five seconds, then the
+   evening ends, and its Live Activity with it. Put it back before zero and
+   nothing changes.
 4. Lock the phone and put it back. The evening should start with no tap, and
    the app opens on it the next time you look.
 5. Try a second phone already on another charger nearby: it shouldn't start.

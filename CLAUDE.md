@@ -42,7 +42,7 @@ honestly and the exact nagging instrument this product replaces.
 
 **4. The box is the only switch.** Putting your phone in a slot starts the
 evening — that is the person deciding, with a drawer around it. Taking it out
-ends it, fifteen seconds later. Nothing else starts one: not face-down
+ends it, five seconds later, counted down. Nothing else starts one: not face-down
 detection, not motion history, not proximity, not a button. A sensor that
 guesses is how a product tells someone they weren't there when they were.
 

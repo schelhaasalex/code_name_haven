@@ -48,7 +48,8 @@ extension AppState {
     ///
     /// A phone that left the box without the box's word reaching it — out of
     /// range, or the wake missed. Every return to the foreground checks, and
-    /// a phone in the hand that isn't charging has left: its evening ends.
+    /// a phone in the hand that isn't charging has left: its evening counts
+    /// down to its end.
     /// The grace after docking is for the pad, which starts charging a moment
     /// after the phone lands.
     func checkDock() async {
@@ -66,8 +67,10 @@ extension AppState {
         let device = UIDevice.current
         device.isBatteryMonitoringEnabled = true
         let charging = device.batteryState == .charging || device.batteryState == .full
+        // The same countdown as the box's, not an ending on the spot: opening
+        // the app is often the first thing a lifted phone does.
         if DockSlot.hasLeft(since: DockSlot.since, charging: charging) {
-            await leftBox()
+            Task { await leaving() }
         }
     }
 

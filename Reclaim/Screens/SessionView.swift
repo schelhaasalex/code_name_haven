@@ -43,24 +43,41 @@ struct SessionView: View {
             // Together, the count has earned it. It changes at the ring's
             // steps, not every minute.
             VStack(alignment: .leading, spacing: 20) {
-                TimelineView(.everyMinute) { context in
-                    Text(solo ? EveningCharge.line(minutes: state.startedAt.map {
-                                    context.date.timeIntervalSince($0) / 60 })
-                              : t("session.together", "count", Say.count(state.members.count)))
-                        .font(Type.display(52, weight: .light))
-                        .foregroundStyle(Palette.cream)
-                        .lineSpacing(2)
-                        .contentTransition(.opacity)
+                if let until = state.leavingUntil {
+                    // Out of the box: when it ends, and that putting it back
+                    // carries on. The only seconds on this screen that tick.
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(t("leaving.headline"))
+                        Text(timerInterval: min(Date.now, until)...until, countsDown: true)
+                            .monospacedDigit()
+                    }
+                    .font(Type.display(52, weight: .light))
+                    .foregroundStyle(Palette.cream)
+                    Text(t("leaving.body"))
+                        .font(Type.body(16)).foregroundStyle(Palette.dim)
+                } else {
+                    TimelineView(.everyMinute) { context in
+                        Text(solo ? EveningCharge.line(minutes: state.startedAt.map {
+                                        context.date.timeIntervalSince($0) / 60 })
+                                  : t("session.together", "count", Say.count(state.members.count)))
+                            .font(Type.display(52, weight: .light))
+                            .foregroundStyle(Palette.cream)
+                            .lineSpacing(2)
+                            .contentTransition(.opacity)
+                    }
+                    Text(t("session.since", "time", Say.time(state.startedAt ?? .now)))
+                        .font(Type.body(16)).foregroundStyle(Palette.dim)
                 }
-                Text(t("session.since", "time", Say.time(state.startedAt ?? .now)))
-                    .font(Type.body(16)).foregroundStyle(Palette.dim)
             }
             .animation(.easeInOut(duration: 0.5), value: state.members.count)
+            .animation(.easeInOut(duration: 0.3), value: state.leavingUntil)
 
             Spacer(minLength: 28)
 
+            // While counting down it's already out; the line would argue.
             Text(t("session.out"))
                 .font(Type.note).foregroundStyle(Palette.dim).lineSpacing(2)
+                .opacity(state.leavingUntil == nil ? 1 : 0)
         }
         .ground(night: true)
     }

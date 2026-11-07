@@ -54,10 +54,10 @@ const int I2C_SDA = 9, I2C_SCL = 8;
 // The INA219's shunt is 0.1 Ω (R100) and reads in steps of 10 µV: 0.1 mA each.
 // Measured on the desk: an empty cable reads about 12 mA, with lone spikes to
 // 300; a charging iPhone, 800–900. So a slot is read as the average of the
-// last two seconds, and it takes 100 mA to come in and under 30 to go out.
+// last second, and it takes 100 mA to come in and under 30 to go out.
 const float MA_PER_STEP = 0.1;
 const float IN_MA = 100, OUT_MA = 30;
-const int AVERAGE_OVER = 20;      // samples, one per 100 ms
+const int AVERAGE_OVER = 10;      // samples, one per 100 ms
 
 // The lights, if this board runs them: a strip with two LEDs per slot, slot 1
 // first. -1 leaves the lights to something else (the WLED controller).
