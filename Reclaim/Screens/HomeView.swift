@@ -81,7 +81,7 @@ struct HomeView: View {
         if let total = state.eveningTotal {
             let layout = EveningMarkLayout.today(total: total.count, counted: countedToday)
             VStack(spacing: 20) {
-                EveningMark(layout: layout, size: 200)
+                EveningMark(layout: layout, size: 200, seed: state.skySeed)
                     .animation(.spring(response: 0.6, dampingFraction: 0.65), value: layout)
                 VStack(spacing: 6) {
                     Text(t(countedToday ? "home.counted" : "home.headline"))

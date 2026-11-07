@@ -25,6 +25,8 @@ public final class AppState {
 
     public var phase: Phase = .loading
     public var profile: Profile?
+    /// Whose sky the evening mark draws.
+    public var skySeed: UInt64 { EveningMarkLayout.seed(profile?.id) }
     public var places: [Place] = []
     /// This phone's boxes, in the order they were met — each from the moment
     /// its card or a tag was read, whether or not Bluetooth found its radio.
