@@ -76,7 +76,7 @@ struct SessionView: View {
                     total: total.count,
                     alreadyCounted: alreadyCounted,
                     elapsed: context.date.timeIntervalSince(state.startedAt ?? context.date))
-                EveningMark(layout: layout, size: 340, dot: Palette.edge, tonight: Palette.ember,
+                EveningMark(layout: layout, size: 340, dot: Palette.edge, tonight: Palette.ember, seed: state.skySeed,
                             label: markLabel(layout.count))
                     .animation(.spring(response: 0.6, dampingFraction: 0.65), value: layout)
             }

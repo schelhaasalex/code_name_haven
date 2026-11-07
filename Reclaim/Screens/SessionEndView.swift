@@ -63,7 +63,7 @@ struct SessionEndView: View {
             // go away — and it claims no number.
             if landing.known {
                 HStack(spacing: 18) {
-                    EveningMark(layout: landed ? landing.after : landing.before)
+                    EveningMark(layout: landed ? landing.after : landing.before, seed: state.skySeed)
                     VStack(alignment: .leading, spacing: 6) {
                         Text(t("end.evenings.label")).eyebrow(Palette.muted)
                         Text(countLine)

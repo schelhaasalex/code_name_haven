@@ -7,7 +7,7 @@ The schema is in `supabase/migrations/`.
 The app is the box's. Putting your phone in it starts your evening; taking it
 out ends it, fifteen seconds later. Everyone whose phone is in the same box is
 in the same evening. The lock screen and the wrist show the evening charging,
-and Home shows what the box has kept. Nothing else starts an evening, and
+and Home shows your evenings as a sky. Nothing else starts an evening, and
 there is nothing to set up but meeting the box once.
 
 Deployment target **iOS 17.0**: Live Activities that a push can start need
@@ -127,7 +127,7 @@ running".
 | # | Screen | View | |
 |---|---|---|---|
 | 0 | Splash | `SplashView` | over everything, on its own clock |
-| 2 | Home — the box, what it has kept, your week | `HomeView` | root |
+| 2 | Home — the box, your sky, your week | `HomeView` | root |
 | 2a | Meet your box | `HomeView`, no box yet | root |
 | 2b | Scan the card — the camera, then pairing | `ScanView` | full screen, from 2a |
 | 6 | In the box — with others, or alone | `SessionView` | root while live |
@@ -142,14 +142,16 @@ There is no button that starts an evening, no tab bar, and no End: the box is
 the only switch. `scripts/shape.sh` fails any call that starts one from
 anywhere but the box's radio and its tags.
 
-**Home** centres on the evening mark: a dot for every evening you've had,
-outward from your first, with today's last — an outline until today has
-counted, then filled, and the line beside it goes from *Ready when you are.*
-to *Today counts.* Above it, the box this phone was last at and the part of
-the day. Below it, quietly, what each box has kept (`place_summary`'s hours
-and evenings, a line each — tracked and said, not the reason to set the phone
-down), and your week as dots. The ring is the lock screen's; the mark is
-Home's, and the receipt is where tonight's dot joins it. Nothing claims a
+**Home** centres on the evening mark, a sky: a star for every evening you've
+had, your first at the centre and each after it further out, in places your
+account decides and nothing moves (`EveningMarkLayout`). Today's is the
+newest — an outline until today has counted, then filled — and the line
+beside it goes from *Ready when you are.* to *Today counts.* Above it, the box
+this phone was last at and the part of the day; below it, your week as dots.
+What each box has kept is on its page in Settings (16a), not Home: the long
+view isn't the reason to set the phone down tonight. The ring is the lock
+screen's; the mark is Home's, and the receipt is where tonight's star joins
+it. Nothing claims a
 number before the database has said one.
 
 An unnamed box goes by The Harbor, The Cove or The Mooring, in the order the

@@ -5,15 +5,48 @@ final class EveningMarkLayoutTests: XCTestCase {
 
     /// The first evening you ever had is the middle of the mark.
     func testTheFirstIsTheCentre() {
-        XCTAssertEqual(EveningMarkLayout.points(1), [.init(x: 0, y: 0)])
+        let first = EveningMarkLayout.stars(1, seed: 7)[0]
+        XCTAssertEqual(first.x, 0)
+        XCTAssertEqual(first.y, 0)
     }
 
-    func testOneDotPerEvening() {
-        XCTAssertEqual(EveningMarkLayout.points(27).count, 27)
-        XCTAssertEqual(EveningMarkLayout.points(91).count, 91)
+    func testOneStarPerEvening() {
+        XCTAssertEqual(EveningMarkLayout.stars(27, seed: 7).count, 27)
+        XCTAssertEqual(EveningMarkLayout.stars(365, seed: 7).count, 365)
     }
 
-    /// Five rings hold 91. Past that it's bounded, and the words carry the rest.
+    /// A star never moves: more evenings is the same sky from further back,
+    /// so every star keeps its place relative to the others.
+    func testAStarKeepsItsPlace() {
+        let week = EveningMarkLayout.stars(7, seed: 7)
+        let year = EveningMarkLayout.stars(365, seed: 7)
+        let zoom = (week[6].x * week[6].x + week[6].y * week[6].y).squareRoot()
+            / (year[6].x * year[6].x + year[6].y * year[6].y).squareRoot()
+        for i in 1..<7 {
+            XCTAssertEqual(week[i].x, year[i].x * zoom, accuracy: 1e-9)
+            XCTAssertEqual(week[i].y, year[i].y * zoom, accuracy: 1e-9)
+            XCTAssertEqual(week[i].size, year[i].size)
+        }
+    }
+
+    /// Scattered, but never two stars on top of each other.
+    func testNoTwoStarsTouch() {
+        let sky = (0..<365).map { EveningMarkLayout.place($0, seed: 7) }
+        for i in sky.indices { for j in sky.indices where j > i {
+            let d = ((sky[i].x - sky[j].x) * (sky[i].x - sky[j].x) + (sky[i].y - sky[j].y) * (sky[i].y - sky[j].y)).squareRoot()
+            XCTAssertGreaterThan(d, 0.45, "stars \(i) and \(j)")
+        } }
+    }
+
+    /// Each account's sky is its own, and the same every time it's drawn.
+    func testASkyIsItsOwnersAndAlwaysTheSame() {
+        let account = UUID(uuidString: "b6d45234-0b87-4046-a800-6a191d92b823")
+        let seed = EveningMarkLayout.seed(account)
+        XCTAssertEqual(EveningMarkLayout.stars(30, seed: seed), EveningMarkLayout.stars(30, seed: seed))
+        XCTAssertNotEqual(EveningMarkLayout.stars(30, seed: seed), EveningMarkLayout.stars(30, seed: seed &+ 1))
+        XCTAssertEqual(seed, EveningMarkLayout.seed(account))
+    }
+
     /// Home the morning after: today waits as an outline beside every evening
     /// so far; once it counts, it is the newest of them, filled.
     func testHomeShowsTodayWaitingThenCounted() {
@@ -24,15 +57,15 @@ final class EveningMarkLayoutTests: XCTestCase {
     }
 
     func testTheMarkIsBounded() {
-        XCTAssertEqual(EveningMarkLayout.points(200).count, EveningMarkLayout.capacity)
-        XCTAssertEqual(EveningMarkLayout(count: 200, tonight: .counted).drawn, 91)
+        XCTAssertEqual(EveningMarkLayout.stars(5000, seed: 7).count, EveningMarkLayout.capacity)
+        XCTAssertEqual(EveningMarkLayout(count: 5000, tonight: .counted).drawn, EveningMarkLayout.capacity)
     }
 
-    /// Every dot fits inside the mark.
-    func testEveryDotIsInside() {
-        for p in EveningMarkLayout.points(91) {
-            XCTAssertLessThanOrEqual((p.x * p.x + p.y * p.y).squareRoot(), 1.000_001)
-        }
+    /// Every star fits inside the mark, and the outermost reaches its edge.
+    func testEveryStarIsInside() {
+        let reach = EveningMarkLayout.stars(91, seed: 7).map { ($0.x * $0.x + $0.y * $0.y).squareRoot() }
+        XCTAssertLessThanOrEqual(reach.max() ?? 0, 1.000_001)
+        XCTAssertEqual(reach.max() ?? 0, 1, accuracy: 1e-9)
     }
 
     /// Before fifteen minutes tonight is an outline; after, it's filled.

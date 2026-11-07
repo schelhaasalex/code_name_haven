@@ -1,14 +1,14 @@
 import SwiftUI
 import ReclaimKit
 
-/// Screen 2 — Home: your evenings as the mark, today's dot among them; the
-/// box you were last at; what each box has kept, quietly; and your week. With
-/// no box yet, the one thing there is to do: meet it.
+/// Screen 2 — Home: the box you were last at, your evenings as the mark with
+/// today's star among them, and your week. With no box yet, the one thing
+/// there is to do: meet it.
 ///
-/// The mark is the point: today's dot waits as an outline until today has
-/// counted, and every evening that counts stays, outward from the first. The
-/// boxes' totals are tracked and said, but they're the long view, not the
-/// reason to set the phone down tonight.
+/// The mark is the point: today's star waits as an outline until today has
+/// counted, and every evening that counts stays. What each box has kept is
+/// the long view, on the box's own page in Settings — not the reason to set
+/// the phone down tonight.
 ///
 /// NO BUTTON TO START. The box is the only switch; Home is what it leaves
 /// behind. And no tab bar: a tab bar advertises that there's something to
@@ -30,7 +30,6 @@ struct HomeView: View {
                     Spacer(minLength: 16)
                     today
                     Spacer(minLength: 16)
-                    kept
                 }
                 week
             }
@@ -81,7 +80,7 @@ struct HomeView: View {
         if let total = state.eveningTotal {
             let layout = EveningMarkLayout.today(total: total.count, counted: countedToday)
             VStack(spacing: 20) {
-                EveningMark(layout: layout, size: 200)
+                EveningMark(layout: layout, size: 200, seed: state.skySeed)
                     .animation(.spring(response: 0.6, dampingFraction: 0.65), value: layout)
                 VStack(spacing: 6) {
                     Text(t(countedToday ? "home.counted" : "home.headline"))
@@ -106,38 +105,6 @@ struct HomeView: View {
         case 0:     return t("home.body")
         case 1:     return t("home.evenings.one", "month", month)
         case let n: return t("home.evenings", "count", Say.number(n), "month", month)
-        }
-    }
-
-    // MARK: The boxes
-
-    /// What each box has kept: every evening anyone has had at it, one quiet
-    /// line each, the box Home leads with first. A tap on another brings it
-    /// forward. Nothing until the database has said.
-    private var kept: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ForEach([state.boxPlace].compactMap { $0 } + state.otherBoxes, id: \.self) { id in
-                if let summary = state.boxSummaries[id] {
-                    let line = Text(keptLine(summary, at: state.name(of: id)))
-                        .font(Type.body(14)).foregroundStyle(Palette.ink2)
-                        .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
-                    if id == state.boxPlace {
-                        line
-                    } else {
-                        Button { state.lastBox = id } label: { line }.buttonStyle(.plain)
-                    }
-                }
-            }
-        }
-    }
-
-    private func keptLine(_ summary: PlaceSummary, at place: String) -> String {
-        let hours = Say.spokenDuration(minutes: summary.wallClockMinutes)
-        switch summary.evenings {
-        case 0:     return t("home.box.none", "place", place)
-        case 1:     return t("home.box.one", "duration", hours, "place", place)
-        case let n: return t("home.box", "duration", hours, "place", place, "count", Say.number(n))
         }
     }
 
