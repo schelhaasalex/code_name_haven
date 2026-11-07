@@ -21,7 +21,7 @@ struct ReclaimLiveActivity: Widget {
                 }
                 DynamicIslandExpandedRegion(.center) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(headline(context.state.memberCount))
+                        Text(headline(context.state))
                             .font(.system(size: 15, weight: .medium))
                             .foregroundStyle(Palette.cream)
                             .lineLimit(1)
@@ -65,7 +65,7 @@ struct ReclaimLiveActivity: Widget {
         HStack(spacing: 16) {
             RingMark(stage: state.stage, memberCount: state.memberCount, size: 44)
             VStack(alignment: .leading, spacing: 5) {
-                Text(headline(state.memberCount))
+                Text(headline(state))
                     .font(Type.display(22))
                     .foregroundStyle(Palette.cream)
                     .lineLimit(2)
@@ -79,11 +79,11 @@ struct ReclaimLiveActivity: Widget {
         .padding(20)
     }
 
-    /// The same headline as the session screen: what you're doing when alone,
-    /// the count when it's earned it.
-    private func headline(_ count: Int) -> String {
-        count <= 1 ? t("lockscreen.solo")
-                   : t("lockscreen.together", "count", Say.count(count))
+    /// The same headline as the session screen: where the evening has got
+    /// to when alone, the count when it's earned it.
+    private func headline(_ state: ReclaimActivityAttributes.ContentState) -> String {
+        state.memberCount <= 1 ? EveningCharge.line(stage: state.stage)
+                               : t("lockscreen.together", "count", Say.count(state.memberCount))
     }
 
     private func since(_ state: ReclaimActivityAttributes.ContentState) -> String {

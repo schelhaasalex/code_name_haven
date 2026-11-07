@@ -36,10 +36,7 @@ struct WristActivity: View {
     }
 
     /// Where the evening has got to. The count moves to the line below.
-    private var headline: String {
-        let stages = Copy.list("wrist.stage")
-        return stages.isEmpty ? "" : stages[min(max(state.stage, 0), stages.count - 1)]
-    }
+    private var headline: String { EveningCharge.line(stage: state.stage) }
 
     private var since: String {
         let time = Say.time(state.startedAt)

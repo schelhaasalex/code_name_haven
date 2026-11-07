@@ -35,16 +35,20 @@ struct SessionView: View {
 
             Spacer(minLength: 20)
 
-            // Alone, the headline is what you did, never a count: "Just you."
-            // at hero size made being alone the news. Together, the count has
-            // earned it.
+            // Alone, the headline is where the evening has got to, never a
+            // count: "Just you." at hero size made being alone the news.
+            // Together, the count has earned it. It changes at the ring's
+            // steps, not every minute.
             VStack(alignment: .leading, spacing: 20) {
-                Text(solo ? t("session.line.solo")
-                          : t("session.together", "count", Say.count(state.members.count)))
-                    .font(Type.display(52, weight: .light))
-                    .foregroundStyle(Palette.cream)
-                    .lineSpacing(2)
-                    .contentTransition(.opacity)
+                TimelineView(.everyMinute) { context in
+                    Text(solo ? EveningCharge.line(minutes: state.startedAt.map {
+                                    context.date.timeIntervalSince($0) / 60 })
+                              : t("session.together", "count", Say.count(state.members.count)))
+                        .font(Type.display(52, weight: .light))
+                        .foregroundStyle(Palette.cream)
+                        .lineSpacing(2)
+                        .contentTransition(.opacity)
+                }
                 Text(t("session.since", "time", Say.time(state.startedAt ?? .now)))
                     .font(Type.body(16)).foregroundStyle(Palette.dim)
             }

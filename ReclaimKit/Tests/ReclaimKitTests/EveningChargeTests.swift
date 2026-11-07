@@ -20,7 +20,21 @@ final class EveningChargeTests: XCTestCase {
     }
 
     func testAStageForEachHeadline() {
-        XCTAssertEqual(Copy.list("wrist.stage").count, EveningCharge.full + 1)
+        XCTAssertEqual(Copy.list("evening.stage").count, EveningCharge.full + 1)
+    }
+
+    /// A goodbye while the phone is being set down; after that, where the
+    /// evening has got to — the same on the phone as on the lock screen.
+    func testTheLineFollowsTheEvening() {
+        XCTAssertEqual(EveningCharge.line(minutes: 0.5), t("session.line.solo"))
+        XCTAssertEqual(EveningCharge.line(minutes: nil), t("session.line.solo"))
+        XCTAssertEqual(EveningCharge.line(minutes: 8), "Settling in.")
+        XCTAssertEqual(EveningCharge.line(minutes: 15), "Tonight counts.")
+        XCTAssertEqual(EveningCharge.line(minutes: 600), "Recharged.")
+        for minutes in [8.0, 15, 45, 75, 200] {
+            XCTAssertEqual(EveningCharge.line(minutes: minutes),
+                           EveningCharge.line(stage: EveningCharge.stage(minutes: minutes)))
+        }
     }
 
     func testNoLightAloneOneEachTogether() {
