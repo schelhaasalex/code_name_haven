@@ -30,6 +30,7 @@ extension AppState {
         if phase != .ready { await load() }
         guard let place = await boxPlace(secret: link.secret) else {
             banner = t("error.retry")
+            note(.dockFailed)
             return false
         }
         meet(place)

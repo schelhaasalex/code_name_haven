@@ -60,6 +60,11 @@ public protocol Repository: Sendable {
     /// A running Live Activity's own token, so the server can push the ring's
     /// steps to it. `state` is `RemoteActivity.stateJSON`.
     func saveLiveActivity(token: String, gatheringId: UUID, environment: String, state: String) async throws
+
+    // ---- what goes wrong (migration 0021) ----
+    /// One of a fixed list of moments, against a box this person belongs to.
+    /// Write-only: nobody's client can read notes back.
+    func note(_ note: Note, place: UUID?, detail: [String: String]) async throws
 }
 
 public extension Repository {

@@ -165,6 +165,7 @@ struct ScanView: View {
         case .notDetermined: stage = await AVCaptureDevice.requestAccess(for: .video) ? .looking : .denied
         default:             stage = .denied
         }
+        if stage == .denied { state.note(.cameraDenied) }
     }
 }
 

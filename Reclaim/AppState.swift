@@ -134,6 +134,7 @@ public final class AppState {
         do { found = .success(try await live) } catch { found = .failure(error) }
         await reconcile(Reconciliation.between(running: session, database: found))
         kept = await repo.isKept()
+        noteHowThingsAre()
         await checkDock()
     }
 

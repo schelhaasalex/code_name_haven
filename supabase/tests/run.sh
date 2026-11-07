@@ -43,6 +43,7 @@ psql -v ON_ERROR_STOP=1 -q -d "$DB" \
   -f "$ROOT/supabase/migrations/0017_box_people.sql" \
   -f "$ROOT/supabase/migrations/0018_cap_every_evening.sql" \
   -f "$ROOT/supabase/migrations/0019_time_someone_was_in.sql" \
-  -f "$ROOT/supabase/migrations/0020_delete_account.sql"
+  -f "$ROOT/supabase/migrations/0020_delete_account.sql" \
+  -f "$ROOT/supabase/migrations/0021_pilot_notes.sql"
 
 psql -v ON_ERROR_STOP=1 -q -d "$DB" -f "$ROOT/supabase/tests/01_schema_test.sql"

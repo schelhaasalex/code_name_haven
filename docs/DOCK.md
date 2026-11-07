@@ -107,7 +107,7 @@ on each pad speaks too. The ids are placeholders until production, and live in
 |---|---|---|
 | Service | `6e400001-b5a3-f393-e0a9-0000706f7274` | advertised; phones scan for this, never the name |
 | Slot state | `6e400010-…` | read, notify. A byte per slot: 0 empty, 1 charging, 2 full |
-| Event | `6e400011-…` | notify. `{"v":1,"slot":1,"event":"docked","t":…}`; also `undocked`, `full`, `pong` |
+| Event | `6e400011-…` | notify. `{"v":1,"slot":1,"event":"docked","t":…}`; also `undocked`, `full`, `pong`, and `hello` — `{"v":1,"event":"hello","boots":7,"up":120,"reset":1,"fw":"0.4"}`, 1.5 s after a phone sends the time: restarts (kept in flash), seconds up, ESP-IDF reset reason, firmware |
 | Command | `6e400020-…` | write. `{"cmd":"time","epoch":…}` (sent on every connect), `light`, `ping` |
 
 The phone subscribes to slot state and events, reads the slot state once, and

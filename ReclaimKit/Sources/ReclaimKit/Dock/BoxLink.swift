@@ -35,6 +35,8 @@ public final class BoxLink: NSObject {
     /// Something about the radios changed: a box connected or went, or
     /// Bluetooth was turned on or off.
     public var onStatus: (@MainActor () -> Void)?
+    /// A box said how it is (`Box.Hello`): which radio, and what it said.
+    public var onHello: (@MainActor (UUID, Box.Hello) -> Void)?
 
     var manager: CBCentralManager?
     private var connectedNow: Set<UUID> = []
@@ -117,7 +119,9 @@ public final class BoxLink: NSObject {
         case CBUUID(string: Box.slotStateCharacteristic):
             if let now = Box.Slots(state: characteristic.value) { apply(now, from: peripheral) }
         case CBUUID(string: Box.eventCharacteristic):
-            if let event = Box.Event(characteristic.value) {
+            if let hello = Box.Hello(characteristic.value) {
+                onHello?(id, hello)
+            } else if let event = Box.Event(characteristic.value) {
                 apply((pending[id] ?? slots[id] ?? Box.Slots(bits: 0)).after(event), from: peripheral)
             }
         default:
