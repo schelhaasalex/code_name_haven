@@ -43,12 +43,15 @@ extension AppState {
         return maker == profile?.id
     }
 
-    public func rename(_ id: UUID, to name: String) async {
+    @discardableResult
+    public func rename(_ id: UUID, to name: String) async -> Bool {
         do {
             try await repo.rename(place: id, to: name)
             places = (try? await repo.myPlaces()) ?? places
+            return true
         } catch {
             banner = t("error.retry")
+            return false
         }
     }
 

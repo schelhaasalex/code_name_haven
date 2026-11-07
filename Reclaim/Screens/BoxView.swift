@@ -18,6 +18,8 @@ struct BoxView: View {
     /// Confirmed in the sheet: once it has gone, the box goes, and this page.
     @State private var forgotten = false
     @State private var scanning = false
+    /// Renamed a moment ago, for the field's check.
+    @State private var saved = false
     @FocusState private var editing: Bool
 
     var body: some View {
@@ -53,12 +55,9 @@ struct BoxView: View {
 
     @ViewBuilder private var nameField: some View {
         if state.canRename(id) {
-            TextField(state.name(of: id), text: $name)
-                .font(Type.body(16)).foregroundStyle(Palette.ink)
-                .focused($editing)
-                .submitLabel(.done)
-                .onSubmit(save)
-                .paperCard()
+            NameField(text: $name, placeholder: state.name(of: id), saved: saved,
+                      editing: $editing, onSubmit: save)
+            Text(t("box.name.shared")).font(Type.note).foregroundStyle(Palette.muted)
         } else {
             Text(state.name(of: id)).font(Type.body(16)).foregroundStyle(Palette.ink)
             Text(t("box.name.locked")).font(Type.note).foregroundStyle(Palette.muted)
@@ -69,7 +68,12 @@ struct BoxView: View {
         let new = name.trimmed
         guard state.canRename(id), !new.isEmpty, new != shown else { return }
         shown = new
-        Task { await state.rename(id, to: new) }
+        Task {
+            guard await state.rename(id, to: new) else { return }
+            saved = true
+            try? await Task.sleep(for: .seconds(1.4))
+            saved = false
+        }
     }
 
     /// Everyone's evenings at it, added up — never whose.
