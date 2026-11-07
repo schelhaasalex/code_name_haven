@@ -64,7 +64,7 @@
   "home.footer.none": "This week starts whenever you do.",
 
   "session.together": "{count} so far.",
-  "session.line.solo": "Back when you're back.",
+  "session.line.solo": "See you in a bit.",
   "session.since": "Since {time}",
   "session.out": "This evening ends when your phone comes out of the box.",
   "session.a11y.mark": "{count} evenings, tonight's among them.",
@@ -72,7 +72,7 @@
   "session.end": "End",
 
   "lockscreen.together": "{count} so far.",
-  "lockscreen.solo": "Back when you're back.",
+  "lockscreen.solo": "See you in a bit.",
   "lockscreen.since": "{place} · since {time}",
   "wrist.since": "Since {time}",
   "wrist.together": "{count} · since {time}",
