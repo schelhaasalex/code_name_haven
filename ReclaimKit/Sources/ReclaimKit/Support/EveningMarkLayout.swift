@@ -59,10 +59,12 @@ public struct EveningMarkLayout: Equatable, Sendable {
         /// Both in -1...1, the centre at 0.
         public let x: Double
         public let y: Double
-        /// About 1: most stars a little smaller, a few larger.
+        /// About 1: some stars a little larger than others.
         public let size: Double
-        /// 0.3...1: most faint, a few bright.
+        /// 0.55...1: some a little fainter.
         public let brightness: Double
+        /// 0 for the plain star; 1 or 2 for one of the sky's two colours.
+        public let tint: Int
     }
 
     /// Where each star sits, oldest first, in a sky drawn from `seed`.
@@ -74,7 +76,7 @@ public struct EveningMarkLayout: Equatable, Sendable {
         let raw = (0..<min(max(n, 0), capacity)).map { place($0, seed: seed) }
         let reach = raw.map { ($0.x * $0.x + $0.y * $0.y).squareRoot() }.max() ?? 0
         guard reach > 0 else { return raw }
-        return raw.map { Star(x: $0.x / reach, y: $0.y / reach, size: $0.size, brightness: $0.brightness) }
+        return raw.map { Star(x: $0.x / reach, y: $0.y / reach, size: $0.size, brightness: $0.brightness, tint: $0.tint) }
     }
 
     /// Star `i` before zooming, from nothing but `i` and the seed — so it
@@ -85,19 +87,18 @@ public struct EveningMarkLayout: Equatable, Sendable {
     /// close; a nudge in each direction keeps that from reading as a pattern.
     static func place(_ i: Int, seed: UInt64) -> Star {
         var rng = SplitMix(seed ^ (UInt64(i) &* 0x9E37_79B9_7F4A_7C15))
-        // Most stars faint and small; about one in ten bright.
-        let bright = rng.unit() < 0.1
-        let size = bright ? 1.45 + 0.25 * rng.unit() : 0.6 + 0.55 * rng.unit()
-        let brightness = bright ? 1 : 0.3 + 0.55 * rng.unit() * rng.unit()
-        guard i > 0 else { return Star(x: 0, y: 0, size: size, brightness: brightness) }
-        let golden = Double.pi * (3 - 5.0.squareRoot())
-        let angle = Double(i) * golden + (rng.unit() - 0.5) * 1.6 / Double(i).squareRoot()
-        // The sky's edge is the account's own uneven shape, not a circle.
-        var shape = SplitMix(seed)
-        let a = shape.unit() * 2 * .pi, b = shape.unit() * 2 * .pi
-        let edge = 1 + 0.14 * sin(3 * angle + a) + 0.08 * sin(5 * angle + b)
-        let radius = (Double(i) + (rng.unit() - 0.5) * 0.9).squareRoot() * edge
-        return Star(x: radius * cos(angle), y: radius * sin(angle), size: size, brightness: brightness)
+        let size = 0.75 + 0.5 * rng.unit()
+        let brightness = 0.55 + 0.45 * rng.unit()
+        var radius = 0.0, angle = 0.0
+        if i > 0 {
+            let golden = Double.pi * (3 - 5.0.squareRoot())
+            radius = (Double(i) + (rng.unit() - 0.5) * 0.8).squareRoot()
+            angle = Double(i) * golden + (rng.unit() - 0.5) * 0.9 / radius
+        }
+        // About one in six has a colour: half warm, half cool.
+        let pick = rng.unit()
+        let tint = pick < 1.0 / 12 ? 1 : pick < 1.0 / 6 ? 2 : 0
+        return Star(x: radius * cos(angle), y: radius * sin(angle), size: size, brightness: brightness, tint: tint)
     }
 
     /// The seed for an account's sky.

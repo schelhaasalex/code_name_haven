@@ -14,6 +14,8 @@ struct EveningMark: View {
     var size: CGFloat = 104
     var dot: Color = Palette.hairline
     var tonight: Color = Palette.clay
+    /// The few stars with a colour: the first for tint 1, the second for 2.
+    var tints: [Color] = [Palette.starGold, Palette.starBlue]
     /// Whose sky: `EveningMarkLayout.seed(_:)` of the account.
     var seed: UInt64 = 0
     /// What VoiceOver says. Nil hides the mark, for where the words beside it
@@ -26,14 +28,15 @@ struct EveningMark: View {
         // Inset by tonight's star, so the outermost never clips.
         let reach = size / 2 - tonightSize
         // Smaller as the sky fills, so stars never touch.
-        let starSize = max(1.5, min(size / 34, reach * 1.15 / Double(stars.count).squareRoot()))
+        let starSize = max(1.5, min(size / 34, reach * 1.5 / Double(stars.count).squareRoot()))
         ZStack {
             ForEach(Array(stars.enumerated()), id: \.offset) { index, star in
                 Group {
                     if index == stars.count - 1 {
                         tonightDot.frame(width: tonightSize, height: tonightSize)
                     } else {
-                        Circle().fill(dot).opacity(star.brightness)
+                        Circle().fill(star.tint > 0 && tints.count >= star.tint ? tints[star.tint - 1] : dot)
+                            .opacity(star.brightness)
                             .frame(width: starSize * star.size, height: starSize * star.size)
                     }
                 }

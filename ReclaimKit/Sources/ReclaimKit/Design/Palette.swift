@@ -32,6 +32,11 @@ public enum Palette {
     // the rest day marker
     public static let restFill   = Color(hex: 0xE9D8B8)
     public static let restStroke = Color(hex: 0xC9A961)
+
+    // the sky: the few stars that aren't the plain dot — a warm one and a
+    // cool one, quiet enough on paper and on night that tonight's still leads
+    public static let starGold = Color(hex: 0xC9A961)
+    public static let starBlue = Color(hex: 0x8C9AB4)
 }
 
 extension Color {
