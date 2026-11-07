@@ -88,8 +88,6 @@
   "end.evenings.none": "The first is still to come.",
   "end.evenings.body": "Today's is the newest. They don't go away.",
   "end.evenings.again": "Today had already counted. A day counts once, however many times you set your phone down.",
-  "end.place": "{count} days at {place}.",
-  "end.place.first": "The first day at {place}.",
   "end.done": "Done",
   "end.short": "It counts from fifteen minutes in the box. This one is kept all the same.",
 

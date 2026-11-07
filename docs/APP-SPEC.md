@@ -164,8 +164,11 @@ An unnamed box goes by The Harbor, The Cove or The Mooring, in the order the
 house met them. The first phone to read it writes that name down, so every
 phone calls it the same thing; renaming is Settings.
 
-**The receipt** says when, how long and with how many, then your evenings with
-tonight's landing among them. **The evening screen** is rarely seen — a phone in
+**The receipt** says when, how long, with how many and where, then your sky
+with today's star landing in it — never the box's own count beside yours,
+which read as two numbers that disagreed. Out again within a minute, there is
+no receipt (`EveningLanding.earnsAReceipt`): the time is kept, but "No
+minutes, all yours." isn't a moment. **The evening screen** is rarely seen — a phone in
 a hand that isn't charging has left the box — so it says only who's there and
 since when, and that the evening ends when the phone comes out.
 

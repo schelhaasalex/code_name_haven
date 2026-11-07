@@ -98,10 +98,10 @@ final class CopyTests: XCTestCase {
     }
 
     func testSubstitutionTakesPairsAndIgnoresAStray() {
-        XCTAssertEqual(t("end.place", "count", "nine", "place", "the box"),
-                       "Nine days at the box.")
-        XCTAssertEqual(t("end.place", "count", "nine", "place"),
-                       "Nine days at {place}.")
+        XCTAssertEqual(t("end.receipt", "duration", "an hour", "count", "three"),
+                       "An hour, the three of you.")
+        XCTAssertEqual(t("end.receipt", "duration", "an hour", "count"),
+                       "An hour, the {count} of you.")
     }
 
     func testAnUnknownTokenLeavesTheLineAlone() {
