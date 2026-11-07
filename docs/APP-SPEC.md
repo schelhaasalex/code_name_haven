@@ -142,6 +142,12 @@ There is no button that starts an evening, no tab bar, and no End: the box is
 the only switch. `scripts/shape.sh` fails any call that starts one from
 anywhere but the box's radio and its tags.
 
+**Words.** The code says *evening*; a person never reads it. What's counted is
+a day with fifteen minutes in the box, at any hour, so the copy says *days*
+and *today* — "38 days, since July.", "Today counts." — and never *evening*
+or *tonight*. (`time.evening` is the part of the day, beside morning and
+afternoon, and stays.)
+
 **Home** centres on the evening mark, a sky: a star for every evening you've
 had, your first at the centre and each after it further out, in places your
 account decides and nothing moves (`EveningMarkLayout`). Today's is the
@@ -212,7 +218,7 @@ struct ContentState: Codable, Hashable {
 }
 ```
 
-Lock screen: the ring-and-dot mark, its step's line (*"Settling in."*, *"Tonight counts."*…) alone or
+Lock screen: the ring-and-dot mark, its step's line (*"Settling in."*, *"Today counts."*…) alone or
 *"Three of you so far."* together, and *"The Kitchen Table · since 7:27"*.
 **No ticking digits and nothing to press.**
 
@@ -224,7 +230,7 @@ pushed by the server (`charge-live-activities`, once a minute, migration
 0016), because the phone is asleep in the box when it happens.
 
 Watch (iOS 18, watchOS 11): the same activity in the Smart Stack — the ring,
-a headline for its step (*"Settling in."*, *"Tonight counts."*, *"Unwinding."*,
+a headline for its step (*"Settling in."*, *"Today counts."*, *"Unwinding."*,
 *"Present."*, *"Recharged."*) and *"Three of you · since 7:27"*.
 
 ---

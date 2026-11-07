@@ -118,9 +118,9 @@ final class FormattingTests: XCTestCase {
         XCTAssertNil(PlainDate.date(from: "21/09/2026"))
     }
 
-    /// Six screens opened a sentence with "three evenings…" in lowercase.
+    /// Six screens opened a sentence with "three days…" in lowercase.
     func testASentenceOpeningWithACountStartsWithACapital() {
-        XCTAssertEqual(t("home.footer", "count", Say.number(3)), "Three evenings this week.")
+        XCTAssertEqual(t("home.footer", "count", Say.number(3)), "Three days this week.")
         XCTAssertEqual(t("session.together", "count", Say.count(3)), "Three of you so far.")
     }
 

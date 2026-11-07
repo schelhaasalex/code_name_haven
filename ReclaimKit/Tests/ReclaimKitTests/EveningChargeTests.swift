@@ -13,7 +13,7 @@ final class EveningChargeTests: XCTestCase {
         XCTAssertEqual(EveningCharge.stage(minutes: 600), EveningCharge.full)
     }
 
-    /// "Tonight counts." appears with the first segment, so the first segment
+    /// "Today counts." appears with the first segment, so the first segment
     /// has to be the moment an evening does count.
     func testTheFirstSegmentIsWhenTheEveningCounts() {
         XCTAssertEqual(EveningCharge.minutes.first, EveningLanding.qualifyingMinutes)
@@ -29,7 +29,7 @@ final class EveningChargeTests: XCTestCase {
         XCTAssertEqual(EveningCharge.line(minutes: 0.5), t("session.line.solo"))
         XCTAssertEqual(EveningCharge.line(minutes: nil), t("session.line.solo"))
         XCTAssertEqual(EveningCharge.line(minutes: 8), "Settling in.")
-        XCTAssertEqual(EveningCharge.line(minutes: 15), "Tonight counts.")
+        XCTAssertEqual(EveningCharge.line(minutes: 15), "Today counts.")
         XCTAssertEqual(EveningCharge.line(minutes: 600), "Recharged.")
         for minutes in [8.0, 15, 45, 75, 200] {
             XCTAssertEqual(EveningCharge.line(minutes: minutes),
