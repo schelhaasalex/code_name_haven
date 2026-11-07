@@ -15,6 +15,8 @@ struct BoxView: View {
     /// saved — never a name that arrived late from the database.
     @State private var shown = ""
     @State private var confirmingForget = false
+    /// Confirmed in the sheet: once it has gone, the box goes, and this page.
+    @State private var forgotten = false
     @State private var scanning = false
     @FocusState private var editing: Bool
 
@@ -41,13 +43,11 @@ struct BoxView: View {
         .onChange(of: editing) { _, now in if !now { save() } }
         .onDisappear { save() }
         .fullScreenCover(isPresented: $scanning) { ScanView() }
-        .confirmationDialog(t("settings.forget"), isPresented: $confirmingForget) {
-            Button(t("settings.forget"), role: .destructive) {
-                state.forget(id)
-                dismiss()
+        .sheet(isPresented: $confirmingForget, onDismiss: { if forgotten { state.forget(id); dismiss() } }) {
+            ConfirmSheet(title: t("settings.forget.title"), message: t("settings.forget.body"),
+                         confirm: t("settings.forget"), cancel: t("settings.forget.keep")) {
+                forgotten = true
             }
-        } message: {
-            Text(t("settings.forget.body"))
         }
     }
 

@@ -36,20 +36,19 @@ struct SettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(for: BoxRoute.self) { BoxView(id: $0.id) }
         .fullScreenCover(isPresented: $scanning) { ScanView() }
-        .confirmationDialog(t("settings.delete"), isPresented: $confirmingDelete) {
-            Button(t("settings.delete"), role: .destructive) {
+        .sheet(isPresented: $confirmingDelete) {
+            ConfirmSheet(title: t("settings.delete.title"), message: t("settings.delete.body"),
+                         confirm: t("settings.delete"), cancel: t("settings.delete.keep")) {
                 Task { await state.deleteAccount() }
             }
-        } message: {
-            Text(t("settings.delete.body"))
         }
-        .confirmationDialog(t("settings.elsewhere.title"),
-                            isPresented: Binding(get: { state.keptElsewhere != nil },
-                                                 set: { if !$0 { state.keptElsewhere = nil } }),
-                            titleVisibility: .visible) {
-            Button(t("settings.elsewhere.switch")) { Task { await state.useKeptElsewhere() } }
-        } message: {
-            Text(t("settings.elsewhere.body"))
+        .sheet(isPresented: Binding(get: { state.keptElsewhere != nil },
+                                    set: { if !$0 { state.keptElsewhere = nil } })) {
+            ConfirmSheet(title: t("settings.elsewhere.title"), message: t("settings.elsewhere.body"),
+                         confirm: t("settings.elsewhere.switch"), cancel: t("settings.elsewhere.stay"),
+                         tint: Palette.ink) {
+                Task { await state.useKeptElsewhere() }
+            }
         }
     }
 
