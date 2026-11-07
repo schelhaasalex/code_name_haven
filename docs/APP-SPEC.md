@@ -200,7 +200,7 @@ struct ContentState: Codable, Hashable {
 }
 ```
 
-Lock screen: the ring-and-dot mark, *"Back when you're back."* alone or
+Lock screen: the ring-and-dot mark, *"See you in a bit."* alone or
 *"Three of you so far."* together, and *"The Kitchen Table · since 7:27"*.
 **No ticking digits and nothing to press.**
 
