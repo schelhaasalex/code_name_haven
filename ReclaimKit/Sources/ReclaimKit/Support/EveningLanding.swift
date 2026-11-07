@@ -15,6 +15,15 @@ public struct EveningLanding: Equatable, Sendable {
     /// Mirrors `app.qualifying_minutes()`.
     public static let qualifyingMinutes = 15
 
+    /// Out again within a minute — a test, a slip, a lift — and there's no
+    /// receipt: "No minutes, all yours." from 2:57 to 2:57 was the receipt.
+    /// The time is still kept; it just isn't made a moment of.
+    public static let receiptAfter: TimeInterval = 60
+
+    public static func earnsAReceipt(from start: Date, to end: Date) -> Bool {
+        end.timeIntervalSince(start) >= receiptAfter
+    }
+
     /// Your evenings before this one ended — tonight not among them, unless
     /// an earlier session today already counted.
     public let total: Int

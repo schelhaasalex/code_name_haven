@@ -17,7 +17,6 @@ struct SessionEndView: View {
     @State private var landed = false
     /// The box's own total, from `place_summary`. Until it arrives — or if
     /// it never does — the line just names the box. Nothing waits on it.
-    @State private var placeEvenings: Int?
 
     private var landing: EveningLanding { ended.landing }
 
@@ -34,10 +33,6 @@ struct SessionEndView: View {
         }
         .ground()
         .task { await land() }
-        .task {
-            guard let id = ended.placeId else { return }
-            placeEvenings = try? await state.repo.summary(of: id).evenings
-        }
     }
 
     private var receipt: some View {
@@ -47,10 +42,8 @@ struct SessionEndView: View {
             Text(receiptLine)
                 .font(Type.display(44)).foregroundStyle(Palette.ink)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(whereLine)
+            Text(t("end.where", "place", ended.place ?? t("box.unnamed")))
                 .font(Type.body(17)).foregroundStyle(Palette.ink2)
-                .contentTransition(.opacity)
-                .animation(.easeInOut, value: placeEvenings)
         }
     }
 
@@ -87,15 +80,6 @@ struct SessionEndView: View {
         return ended.people <= 1
             ? t("end.receipt.solo", "duration", duration)
             : t("end.receipt", "duration", duration, "count", Say.number(ended.people))
-    }
-
-    private var whereLine: String {
-        let place = ended.place ?? t("box.unnamed")
-        switch placeEvenings {
-        case .some(1):                return t("end.place.first", "place", place)
-        case .some(let n) where n > 1: return t("end.place", "count", Say.number(n), "place", place)
-        default:                      return t("end.where", "place", place)
-        }
     }
 
     private var countLine: String {

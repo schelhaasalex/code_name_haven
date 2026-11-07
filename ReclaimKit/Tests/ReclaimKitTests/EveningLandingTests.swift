@@ -70,4 +70,13 @@ final class EveningLandingTests: XCTestCase {
         XCTAssertTrue(landing.known, "a real zero is a fact, and screen 8 may say it")
         XCTAssertEqual(landing.evenings, 1)
     }
+
+    /// Out again within a minute isn't made a moment of: no receipt.
+    func testAMomentInTheBoxHasNoReceipt() {
+        let start = Date(timeIntervalSince1970: 1_800_000_000)
+        XCTAssertFalse(EveningLanding.earnsAReceipt(from: start, to: start.addingTimeInterval(20)))
+        XCTAssertFalse(EveningLanding.earnsAReceipt(from: start, to: start.addingTimeInterval(59)))
+        XCTAssertTrue(EveningLanding.earnsAReceipt(from: start, to: start.addingTimeInterval(60)))
+        XCTAssertTrue(EveningLanding.earnsAReceipt(from: start, to: start.addingTimeInterval(6 * 60)))
+    }
 }

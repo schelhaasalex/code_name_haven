@@ -32,10 +32,12 @@ extension AppState {
         let credited = try? await repo.endSession(s.id)
         // Set in the same turn as the teardown, so Home never flashes between.
         let minutes = max(0, credited ?? estimate)
-        justEnded = Ended(startedAt: startedAt ?? s.startedAt, endedAt: .now, minutes: minutes,
-                          people: people, place: place, placeId: placeId,
-                          landing: EveningLanding(total: eveningTotal, known: evenings,
-                                                  localDate: s.localDate, minutes: minutes))
+        if EveningLanding.earnsAReceipt(from: startedAt ?? s.startedAt, to: .now) {
+            justEnded = Ended(startedAt: startedAt ?? s.startedAt, endedAt: .now, minutes: minutes,
+                              people: people, place: place, placeId: placeId,
+                              landing: EveningLanding(total: eveningTotal, known: evenings,
+                                                      localDate: s.localDate, minutes: minutes))
+        }
         await teardown()
         await loadEvenings()
     }
