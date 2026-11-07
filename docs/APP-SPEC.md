@@ -166,7 +166,7 @@ read first, finds or makes the box's place and makes this phone one of its
 people; the app then listens for docks for three seconds and keeps the closest
 (`Box.closest`) as its radio — on every read, so a box whose board was
 swapped under the same card is found again. The scanner shows those seconds:
-*Found it*, *Listening for your box…*, *Paired.* — or *Not hearing it yet*
+*Listening for your box.*, *There it is.* — or *Not hearing it yet*
 and a retry. A tag also starts the evening: it's read with
 the phone going into the slot. The code starts nothing.
 
