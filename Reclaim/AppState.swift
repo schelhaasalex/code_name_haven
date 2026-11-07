@@ -129,6 +129,9 @@ public final class AppState {
         async let places = repo.myPlaces()
         async let live = repo.liveSession()
         self.places = (try? await places) ?? self.places
+        // A box met before boxes had names, or whose naming didn't reach the
+        // server, is named now rather than only at its next scan.
+        for id in boxPlaces { await nameIfUnnamed(id) }
         await loadEvenings()
         let found: Result<Session?, any Error>
         do { found = .success(try await live) } catch { found = .failure(error) }
