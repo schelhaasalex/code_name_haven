@@ -420,7 +420,7 @@ begin
       'create_invite', 'accept_invite', 'has_company',
       'open_nearby', 'nearby_offer', 'join_nearby', 'my_evenings',
       'dock_place', 'save_activity_token', 'save_live_activity',
-      'delete_my_account']) as name
+      'delete_my_account', 'note']) as name
     where not exists (
       select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'public' and p.proname = name)
@@ -432,7 +432,7 @@ begin
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public'
      and has_function_privilege('authenticated', p.oid, 'execute');
-  assert v_wrapped = 22, format('expected 22 callable wrappers, found %s', v_wrapped);
+  assert v_wrapped = 23, format('expected 23 callable wrappers, found %s', v_wrapped);
 
   -- The scheduler's job is not a client's to call: nine hours of
   -- phone-on-the-side becoming 180 minutes has to happen TO you, not by you.
@@ -445,7 +445,7 @@ begin
    where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute');
   assert v_anon = 0, format('anon can execute %s functions in public', v_anon);
 
-  raise notice 'PASS 12  twenty-two wrappers callable by authenticated, none by anon';
+  raise notice 'PASS 12  twenty-three wrappers callable by authenticated, none by anon';
 end $$;
 
 -- ============================================================ FINDING 15
@@ -1397,5 +1397,58 @@ begin
   assert v_failed, 'not without an account';
   assert not has_function_privilege('anon', 'public.delete_my_account()', 'execute'), 'anon has no door';
   raise notice 'PASS 30  deleting an account deletes the login, and the hours stay';
+end $$;
+-- ============================================================ 31
+-- What goes wrong is noted, and nobody's phone can read it (0021). A note
+-- names only a box its writer belongs to, a phone in a loop can't fill the
+-- table, and the pilot's views are out of every client's reach.
+do $$
+declare
+  v_me    uuid := 'cdcdcdcd-cdcd-cdcd-cdcd-cdcdcdcd0001';
+  v_other uuid := 'cdcdcdcd-cdcd-cdcd-cdcd-cdcdcdcd0002';
+  v_mine  uuid;
+  v_theirs uuid;
+  v_failed boolean := false;
+begin
+  insert into auth.users (id, email) values (v_me, 'notes@example.test'), (v_other, 'other@example.test');
+  insert into profiles (id) values (v_me), (v_other);
+  perform auth.login(v_other);
+  v_theirs := app.dock_place('someone-elses-box', 'quiet-heron');
+  perform auth.login(v_me);
+  v_mine := app.dock_place('a-box-that-notes', 'brisk-wren');
+
+  perform app.note('box_hello', v_mine, '{"boots": 3, "up": 60, "fw": "0.4"}');
+  assert (select place_id from events where profile_id = v_me and kind = 'box_hello') = v_mine,
+    'a note on my box keeps the box';
+  perform app.note('paired', v_theirs);
+  assert (select place_id from events where profile_id = v_me and kind = 'paired') is null,
+    'a note never names a box I am not in';
+
+  begin
+    perform app.note('opened_instagram', v_mine);
+  exception when check_violation then v_failed := true; end;
+  assert v_failed, 'only the moments on the list';
+
+  for i in 1..20 loop perform app.note('pair_not_heard', v_mine); end loop;
+  assert (select count(*) from events where profile_id = v_me and at > now() - interval '1 minute') = 10,
+    'ten a minute, and the rest dropped';
+
+  set local role authenticated;
+  v_failed := false;
+  begin
+    perform 1 from events limit 1;
+  exception when insufficient_privilege then v_failed := true; end;
+  assert v_failed, 'no phone reads the notes';
+  v_failed := false;
+  begin
+    perform 1 from ops.box_health limit 1;
+  exception when insufficient_privilege then v_failed := true; end;
+  assert v_failed, 'nor the pilot';
+  reset role;
+
+  assert (select restarts_7d from ops.box_health where box = 'brisk-wren') = 0, 'one hello is no restart';
+  assert not has_function_privilege('anon', 'public.note(text, uuid, jsonb)', 'execute'), 'anon has no door';
+  perform auth.logout();
+  raise notice 'PASS 31  what goes wrong is noted, and only the pilot reads it';
 end $$;
 do $$ begin raise notice '--- all assertions held ---'; end $$;

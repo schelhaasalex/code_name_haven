@@ -93,6 +93,16 @@ own.
 | `summary(of:)` | The box's whole life: evenings, hours together, its stage |
 | `myEvenings()` | Your own evenings, as days |
 | `saveActivityToken`, `startActivityRemotely`, `saveLiveActivity` | The Live Activity's pushes (0015, 0016) |
+| `note(_:place:detail:)` | A moment setup or the box went wrong, or the box's hello (0021). Write-only, rate-limited, never waited on |
+
+**Notes and the pilot.** `Note` is a fixed list: pairing heard or not heard,
+a card that didn't go through, the camera or Bluetooth refused, the lock
+screen ring off, and the box's `hello` (restarts, uptime, reset reason,
+firmware) passed up by a phone. `NoteLog` sends a state once a day, a hello
+hourly unless the box restarted, and anything that happened every time.
+Settings' "What we can see" says so. Nobody's client can read them back; the
+`ops` schema adds the pilot up per box — `ops.box_health`, `ops.box_weeks`,
+`ops.retention`, `ops.start_hours`, `ops.problems` — from the SQL Editor.
 
 ---
 

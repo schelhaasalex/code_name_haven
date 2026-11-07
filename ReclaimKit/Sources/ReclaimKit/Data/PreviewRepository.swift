@@ -81,6 +81,7 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
     public func myProfile() async throws -> Profile? { signedIn ? profile : nil }
     public func deleteAccount() async throws { signedIn = false }
     public func isKept() async -> Bool { kept }
+    public func note(_ note: Note, place: UUID?, detail: [String: String]) async throws {}
     public func keep(appleIdToken: String, nonce: String) async throws { kept = true }
     public func signIn(appleIdToken: String, nonce: String) async throws { signedIn = true; kept = true }
 

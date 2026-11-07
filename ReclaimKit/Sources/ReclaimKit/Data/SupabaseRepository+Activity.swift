@@ -25,4 +25,9 @@ extension SupabaseRepository {
         try await client.rpc("save_live_activity", params: P(
             p_token: token, p_gathering: gatheringId, p_environment: environment, p_state: state)).execute()
     }
+
+    public func note(_ note: Note, place: UUID?, detail: [String: String]) async throws {
+        struct P: Encodable { let p_kind: String; let p_place: UUID?; let p_detail: [String: String] }
+        try await client.rpc("note", params: P(p_kind: note.rawValue, p_place: place, p_detail: detail)).execute()
+    }
 }

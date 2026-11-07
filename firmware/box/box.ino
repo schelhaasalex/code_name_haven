@@ -16,6 +16,7 @@
 
 #include <NimBLEDevice.h>
 #include <Wire.h>
+#include <Preferences.h>
 
 // The radio has a fixed number of things it can do at once — advertising is
 // one, each connected phone is another (6 in all on an ESP32-C3). NimBLE's
@@ -69,6 +70,8 @@ const int LEDS_PER_SLOT = 2;
 #define EVENT_UUID     "6e400011-b5a3-f393-e0a9-0000706f7274"
 #define COMMAND_UUID   "6e400020-b5a3-f393-e0a9-0000706f7274"
 const int PROTOCOL = 1;
+// Said in every hello, so the pilot can tell which boxes are on which build.
+const char *FIRMWARE = "0.4";
 
 // Slot state bytes. A presence sensor can only say "something is there", and
 // a phone drawing current is charging, so every phone in reads as charging.
@@ -92,6 +95,15 @@ unsigned long seenSince = 0;
 // Seconds since 1970 at the moment millis() was zero, once a phone has said
 // what time it is. Until then, event times are seconds since power-on.
 uint32_t epochAtBoot = 0;
+
+// How many times this box has started, kept in flash. A box that restarts on
+// its own — a brownout, a crash — looks fine from a phone; the count going up
+// between hellos is how anyone finds out.
+uint32_t boots = 0;
+// A phone told the time a moment ago and should hear hello once it's
+// listening: a hello sent in the same breath as the connect can arrive before
+// the phone has subscribed, and be lost.
+unsigned long helloDue = 0;
 
 // A colour per slot chosen by the app, or -1: the box's own warm light.
 long lightOverride[SLOTS] = {-1, -1, -1, -1};
@@ -161,6 +173,7 @@ void command(const std::string &json) {
   if (cmd == "time") {
     long epoch = numberField(json, "epoch");
     if (epoch > 0) epochAtBoot = (uint32_t)epoch - millis() / 1000;
+    helloDue = millis() + 1500;
   } else if (cmd == "ping") {
     char out[48];
     snprintf(out, sizeof out, "{\"v\":%d,\"event\":\"pong\"}", PROTOCOL);
@@ -238,8 +251,21 @@ void publishState() {
   slotStateChar->setValue(state, SLOTS);
 }
 
+// Restarts, how long this run has lasted, why it began, and the build.
+void hello() {
+  char out[128];
+  snprintf(out, sizeof out, "{\"v\":%d,\"event\":\"hello\",\"boots\":%lu,\"up\":%lu,\"reset\":%d,\"fw\":\"%s\"}",
+           PROTOCOL, (unsigned long)boots, millis() / 1000, (int)esp_reset_reason(), FIRMWARE);
+  send(out);
+}
+
 void setup() {
   Serial.begin(115200);
+  Preferences flash;
+  flash.begin("box", false);
+  boots = flash.getUInt("boots", 0) + 1;
+  flash.putUInt("boots", boots);
+  flash.end();
   for (int i = 0; i < SLOTS; i++) if (SLOT_PINS[i] >= 0) pinMode(SLOT_PINS[i], INPUT_PULLUP);
   Wire.begin(I2C_SDA, I2C_SCL);
 #if LIGHT_PIN >= 0
@@ -279,11 +305,15 @@ void setup() {
   response.setName(name);
   advertising->setScanResponseData(response);
   advertising->start();
-  Serial.printf("%s up, slots %02x\n", name, reported);
+  Serial.printf("%s up, slots %02x, start %lu\n", name, reported, (unsigned long)boots);
 }
 
 void loop() {
   readSerial();
+  if (helloDue && millis() >= helloDue) {
+    helloDue = 0;
+    hello();
+  }
   sampleCurrent();
   uint8_t sensed = readSlots();
   if (sensed != seen) {

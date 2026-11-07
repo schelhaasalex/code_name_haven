@@ -19,7 +19,11 @@ extension AppState {
     /// At launch, including the background launches the box causes.
     func watchBox() {
         _ = ChargingWatch.shared
-        boxLink.onStatus = { [weak self] in self?.radioTick += 1 }
+        boxLink.onStatus = { [weak self] in
+            self?.radioTick += 1
+            self?.noteHowThingsAre()
+        }
+        boxLink.onHello = { [weak self] radio, hello in self?.heard(hello, from: radio) }
         LiveActivityController.watchPushToStartTokens { [weak self] token in
             try? await self?.repo.saveActivityToken(token, environment: LiveActivityController.pushEnvironment)
         }
@@ -56,6 +60,7 @@ extension AppState {
                 BoxPairing.met(place, peripheral: peripheral)
             }
             self.pairing = peripheral == nil ? .notHeard : .paired
+            self.note(peripheral == nil ? .pairNotHeard : .paired, place: place)
         }
     }
 

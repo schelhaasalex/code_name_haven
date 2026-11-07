@@ -79,6 +79,32 @@ public enum Box {
         }
     }
 
+    /// The box about itself, a moment after a phone tells it the time: how
+    /// many times it has started, how long this run has lasted, why it began
+    /// (ESP-IDF's reset reason), and its firmware.
+    public struct Hello: Decodable, Equatable, Sendable {
+        public let boots: Int
+        public let up: Int
+        public let reset: Int?
+        public let fw: String?
+
+        public init?(_ data: Data?) {
+            struct Kind: Decodable { let v: Int; let event: String }
+            guard let data, let kind = try? JSONDecoder().decode(Kind.self, from: data),
+                  kind.v == 1, kind.event == "hello",
+                  let hello = try? JSONDecoder().decode(Hello.self, from: data) else { return nil }
+            self = hello
+        }
+
+        /// As a note's detail.
+        public var detail: [String: String] {
+            var d = ["boots": "\(boots)", "up": "\(up)"]
+            if let reset { d["reset"] = "\(reset)" }
+            if let fw { d["fw"] = fw }
+            return d
+        }
+    }
+
     /// Sent on every connect, so the times in the dock's events are real dates.
     public static func timeCommand(at date: Date = .now) -> Data {
         Data(#"{"cmd":"time","epoch":\#(Int(date.timeIntervalSince1970))}"#.utf8)
