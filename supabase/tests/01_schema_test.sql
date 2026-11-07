@@ -1293,4 +1293,54 @@ begin
   perform auth.logout();
   raise notice 'PASS 28  every evening is credited at most the cap, however it ends';
 end $$;
+-- ============================================================ 29
+-- A box's hours are the time someone was in it (0019). Seen on the test box:
+-- one phone left in overnight, capped at three hours, and a second that joined
+-- the still-open evening for a minute the next afternoon. First in to last
+-- out was fifteen hours, nearly all of them empty.
+do $$
+declare
+  v_first  uuid := 'b9b9b9b9-b9b9-b9b9-b9b9-b9b9b9b9b901';
+  v_late   uuid := 'b9b9b9b9-b9b9-b9b9-b9b9-b9b9b9b9b902';
+  v_box    uuid;
+  v_s1     uuid;
+  v_s2     uuid;
+  v_g      uuid;
+  v_cap    integer := app.auto_close_minutes();
+begin
+  insert into auth.users (id, email) values
+    (v_first, 'first@example.test'), (v_late, 'late@example.test');
+  insert into profiles (id) values (v_first), (v_late);
+  perform auth.login(v_first);
+  v_box := app.dock_place('a-box-with-a-gap', 'still-otter');
+  v_s1 := app.start_or_join(v_box, 'tag', 'UTC');
+  select gathering_id into v_g from sessions where id = v_s1;
+  update sessions set started_at = now() - interval '15 hours' where id = v_s1;
+  update gatherings set started_at = now() - interval '15 hours' where id = v_g;
+  perform auth.login(v_late);
+  perform app.dock_place('a-box-with-a-gap', 'still-otter');
+  v_s2 := app.start_or_join(v_box, 'tag', 'UTC');
+  assert (select gathering_id from sessions where id = v_s2) = v_g, 'the same evening, still open';
+  perform app.end_session(v_s2);
+  perform auth.login(v_first);
+  perform app.end_session(v_s1);
+  assert (select wall_clock_minutes from app.place_summary(v_box)) = v_cap,
+    'the three hours someone was in, not the fifteen between';
+
+  -- Two together for an hour, and one staying on for another: two hours.
+  v_s1 := app.start_or_join(v_box, 'tag', 'UTC');
+  select gathering_id into v_g from sessions where id = v_s1;
+  update sessions set started_at = now() - interval '2 hours' where id = v_s1;
+  update gatherings set started_at = now() - interval '2 hours' where id = v_g;
+  perform auth.login(v_late);
+  v_s2 := app.start_or_join(v_box, 'tag', 'UTC');
+  update sessions set started_at = now() - interval '2 hours' where id = v_s2;
+  update sessions set ended_at = now() - interval '1 hour', duration_minutes = 60 where id = v_s2;
+  perform auth.login(v_first);
+  perform app.end_session(v_s1);
+  assert (select wall_clock_minutes from app.place_summary(v_box)) = v_cap + 120,
+    'together counts once, and the hour after it too';
+  perform auth.logout();
+  raise notice 'PASS 29  a box''s hours are the time someone was in it';
+end $$;
 do $$ begin raise notice '--- all assertions held ---'; end $$;
