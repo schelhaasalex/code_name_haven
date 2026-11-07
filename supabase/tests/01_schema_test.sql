@@ -1256,4 +1256,41 @@ begin
   raise notice 'PASS 27  reading a box makes you one of its people, and starts nothing';
 end $$;
 
+-- ============================================================ 28
+-- Every evening is credited at most the cap, however it ends (0018). A phone
+-- left in the box overnight and taken out by hand the next afternoon, before
+-- the scheduled close got to it, was credited all seventeen hours — and the
+-- box's total counted them too.
+do $$
+declare
+  v_me      uuid := 'b8b8b8b8-b8b8-b8b8-b8b8-b8b8b8b8b801';
+  v_box     uuid;
+  v_session uuid;
+  v_cap     integer := app.auto_close_minutes();
+begin
+  insert into auth.users (id, email) values (v_me, 'overnight@example.test');
+  insert into profiles (id) values (v_me);
+  perform auth.login(v_me);
+  v_box := app.dock_place('a-box-left-overnight', 'late-heron');
+  v_session := app.start_or_join(v_box, 'tag', 'UTC');
+  update sessions set started_at = now() - interval '17 hours 45 minutes' where id = v_session;
+  update gatherings set started_at = now() - interval '17 hours 45 minutes'
+   where id = (select gathering_id from sessions where id = v_session);
+  assert app.end_session(v_session) = v_cap, 'ending it by hand credits the cap';
+  assert (select duration_minutes from sessions where id = v_session) = v_cap, 'and keeps it';
+  assert (select qualifying from sessions where id = v_session), 'and it counts';
+  assert (select ended_at from sessions where id = v_session) > now() - interval '1 minute',
+    'it ended when it ended';
+  assert (select wall_clock_minutes from app.place_summary(v_box)) = v_cap,
+    'the box keeps the cap, not the seventeen hours';
+  v_session := app.start_or_join(v_box, 'tag', 'UTC');
+  update sessions set started_at = now() - interval '50 minutes' where id = v_session;
+  update gatherings set started_at = now() - interval '50 minutes'
+   where id = (select gathering_id from sessions where id = v_session);
+  assert app.end_session(v_session) = 50, 'an evening under the cap is what it was';
+  assert (select wall_clock_minutes from app.place_summary(v_box)) = v_cap + 50,
+    'and adds what it was';
+  perform auth.logout();
+  raise notice 'PASS 28  every evening is credited at most the cap, however it ends';
+end $$;
 do $$ begin raise notice '--- all assertions held ---'; end $$;
