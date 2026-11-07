@@ -79,6 +79,14 @@ final class BoxTests: XCTestCase {
         XCTAssertNil(Box.closest([:]))
     }
 
+    /// The bedroom's card, read in the doorway: the kitchen's box is louder,
+    /// and already this phone's.
+    func testPairingSkipsThePhonesOtherBoxes() {
+        let kitchen = UUID(), bedroom = UUID()
+        XCTAssertEqual(Box.closest([kitchen: -45, bedroom: -62], except: [kitchen]), bedroom)
+        XCTAssertNil(Box.closest([kitchen: -45], except: [kitchen]), "nothing new heard")
+    }
+
     // MARK: - Was it this phone?
 
     func testThePhoneThatJustStartedChargingBesideTheBoxIsIn() {

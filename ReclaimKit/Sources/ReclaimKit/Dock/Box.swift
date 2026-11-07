@@ -89,9 +89,12 @@ public enum Box {
     /// length away. Weaker than this is a dock across the room, or next door.
     public static let pairable = -75
 
-    /// The strongest dock heard while pairing, if any was close enough.
-    public static func closest(_ heard: [UUID: Int]) -> UUID? {
-        heard.filter { $0.value >= pairable }.max { $0.value < $1.value }?.key
+    /// The strongest dock heard while pairing, if any was close enough —
+    /// leaving out the radios of this phone's other boxes. With the kitchen's
+    /// box already paired, the bedroom's card read in the doorway between them
+    /// finds the bedroom's, even if the kitchen's is louder.
+    public static func closest(_ heard: [UUID: Int], except known: Set<UUID> = []) -> UUID? {
+        heard.filter { $0.value >= pairable && !known.contains($0.key) }.max { $0.value < $1.value }?.key
     }
 
     /// Closer than this, and the phone is in the box rather than in the room.

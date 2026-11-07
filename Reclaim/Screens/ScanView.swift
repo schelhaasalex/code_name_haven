@@ -138,5 +138,5 @@ struct ScanView: View {
 }
 
 #Preview("Scanning") {
-    ScanView().environment(AppState(repo: PreviewRepository(places: []), boxPlace: nil))
+    ScanView().environment(AppState(repo: PreviewRepository(places: []), boxPlaces: []))
 }

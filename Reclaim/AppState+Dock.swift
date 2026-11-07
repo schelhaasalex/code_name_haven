@@ -32,10 +32,11 @@ extension AppState {
             banner = t("error.retry")
             return false
         }
-        boxPlace = place
+        meet(place)
         pairBox(place: place)
         places = (try? await repo.myPlaces()) ?? places
-        boxSummary = (try? await repo.summary(of: place)) ?? boxSummary
+        await nameIfUnnamed(place)
+        boxSummaries[place] = (try? await repo.summary(of: place)) ?? boxSummaries[place]
         if link.slot != nil, !isLive {
             await setItDown(place: place, source: .tag)
         }

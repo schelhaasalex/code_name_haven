@@ -63,6 +63,6 @@ extension BoxLink: CBPeripheralDelegate {
 
     nonisolated public func peripheral(_ peripheral: CBPeripheral, didReadRSSI RSSI: NSNumber, error: Error?) {
         let rssi = error == nil ? RSSI.intValue : nil
-        Task { @MainActor in self.measured(rssi) }
+        Task { @MainActor in self.measured(rssi, of: peripheral) }
     }
 }

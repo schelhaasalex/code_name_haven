@@ -1,13 +1,13 @@
 import SwiftUI
 import ReclaimKit
 
-/// Screen 16. Deliberately thin: the box's name, and the way out. "How it
+/// Screen 16. Deliberately thin: the boxes' names, and the way out. "How it
 /// works" states the rules as facts rather than offering them as dials,
 /// because a household tuning its own minimum is setup by another name.
 struct SettingsView: View {
     @Environment(AppState.self) private var state
-    @State private var name = ""
-    @State private var confirmingForget = false
+    @State private var forgetting: UUID?
+    @State private var scanning = false
     @State private var confirmingDelete = false
 
     var body: some View {
@@ -15,7 +15,7 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 24) {
                 Text(t("settings.title")).font(Type.title).foregroundStyle(Palette.ink)
 
-                if state.box != nil { boxSection }
+                if !state.boxPlaces.isEmpty { boxSection }
 
                 LabelledSection(label: t("settings.how.label")) {
                     ForEach(1...3, id: \.self) { i in
@@ -49,9 +49,12 @@ struct SettingsView: View {
         }
         .background(Palette.bone.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
-        .task { name = state.box?.name ?? "" }
-        .confirmationDialog(t("settings.forget"), isPresented: $confirmingForget) {
-            Button(t("settings.forget"), role: .destructive) { state.forgetBox() }
+        .fullScreenCover(isPresented: $scanning) { ScanView() }
+        .confirmationDialog(t("settings.forget"),
+                            isPresented: Binding(get: { forgetting != nil }, set: { if !$0 { forgetting = nil } })) {
+            Button(t("settings.forget"), role: .destructive) {
+                if let id = forgetting { state.forget(id) }
+            }
         } message: {
             Text(t("settings.forget.body"))
         }
@@ -64,29 +67,21 @@ struct SettingsView: View {
         }
     }
 
-    /// Only whoever first read the box can name it; everyone else sees the
-    /// name it has.
+    /// Each box: only whoever first read it can name it; everyone else sees
+    /// the name it has. And another box, met the way the first one was.
     private var boxSection: some View {
-        LabelledSection(label: t("settings.box.label")) {
-            if state.canRenameBox {
-                TextField(t("box.unnamed"), text: $name)
-                    .font(Type.body(16)).foregroundStyle(Palette.ink)
-                    .submitLabel(.done)
-                    .onSubmit {
-                        guard !name.trimmed.isEmpty else { return }
-                        Task { await state.renameBox(to: name.trimmed) }
-                    }
-                    .paperCard()
-            } else {
-                Text(state.box?.name ?? t("box.unnamed"))
-                    .font(Type.body(16)).foregroundStyle(Palette.ink)
+        LabelledSection(label: t(state.boxPlaces.count > 1 ? "settings.boxes.label" : "settings.box.label")) {
+            ForEach(state.boxPlaces, id: \.self) { id in
+                BoxSettings(name: state.name(of: id), canRename: state.canRename(id),
+                            onRename: { name in Task { await state.rename(id, to: name) } },
+                            onForget: { forgetting = id })
             }
-            TextAction(title: t("settings.forget"), tint: Palette.ink2) { confirmingForget = true }
+            TextAction(title: t("settings.add"), tint: Palette.ink2, icon: "plus") { scanning = true }
         }
     }
 }
 
 #Preview {
-    let state = AppState(repo: PreviewRepository(), boxPlace: PreviewRepository.kitchenTable)
+    let state = AppState(repo: PreviewRepository(), boxPlaces: [PreviewRepository.kitchenTable])
     return NavigationStack { SettingsView() }.environment(state).task { await state.load() }
 }
