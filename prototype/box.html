@@ -175,7 +175,7 @@
   </div>
 
   <div class="why">
-    <div><b>It leads with what it has become</b><p>The box ages the way a good object does: <em>broken in</em> at 7 days, <em>well used</em> at 30, <em>seasoned</em> at 100, <em>part of the house</em> at 365. Before the first it's just <em>on its way</em>, with no age or count claimed. A day is one any phone did fifteen minutes in, so one person on their own moves it exactly as a family does. Only ever forward, and there's no "16 to go".</p></div>
+    <div><b>It leads with what it has become</b><p>The box ages the way a good object does: <em>broken in</em> at 7 days, <em>settled in</em> at 30, <em>seasoned</em> at 100, <em>part of the house</em> at 365. Before the first it's just <em>on its way</em>, with no age or count claimed. A day is one any phone did fifteen minutes in, so one person on their own moves it exactly as a family does. Only ever forward, and there's no "16 to go".</p></div>
     <div><b>The figures sit under it</b><p>Hours together and days, large. "Since September." moves up under the name (the existing <code>place.stage.since</code>), because it's part of the box's story, not a statistic.</p></div>
     <div><b>The radio is a status, not a sentence</b><p>A dot (filled when connected, hollow when away, clay when Bluetooth is off) and the existing sentence, with its fix underneath when there is one. It moves above the name, because a box that can't hear your phone matters more than what it's called.</p></div>
     <div><b>The name keeps its field</b><p>Same pencil and same save behaviour, moved down: you name a box once. When someone else named it, the field becomes a dashed outline with "Named by whoever first scanned it."</p></div>
@@ -187,7 +187,7 @@
 <script>
   const st = { days: 34, radio: 'connected', locked: false, clean: false };
   // the first node is day one, with no name: nothing is claimed before it's earned
-  const stages = [[0, ''], [7, 'Broken in'], [30, 'Well used'], [100, 'Seasoned'], [365, 'Part of the house']];
+  const stages = [[0, ''], [7, 'Broken in'], [30, 'Settled in'], [100, 'Seasoned'], [365, 'Part of the house']];
   const radios = {
     connected: ['', 'Connected. It hears your phone go in and come out.', null],
     away:      ['away', "Out of range right now. It reconnects by itself when you're back.", null],
