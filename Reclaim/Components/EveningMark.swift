@@ -16,6 +16,10 @@ struct EveningMark: View {
     var tonight: Color = Palette.clay
     /// The few stars with a colour: the first for tint 1, the second for 2.
     var tints: [Color] = [Palette.starGold, Palette.starBlue]
+    /// How many of the stars just before tonight's are this week's — drawn
+    /// in `near`, so the week is in the sky rather than in a row beside it.
+    var recent: Int = 0
+    var near: Color = Palette.ink2
     /// Whose sky: `EveningMarkLayout.seed(_:)` of the account.
     var seed: UInt64 = 0
     /// What VoiceOver says. Nil hides the mark, for where the words beside it
@@ -34,6 +38,9 @@ struct EveningMark: View {
                 Group {
                     if index == stars.count - 1 {
                         tonightDot.frame(width: tonightSize, height: tonightSize)
+                    } else if index >= stars.count - 1 - recent {
+                        Circle().fill(near)
+                            .frame(width: starSize * star.size * 1.15, height: starSize * star.size * 1.15)
                     } else {
                         Circle().fill(star.tint > 0 && tints.count >= star.tint ? tints[star.tint - 1] : dot)
                             .opacity(star.brightness)
@@ -60,7 +67,7 @@ struct EveningMark: View {
 #Preview {
     HStack(spacing: 24) {
         EveningMark(layout: .init(count: 7, tonight: .waiting), seed: 42)
-        EveningMark(layout: .init(count: 27, tonight: .counted), seed: 42)
+        EveningMark(layout: .init(count: 27, tonight: .counted), recent: 3, seed: 42)
         EveningMark(layout: .init(count: 90, tonight: .counted), seed: 42)
     }
     .padding()

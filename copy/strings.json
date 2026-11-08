@@ -28,10 +28,10 @@
 
   "home.headline": "Ready when you are.",
   "home.body": "Put your phone in the box. That's all there is to it.",
-  "home.week.label": "This week",
   "home.counted": "Today counts.",
   "home.evenings": "{count} days, since {month}.",
   "home.evenings.one": "One day, since {month}.",
+  "home.sky": "{count} this week, {total} since {month}.",
   "box.unnamed": "The Landing",
   "box.default.1": "The Harbor",
   "box.default.2": "The Cove",
@@ -56,9 +56,6 @@
   "scan.again": "Try again",
   "scan.later": "Not now",
   "home.primary": "Set it down",
-  "home.footer": "{count} days this week.",
-  "home.footer.one": "One day this week.",
-  "home.footer.none": "This week starts whenever you do.",
 
   "session.together": "{count} so far.",
   "session.line.solo": "See you in a bit.",

@@ -34,6 +34,23 @@ public enum Say {
         }
     }
 
+    /// The line under Home's sky: "Four this week, 36 since September."
+    ///
+    /// This week's days come first because they're the ones drawn darkest.
+    /// A week that hasn't had one yet isn't said at all — never "no days
+    /// this week" — and nor is a week that is all there's been, which would
+    /// say the same number twice.
+    public static func days(total: Int, thisWeek: Int, month: String) -> String {
+        switch total {
+        case 0: return t("home.body")
+        case 1: return t("home.evenings.one", "month", month)
+        case let n where thisWeek <= 0 || thisWeek >= n:
+            return t("home.evenings", "count", number(n), "month", month)
+        case let n:
+            return t("home.sky", "count", number(thisWeek), "total", number(n), "month", month)
+        }
+    }
+
     /// "2h 14m", "48m". Never "0h 48m".
     public static func duration(minutes: Int) -> String {
         let h = minutes / 60, m = minutes % 60
