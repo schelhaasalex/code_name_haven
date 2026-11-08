@@ -152,8 +152,12 @@ afternoon, and stays.)
 **Home** centres on the evening mark, a sky: a star for every evening you've
 had, your first at the centre and each after it further out, in places your
 account decides and nothing moves (`EveningMarkLayout`). Today's is the
-newest — an outline until today has counted, then filled — and the line
-below it goes from *Ready when you are.* to *Today counts.* The sky is the
+newest — an outline until today has counted, then filled. While it waits, a
+ring breathes out from it, and the line below names the box: *Put your phone
+in The Harbor.* Once today counts, the ring stops and the line says *Today
+counts.* — nothing on Home asks for anything after that. Tapping today's star
+opens a short sheet saying what it is (`StarSheet`); it explains and starts
+nothing, because there is no button that starts an evening. The sky is the
 largest thing on the screen. The week is in it rather than beside it: this
 week's stars, the newest before today's, are drawn in ink, and the line under
 the sky says them first — *Four this week, 36 since September.* — so Home only
