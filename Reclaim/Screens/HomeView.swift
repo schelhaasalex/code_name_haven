@@ -40,15 +40,12 @@ struct HomeView: View {
     /// The one destination, so the link has something to say it is.
     struct Settings: Hashable {}
 
-    /// The box, quietly: it's where you are, not what this screen is about.
-    /// Before there is one, the app's own name.
+    /// The mark and the box, as the evening screen has them: it's where you
+    /// are, not what this screen is about. Before there is one, the app's
+    /// own name.
     private var header: some View {
         HStack {
-            if let place = state.boxPlace {
-                Text(state.name(of: place)).eyebrow(Palette.muted)
-            } else {
-                Eyebrow(text: t("app.name"))
-            }
+            Eyebrow(text: state.boxPlace.map(state.name(of:)) ?? t("app.name"))
             Spacer()
             NavigationLink(value: Settings()) {
                 Image(systemName: "slider.horizontal.3")
