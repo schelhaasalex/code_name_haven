@@ -102,13 +102,14 @@
 <div class="wrap">
   <div class="kicker"><a href="settings.html">Screen 16</a> → 16a · a proposal</div>
   <h1>A box's page: what it has become</h1>
-  <p class="lede">Tapping The Harbor in Settings opens this. Today the page is a name field, three numbers and a sentence. The database already knows what each box has become (<code>app.place_stage</code>: five days a regular table, twenty a reclaim house, fifty a landmark), and the copy for it is written, but no screen says it. "The place you did it in slowly becomes something" is the product, so this page leads with that.</p>
+  <p class="lede">Tapping The Harbor in Settings opens this. Today the page is a name field, three numbers and a sentence. The database already keeps a stage for each box (<code>app.place_stage</code>), but no screen says it, and its words were written for tables people visited. This proposes a new ladder, for an object in one home. "The place you did it in slowly becomes something" is the product, so this page leads with that.</p>
 
   <div class="bar" role="group" aria-label="State">
     <button data-k="days" data-v="34" aria-pressed="true">34 days</button>
     <button data-k="days" data-v="3" aria-pressed="false">3 days</button>
     <button data-k="days" data-v="0" aria-pressed="false">Brand new</button>
-    <button data-k="days" data-v="61" aria-pressed="false">61 days</button>
+    <button data-k="days" data-v="140" aria-pressed="false">140 days</button>
+    <button data-k="days" data-v="400" aria-pressed="false">400 days</button>
     <span style="width:12px"></span>
     <button data-k="radio" data-v="connected" aria-pressed="true">Connected</button>
     <button data-k="radio" data-v="away" aria-pressed="false">Out of range</button>
@@ -174,7 +175,7 @@
   </div>
 
   <div class="why">
-    <div><b>It leads with what it has become</b><p>"A reclaim house" in the display face, with a track through the four stages and a gold mark where the box stands. The words are the existing <code>place.stage.*</code> strings and the thresholds are the database's. There's no "16 to go": the track shows the way without counting down to it.</p></div>
+    <div><b>It leads with what it has become</b><p>The box ages the way a good object does: <em>broken in</em> at 7 days, <em>well used</em> at 30, <em>seasoned</em> at 100, <em>part of the house</em> at 365. Before the first it's just <em>on its way</em>, with no age or count claimed. A day is one any phone did fifteen minutes in, so one person on their own moves it exactly as a family does. Only ever forward, and there's no "16 to go".</p></div>
     <div><b>The figures sit under it</b><p>Hours together and days, large. "Since September." moves up under the name (the existing <code>place.stage.since</code>), because it's part of the box's story, not a statistic.</p></div>
     <div><b>The radio is a status, not a sentence</b><p>A dot (filled when connected, hollow when away, clay when Bluetooth is off) and the existing sentence, with its fix underneath when there is one. It moves above the name, because a box that can't hear your phone matters more than what it's called.</p></div>
     <div><b>The name keeps its field</b><p>Same pencil and same save behaviour, moved down: you name a box once. When someone else named it, the field becomes a dashed outline with "Named by whoever first scanned it."</p></div>
@@ -185,7 +186,8 @@
 
 <script>
   const st = { days: 34, radio: 'connected', locked: false, clean: false };
-  const stages = [[0, 'New here'], [5, 'A regular table'], [20, 'A reclaim house'], [50, 'A landmark']];
+  // the first node is day one, with no name: nothing is claimed before it's earned
+  const stages = [[0, ''], [7, 'Broken in'], [30, 'Well used'], [100, 'Seasoned'], [365, 'Part of the house']];
   const radios = {
     connected: ['', 'Connected. It hears your phone go in and come out.', null],
     away:      ['away', "Out of range right now. It reconnects by itself when you're back.", null],
@@ -204,11 +206,12 @@
   function render() {
     const d = st.days, hours = Math.round(d * 3.3);
     const cur = stages.filter(([n]) => d >= n).length - 1;
-    document.getElementById('since').textContent = d ? `Since ${d > 40 ? 'August' : 'September'}.` : '';
-    document.getElementById('now').textContent = stages[cur][1];
+    const month = d >= 365 ? 'last October' : d >= 100 ? 'June' : d >= 30 ? 'September' : 'October';
+    document.getElementById('since').textContent = d ? `Since ${month}.` : '';
+    document.getElementById('now').innerHTML = stages[cur][1] || (d ? '<span class="new">On its way.</span>' : 'Nothing here yet.');
     document.getElementById('track').innerHTML =
       `<div class="rail"></div><div class="fill" style="width:${pos(d)}%"></div>` +
-      stages.map(([n, w], i) => `<div class="node ${i === cur ? 'here' : i < cur ? 'past' : ''}" style="left:${i / 3 * 100}%"><span>${n || 'Day one'}</span></div>`).join('');
+      stages.map(([n, w], i) => `<div class="node ${i === cur ? 'here' : i < cur ? 'past' : ''}" style="left:${i / (stages.length - 1) * 100}%"><span>${n || 'Day one'}</span></div>`).join('');
     document.getElementById('figs').innerHTML = d
       ? `<div><b>${hours}h</b><span>Hours together</span></div><div><b>${d}</b><span>Days</span></div>`
       : `<div style="grid-column:1/-1"><span style="font-size:14px;color:var(--ink-2)">Nothing here yet.</span></div>`;
