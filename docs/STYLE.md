@@ -45,12 +45,11 @@ The current set:
 | `PaperCard` | The bordered off-white block |
 | `LabelledSection` | Eyebrow + a stack, used in Settings |
 | `StatRow` | Label on the left, a display-face number on the right |
-| `DotWeek` | The week of dots on Home |
-| `EveningMark` | One dot per evening you've had, tonight's among them — behind the session, and on screen 8 |
+| `EveningMark` | One dot per evening you've had, tonight's among them, this week's darkest — on Home, behind the session, and on screen 8 |
 | `Ground` | The paper or night ground, gutters, safe area |
 
-**A component takes data, not `AppState`.** `DotWeek(days:)`, not
-`DotWeek(state:)`. Screens read state; components render what they're
+**A component takes data, not `AppState`.** `EveningMark(layout:)`, not
+`EveningMark(state:)`. Screens read state; components render what they're
 handed. This is what makes every component previewable in isolation and keeps
 them from quietly acquiring behaviour.
 

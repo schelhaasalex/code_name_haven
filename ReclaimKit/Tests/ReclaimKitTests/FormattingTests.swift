@@ -118,9 +118,19 @@ final class FormattingTests: XCTestCase {
         XCTAssertNil(PlainDate.date(from: "21/09/2026"))
     }
 
+    /// Home's line names this week only when it's neither nothing nor
+    /// everything — never "no days this week", never the same number twice.
+    func testTheLineUnderTheSky() {
+        XCTAssertEqual(Say.days(total: 36, thisWeek: 4, month: "September"), "Four this week, 36 since September.")
+        XCTAssertEqual(Say.days(total: 36, thisWeek: 0, month: "September"), "36 days, since September.")
+        XCTAssertEqual(Say.days(total: 3, thisWeek: 3, month: "November"), "Three days, since November.")
+        XCTAssertEqual(Say.days(total: 1, thisWeek: 1, month: "November"), "One day, since November.")
+        XCTAssertEqual(Say.days(total: 0, thisWeek: 0, month: ""), t("home.body"))
+    }
+
     /// Six screens opened a sentence with "three days…" in lowercase.
     func testASentenceOpeningWithACountStartsWithACapital() {
-        XCTAssertEqual(t("home.footer", "count", Say.number(3)), "Three days this week.")
+        XCTAssertEqual(t("home.sky", "count", Say.number(3), "total", "36", "month", "May"), "Three this week, 36 since May.")
         XCTAssertEqual(t("session.together", "count", Say.count(3)), "Three of you so far.")
     }
 

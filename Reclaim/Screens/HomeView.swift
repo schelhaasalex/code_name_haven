@@ -1,14 +1,16 @@
 import SwiftUI
 import ReclaimKit
 
-/// Screen 2 — Home: the box you were last at, your evenings as the mark with
-/// today's star among them, and your week. With no box yet, the one thing
-/// there is to do: meet it.
+/// Screen 2 — Home: your evenings as a sky, with today's star among them
+/// and this week's drawn darkest; the box you were last at above it. With no
+/// box yet, the one thing there is to do: meet it.
 ///
-/// The mark is the point: today's star waits as an outline until today has
-/// counted, and every evening that counts stays. What each box has kept is
-/// the long view, on the box's own page in Settings — not the reason to set
-/// the phone down tonight.
+/// The sky is the point, so it is the largest thing here. Today's star waits
+/// as an outline until today has counted, and every evening that counts
+/// stays. The week is in the sky, not a row of dots beside it: a row has to
+/// draw the days that didn't count, and this screen only draws the ones that
+/// did. What each box has kept is the long view, on the box's own page in
+/// Settings — not the reason to set the phone down tonight.
 ///
 /// NO BUTTON TO START. The box is the only switch; Home is what it leaves
 /// behind. And no tab bar: a tab bar advertises that there's something to
@@ -24,14 +26,10 @@ struct HomeView: View {
                 Spacer(minLength: 16)
                 if state.boxPlace == nil {
                     pair
-                    Spacer(minLength: 16)
                 } else {
-                    box
-                    Spacer(minLength: 16)
                     today
-                    Spacer(minLength: 16)
                 }
-                week
+                Spacer(minLength: 16)
             }
             .ground()
             .navigationDestination(for: Settings.self) { _ in SettingsView() }
@@ -42,9 +40,15 @@ struct HomeView: View {
     /// The one destination, so the link has something to say it is.
     struct Settings: Hashable {}
 
+    /// The box, quietly: it's where you are, not what this screen is about.
+    /// Before there is one, the app's own name.
     private var header: some View {
         HStack {
-            Eyebrow(text: t("app.name"))
+            if let place = state.boxPlace {
+                Text(state.name(of: place)).eyebrow(Palette.muted)
+            } else {
+                Eyebrow(text: t("app.name"))
+            }
             Spacer()
             NavigationLink(value: Settings()) {
                 Image(systemName: "slider.horizontal.3")
@@ -52,14 +56,6 @@ struct HomeView: View {
                     .frame(width: 44, height: 44)
             }
             .accessibilityLabel(t("home.a11y.settings"))
-        }
-    }
-
-    private var box: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(Say.partOfDay(.now)).eyebrow(Palette.clay)
-            Text(state.boxPlace.map(state.name(of:)) ?? t("box.unnamed"))
-                .font(Type.display(36)).foregroundStyle(Palette.ink)
         }
     }
 
@@ -75,17 +71,20 @@ struct HomeView: View {
     // MARK: Today
 
     /// Every evening you've had, and today's. Nothing until the database has
-    /// said how many — a guessed mark would be a lie.
+    /// said how many — a guessed sky would be a lie.
     @ViewBuilder private var today: some View {
         if let total = state.eveningTotal {
             let layout = EveningMarkLayout.today(total: total.count, counted: countedToday)
-            VStack(spacing: 20) {
-                EveningMark(layout: layout, size: 200, seed: state.skySeed)
+            VStack(spacing: 28) {
+                EveningMark(layout: layout, size: 290, recent: thisWeek - (countedToday ? 1 : 0),
+                            seed: state.skySeed)
                     .animation(.spring(response: 0.6, dampingFraction: 0.65), value: layout)
-                VStack(spacing: 6) {
+                VStack(spacing: 8) {
+                    Text(Say.partOfDay(.now)).eyebrow(Palette.clay)
                     Text(t(countedToday ? "home.counted" : "home.headline"))
                         .font(Type.display(26)).foregroundStyle(Palette.ink)
-                    Text(eveningsLine(total))
+                    Text(Say.days(total: total.count, thisWeek: thisWeek,
+                                  month: Say.month(from: total.first) ?? ""))
                         .font(Type.body(14)).foregroundStyle(Palette.muted)
                 }
                 .multilineTextAlignment(.center)
@@ -97,45 +96,9 @@ struct HomeView: View {
 
     private var countedToday: Bool { state.evenings.contains(PlainDate.string(from: .now)) }
 
-    /// The words beside the mark carry the number; before the first evening,
-    /// what to do.
-    private func eveningsLine(_ total: EveningTotal) -> String {
-        let month = Say.month(from: total.first) ?? ""
-        switch total.count {
-        case 0:     return t("home.body")
-        case 1:     return t("home.evenings.one", "month", month)
-        case let n: return t("home.evenings", "count", Say.number(n), "month", month)
-        }
-    }
-
-    private var week: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(t("home.week.label")).eyebrow(Palette.muted)
-            HStack(spacing: 12) {
-                Text(weekLine).font(Type.body(15)).foregroundStyle(Palette.ink2)
-                Spacer(minLength: 8)
-                DotWeek(days: weekDots)
-            }
-        }
-        .accessibilityElement(children: .combine)
-        .frame(minHeight: 44)
-        .padding(.top, 18)
-        .overlay(alignment: .top) { Rectangle().fill(Palette.line).frame(height: 1) }
-        .padding(.top, 24)
-    }
-
-    private var weekDots: [EveningCalendar.Day] {
-        EveningCalendar.week(evenings: state.evenings)
-    }
-
-    /// Never "no evenings this week": a week that hasn't had one yet is ahead
-    /// of you, not behind.
-    private var weekLine: String {
-        switch EveningCalendar.count(weekDots) {
-        case 0:     t("home.footer.none")
-        case 1:     t("home.footer.one")
-        case let n: t("home.footer", "count", Say.number(n))
-        }
+    /// Days this week that counted, today's among them once it has.
+    private var thisWeek: Int {
+        EveningCalendar.count(EveningCalendar.week(evenings: state.evenings))
     }
 }
 

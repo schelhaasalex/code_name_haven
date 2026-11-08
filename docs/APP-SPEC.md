@@ -152,8 +152,12 @@ afternoon, and stays.)
 had, your first at the centre and each after it further out, in places your
 account decides and nothing moves (`EveningMarkLayout`). Today's is the
 newest — an outline until today has counted, then filled — and the line
-beside it goes from *Ready when you are.* to *Today counts.* Above it, the box
-this phone was last at and the part of the day; below it, your week as dots.
+below it goes from *Ready when you are.* to *Today counts.* The sky is the
+largest thing on the screen. The week is in it rather than beside it: this
+week's stars, the newest before today's, are drawn in ink, and the line under
+the sky says them first — *Four this week, 36 since September.* — so Home only
+ever draws days that counted, never a row with gaps in it. Above the sky, quietly,
+the box this phone was last at; under it, the part of the day.
 What each box has kept is on its page in Settings (16a), not Home: the long
 view isn't the reason to set the phone down tonight. The ring is the lock
 screen's; the mark is Home's, and the receipt is where tonight's star joins
