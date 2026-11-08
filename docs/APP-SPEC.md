@@ -133,8 +133,9 @@ running".
 | 6 | In the box — with others, or alone | `SessionView` | root while live |
 | 8 | The receipt | `SessionEndView` | root, once, after an evening |
 | 13 | We closed this one for you | `AutoClosedView` | sheet over Home |
-| 16 | Settings — your boxes, keeping your evenings, how it works, deleting the account | `SettingsView` | push |
-| 16a | One box — its name, what it has kept, its radio, Forget | `BoxView` | push from 16 |
+| 16 | Settings — anything to fix first, your boxes, keeping your evenings, how it works, privacy, deleting the account | `SettingsView` | push |
+| 16a | One box — what it has become, its radio, its name, Forget | `BoxView` | push from 16 |
+| 16b | Privacy — what we can see | `PrivacyView` | push from 16 |
 | — | No network on the first launch | `UnreachableView` | root |
 | 7 | Lock screen, Dynamic Island, Watch | Live Activity | `ReclaimWidgets` |
 
@@ -152,8 +153,21 @@ afternoon, and stays.)
 had, your first at the centre and each after it further out, in places your
 account decides and nothing moves (`EveningMarkLayout`). Today's is the
 newest — an outline until today has counted, then filled — and the line
-beside it goes from *Ready when you are.* to *Today counts.* Above it, the box
-this phone was last at and the part of the day; below it, your week as dots.
+below it goes from *Ready when you are.* to *Today counts.* The sky is the
+largest thing on the screen. The week is in it rather than beside it: this
+week's stars, the newest before today's, are drawn in ink, and the line under
+the sky says them first — *Four this week, 36 since September.* — so Home only
+ever draws days that counted, never a row with gaps in it. Above the sky, quietly,
+the box this phone was last at; under it, the part of the day.
+
+**What a box becomes.** Every box has a stage, from the days it has kept —
+any phone, fifteen minutes, so one person on their own moves it exactly as a
+family does: *on its way*, then **broken in** at 7 days, **settled in** at 30,
+**seasoned** at 100 and **part of the house** at 365 (`app.place_stage`,
+0022). It only goes forward. The box's page (16a) leads with it, on a track
+through all four with no count to the next; `BoxStage.days` draws the track
+and `scripts/shape.sh` checks it against the migration.
+
 What each box has kept is on its page in Settings (16a), not Home: the long
 view isn't the reason to set the phone down tonight. The ring is the lock
 screen's; the mark is Home's, and the receipt is where tonight's star joins

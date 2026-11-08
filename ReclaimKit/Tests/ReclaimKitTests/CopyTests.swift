@@ -14,7 +14,7 @@ final class CopyTests: XCTestCase {
     /// renders as an empty string.
     private let knownTokens: Set<String> = [
         "count", "day", "duration", "first", "from", "h", "handle", "last", "link", "list", "m", "month", "name", "names",
-        "place", "second", "stage", "time", "to", "radio", "evenings", "version", "build"
+        "place", "second", "stage", "time", "to", "radio", "evenings", "version", "build", "total"
     ]
 
     private var repoRoot: URL {
