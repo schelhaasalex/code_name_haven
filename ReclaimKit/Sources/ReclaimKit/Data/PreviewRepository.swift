@@ -63,7 +63,7 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
         self.memberList = members
         self.earlierEvenings = places.isEmpty ? 0 : 24
         self.summaryValue = PlaceSummary(evenings: 31, wallClockMinutes: 4080,
-                                         personMinutes: 12240, stage: "a reclaim house",
+                                         personMinutes: 12240, stage: "settled in",
                                          since: "2026-03-04", liveNow: true)
     }
 
@@ -97,7 +97,7 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
     public func summary(of place: UUID) async throws -> PlaceSummary {
         guard place == Self.bedroom else { return summaryValue }
         return PlaceSummary(evenings: 6, wallClockMinutes: 410, personMinutes: 690,
-                            stage: "a regular table", since: "2026-10-30", liveNow: false)
+                            stage: "on its way", since: "2026-10-30", liveNow: false)
     }
 
     /// The sample household has no server and no lock screen to push to.

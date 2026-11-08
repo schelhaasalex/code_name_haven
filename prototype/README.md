@@ -13,5 +13,5 @@ the current page, with toggles for its states (two boxes, days not kept, the
 lock-screen ring off, a box out of range). Copy it would add is underlined.
 
 `box.html` is the same for screen 16a, the page tapping a box in Settings
-opens. It leads with the box's stage (`app.place_stage`), which no screen
-says yet.
+opens, leading with the box's stage. Both are built now (`SettingsView`,
+`BoxView`); the prototypes stay for the reasoning beside them.

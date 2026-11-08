@@ -45,6 +45,13 @@ The current set:
 | `PaperCard` | The bordered off-white block |
 | `LabelledSection` | Eyebrow + a stack, used in Settings |
 | `StatRow` | Label on the left, a display-face number on the right |
+| `Figures` | Display-face figures over their labels, split by hairlines, along a card's foot |
+| `BoxCard` | A box in Settings: name, radio, what it has kept |
+| `StatusDot` | A box's radio at a glance |
+| `StageTrack` | What a box has become, as a line through the stages |
+| `StepLine` | Rules as a line through time, in Settings |
+| `NavRow` | A card that's a way somewhere else |
+| `NoticeCard` | The one thing on a page that needs doing, in clay, first |
 | `DotWeek` | The week of dots on Home |
 | `EveningMark` | One dot per evening you've had, tonight's among them — behind the session, and on screen 8 |
 | `Ground` | The paper or night ground, gutters, safe area |
