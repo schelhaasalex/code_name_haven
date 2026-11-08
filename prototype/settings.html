@@ -1,0 +1,272 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings Redesign</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=Work+Sans:wght@400;500;600&display=swap">
+<style>
+  /* Screen 16, redrawn. Every length inside .screen is a SwiftUI point at
+     393 wide, so a number here is a number in SettingsView. Colours are
+     Palette's, by name. Copy marked .new is not in copy/strings.json yet. */
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  :root {
+    --bone:  #F7F4EE; --paper: #FFFDF8; --linen: #EFE9DC;
+    --ink:   #1F1B16; --ink-2: #4A4239; --muted: #6B6155;
+    --line:  #E3DDD1; --hair:  #C9C0B0;
+    --clay:  #B4512C; --ember: #E08A4E; --night: #17140F;
+    --serif: 'Fraunces', Georgia, serif;
+    --sans:  'Work Sans', ui-sans-serif, system-ui, sans-serif;
+  }
+
+  body { margin: 0; background: var(--linen); color: var(--ink); font-family: var(--sans);
+         -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 36px 16px 72px; }
+
+  .kicker { font-size: 12px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(28px, 5vw, 40px); line-height: 1.1;
+       margin: 12px 0 0; max-width: 20ch; }
+  .lede { font-size: 16px; line-height: 1.6; color: var(--ink-2); margin: 14px 0 0; max-width: 64ch; }
+
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--hair); }
+  .bar button {
+    font: 500 13px var(--sans); min-height: 36px; padding: 0 14px; border-radius: 18px; cursor: pointer;
+    border: 1px solid var(--hair); background: var(--paper); color: var(--ink-2);
+  }
+  .bar button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bone); }
+
+  .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; margin-top: 32px; align-items: start; }
+  .col h2 { font-family: var(--serif); font-weight: 400; font-size: 22px; margin: 0 0 14px; }
+  .col h2 small { font: 600 10px var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--clay);
+                  border: 1px solid var(--clay); border-radius: 3px; padding: 2px 6px; margin-left: 8px; vertical-align: middle; }
+
+  .device { width: 393px; max-width: 100%; margin: 0 auto; background: var(--bone); border-radius: 44px;
+            border: 1px solid var(--hair); overflow: hidden;
+            box-shadow: 0 22px 44px rgba(31,27,22,.10), 0 2px 6px rgba(31,27,22,.06); }
+  .screen { padding: 0 32px 40px; }
+  .status { height: 54px; display: flex; align-items: center; justify-content: space-between;
+            font: 600 16px var(--sans); padding: 0 6px; }
+  .back { width: 44px; height: 44px; border-radius: 22px; border: 1px solid var(--line); background: var(--paper);
+          display: grid; place-items: center; margin: 4px 0 10px -6px; }
+
+  .title { font-family: var(--serif); font-size: 34px; margin: 4px 0 0; font-weight: 400; }
+  .eyebrow { font: 600 12px var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+  .body { font-size: 14px; line-height: 1.55; color: var(--ink-2); margin: 0 0 10px; }
+  .note { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 0; }
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+  section { margin-top: 32px; }
+
+  /* ---- proposed ---- */
+
+  .sub { font-family: var(--serif); font-size: 17px; color: var(--muted); margin: 6px 0 0; font-weight: 400; }
+  .sub em { font-style: normal; color: var(--ink); }
+
+  .alert { display: flex; gap: 12px; align-items: flex-start; border-color: #E6C7B6; background: #FCF3EC; }
+  .alert b { display: block; font: 500 15px/1.4 var(--sans); color: var(--ink); }
+  .alert a { font: 600 14px var(--sans); color: var(--clay); text-decoration: none; display: inline-block; margin-top: 6px; }
+
+  .box { padding: 0; overflow: hidden; }
+  .box + .box { margin-top: 10px; }
+  .box .top { display: flex; gap: 16px; align-items: center; padding: 18px; }
+  .box .name { font: 500 17px var(--sans); }
+  .box .radio { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink); flex: none; }
+  .dot.away { background: transparent; box-shadow: inset 0 0 0 1.5px var(--hair); }
+  .box .chev { margin-left: auto; color: var(--hair); }
+  .figures { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); }
+  .figures div { padding: 12px 0 14px 18px; }
+  .figures div + div { border-left: 1px solid var(--line); }
+  .figures b { display: block; font: 400 22px var(--serif); }
+  .figures span { font-size: 12px; color: var(--muted); }
+
+  .add { display: flex; align-items: center; gap: 10px; min-height: 44px; margin-top: 8px;
+         font: 500 15px var(--sans); color: var(--ink-2); }
+  .add i { width: 28px; height: 28px; border-radius: 14px; border: 1px dashed var(--hair); display: grid; place-items: center;
+           font-style: normal; color: var(--muted); }
+
+  .keep { display: flex; gap: 14px; align-items: center; }
+  .keep .seal { width: 36px; height: 36px; border-radius: 18px; background: var(--linen); display: grid; place-items: center; flex: none; }
+  .keep b { display: block; font: 500 15px var(--sans); }
+  .apple { margin-top: 14px; height: 50px; border-radius: 25px; background: #000; color: #fff;
+           display: flex; align-items: center; justify-content: center; gap: 6px; font: 500 16px -apple-system, var(--sans); }
+
+  .steps { position: relative; }
+  .step { display: grid; grid-template-columns: 64px 1fr; gap: 14px; position: relative; padding-bottom: 18px; }
+  .step:last-child { padding-bottom: 0; }
+  .step .when { font: 400 20px/1.1 var(--serif); text-align: right; padding-top: 1px; }
+  .step .when small { display: block; font: 600 10px var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
+  .step p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink-2); padding-left: 18px; position: relative; }
+  .step p::before { content: ""; position: absolute; left: -1px; top: 6px; width: 9px; height: 9px; border-radius: 50%;
+                    background: var(--bone); box-shadow: inset 0 0 0 1.5px var(--ink); }
+  .step.counts p::before { background: var(--ink); }
+  .step::after { content: ""; position: absolute; left: calc(64px + 14px + 3px); top: 18px; bottom: -4px; width: 1px; background: var(--hair); }
+  .step:last-child::after { display: none; }
+
+  .see { display: grid; grid-template-columns: 1fr 1fr; padding: 0; }
+  .see > div { padding: 16px; }
+  .see > div + div { border-left: 1px solid var(--line); }
+  .see h4 { margin: 0 0 10px; font: 600 11px var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .see ul { margin: 0; padding: 0; list-style: none; }
+  .see li { font-size: 13.5px; line-height: 1.4; color: var(--ink-2); padding: 5px 0 5px 18px; position: relative; }
+  .see .yes li::before { content: ""; position: absolute; left: 0; top: 11px; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-2); }
+  .see .no li { color: var(--muted); }
+  .see .no li::before { content: ""; position: absolute; left: 0; top: 14px; width: 8px; height: 1.5px; background: var(--hair); }
+  .see-foot { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 12px 2px 0; }
+
+  .foot { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .foot .row { min-height: 44px; display: flex; align-items: center; font-size: 14px; color: var(--ink-2); }
+  .foot .row.quiet { color: var(--muted); }
+  .foot .row svg { margin-right: 10px; }
+  .link { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 18px; font: 500 15px var(--sans); color: var(--ink); text-decoration: none; }
+  .link .chev { margin-left: auto; color: var(--hair); }
+  .foot .ver { font-size: 12px; color: var(--hair); margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+
+  .new { text-decoration: underline wavy rgba(180,81,44,.45); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  .hide-new .new { text-decoration: none; }
+
+  .why { margin-top: 48px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px 32px; }
+  .why div { border-top: 1px solid var(--hair); padding-top: 14px; }
+  .why b { font: 400 18px var(--serif); display: block; margin-bottom: 6px; }
+  .why p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink-2); }
+
+  @media (max-width: 860px) { .pair { grid-template-columns: 1fr; } .col.now { order: 2; } }
+  @media (max-width: 420px) { .device { border-radius: 28px; } .screen { padding: 0 20px 32px; } }
+</style>
+
+<div class="wrap">
+  <div class="kicker">Screen 16 · a proposal</div>
+  <h1>Settings, drawn instead of written</h1>
+  <p class="lede">Same facts, same rules, no new dials. The box leads with what it has kept, how it works becomes a timeline, and privacy becomes one link. Words underlined in clay are new copy.</p>
+
+  <div class="bar" role="group" aria-label="State">
+    <button data-k="boxes" aria-pressed="false">Two boxes</button>
+    <button data-k="unkept" aria-pressed="false">Days not kept yet</button>
+    <button data-k="ringoff" aria-pressed="false">Lock screen ring off</button>
+    <button data-k="away" aria-pressed="false">Box out of range</button>
+    <button data-k="clean" aria-pressed="false">Hide new-copy marks</button>
+  </div>
+
+  <div class="pair">
+    <div class="col proposed">
+      <h2>Proposed <small>Pick</small></h2>
+      <div class="device"><div class="screen" id="proposed">
+        <div class="status"><span>7:22</span><span>●●● ▮</span></div>
+        <div class="back"><svg width="12" height="18" viewBox="0 0 12 18"><path d="M10 2 3 9l7 7" fill="none" stroke="#1F1B16" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="title">Settings</div>
+        <p class="sub"><span class="new">Your box, your days, and the rules it keeps.</span></p>
+
+        <section id="ring" hidden>
+          <div class="card alert">
+            <svg width="22" height="22" viewBox="0 0 22 22" style="flex:none;margin-top:1px"><circle cx="11" cy="11" r="8.5" fill="none" stroke="#B4512C" stroke-width="2" stroke-dasharray="40 14" stroke-linecap="round"/></svg>
+            <div><b>The ring on your lock screen is turned off for this app.</b><a>Turn it on in Settings →</a></div>
+          </div>
+        </section>
+
+        <section>
+          <p class="eyebrow" id="boxlabel">Your box</p>
+          <div id="boxlist"></div>
+          <div class="add"><i>+</i>Add another box</div>
+        </section>
+
+        <section>
+          <p class="eyebrow">Your days</p>
+          <div class="card" id="keep"></div>
+        </section>
+
+        <section>
+          <p class="eyebrow">How it works</p>
+          <div class="steps">
+            <div class="step"><div class="when">In<small class="new">a slot</small></div><p>Put your phone in a slot and it begins.</p></div>
+            <div class="step counts"><div class="when">15<small>minutes</small></div><p>It counts from fifteen minutes in.</p></div>
+            <div class="step"><div class="when">5<small>seconds</small></div><p>Take it out and it ends, unless it's back within five seconds.</p></div>
+            <div class="step counts"><div class="when">3<small>hours</small></div><p>Left in overnight, we close it at three hours. It still counts.</p></div>
+          </div>
+        </section>
+
+        <section>
+          <a class="card link">
+            <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M9 1.8 3 4v4.6c0 3.6 2.6 6.4 6 7.6 3.4-1.2 6-4 6-7.6V4L9 1.8Z" fill="none" stroke="#4A4239" stroke-width="1.5" stroke-linejoin="round"/></svg>
+            <span class="new">Privacy</span>
+            <svg class="chev" width="8" height="14" viewBox="0 0 8 14"><path d="m1.5 1.5 5 5.5-5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </a>
+        </section>
+
+        <div class="foot">
+          <div class="row quiet"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h11M6 4V2.6h4V4M4 4l.7 9.4h6.6L12 4M6.6 6.5v4.5M9.4 6.5v4.5" fill="none" stroke="#6B6155" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>Delete your account</div>
+          <div class="ver">
+            <svg width="14" height="14" viewBox="0 0 14 14"><rect x="1" y="4" width="12" height="7" rx="2" fill="none" stroke="#C9C0B0" stroke-width="1.2"/><path d="M4 4v3M7 4v3M10 4v3" stroke="#C9C0B0" stroke-width="1.2"/></svg>
+            Version 1.0 (214)
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="col now">
+      <h2>Now</h2>
+      <div class="device"><div class="screen">
+        <div class="status"><span>7:22</span><span>●●● ▮</span></div>
+        <div class="back"><svg width="12" height="18" viewBox="0 0 12 18"><path d="M10 2 3 9l7 7" fill="none" stroke="#1F1B16" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="title">Settings</div>
+        <section><p class="eyebrow">Your box</p>
+          <div class="card" style="display:flex;align-items:center"><div><div style="font:500 16px var(--sans)">The Harbor</div><p class="note" style="margin-top:4px">Connected · 34 days since September</p></div><span style="margin-left:auto;color:var(--hair)">›</span></div>
+          <div class="add" style="color:var(--ink-2)">+&nbsp; Add another box</div></section>
+        <section><p class="eyebrow">Your days</p><p class="body">Kept with your Apple ID. A new phone picks up where this one left off.</p></section>
+        <section><p class="eyebrow">How it works</p>
+          <p class="body">Put your phone in a slot and it begins.</p><p class="body">It counts from fifteen minutes in.</p>
+          <p class="body">Take it out and it ends, unless it's back within five seconds.</p><p class="body">Left in overnight, we close it at three hours. It still counts.</p></section>
+        <section><p class="eyebrow">What we can see</p>
+          <p class="body">When your phone goes into a box and comes out, and which box, and when setting up or the box goes wrong, so it can be put right. Nothing about your screen, your apps, or where you are.</p>
+          <p class="body">Everyone at a box sees how many of you are in it, and what it has kept, added up. Never who wasn't there.</p></section>
+        <div class="foot"><div class="row quiet">Delete your account</div><div class="ver">Version 1.0 (214)</div></div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="why">
+    <div><b>The box leads with what it has kept</b><p>Its name, its radio as a dot, and underneath, its totals: the ones its own page already shows (<code>box.kept.*</code>), added up, so nothing new crosses a person boundary.</p></div>
+    <div><b>Rules as a timeline</b><p>"In · 15 min · 5 sec · 3 hrs" is how the evening actually runs. The same four sentences, hung on a line, so the numbers can be found at a glance. Still facts, still no dials — a house tuning its own minimum is setup by another name.</p></div>
+    <div><b>Privacy is a link</b><p>What we can see belongs in a privacy policy, not spelled out on this page. One row, opening the policy on <code>LINK_DOMAIN</code>, and that page doesn't exist yet.</p></div>
+    <div><b>Your days says what it is</b><p>Kept: a sealed mark and one line. Not kept: the offer, in a card, with the Apple button inside it — offered, never asked anywhere else.</p></div>
+    <div><b>The ring problem leads</b><p>When the lock-screen ring is off it's the only thing on this page that needs a person to act, so it goes first, in clay, with its fix.</p></div>
+    <div><b>A quiet foot</b><p>Delete your account, with an icon so it reads as an action rather than a caption. No Sign out: an account that is only an Apple ID link has nothing to sign out to. The weight stays in the confirmation.</p></div>
+  </div>
+</div>
+
+<script>
+  const st = { boxes: false, unkept: false, ringoff: false, away: false, clean: false };
+
+  const box = (name, hours, days, since, away) => `
+    <a class="card box" href="box.html" style="display:block;color:inherit;text-decoration:none">
+      <div class="top">
+        <div><div class="name">${name}</div>
+          <div class="radio"><span class="dot ${away ? 'away' : ''}"></span>${away ? 'Out of range' : 'Connected'}</div></div>
+        <svg class="chev" width="8" height="14" viewBox="0 0 8 14"><path d="m1.5 1.5 5 5.5-5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </div>
+      <div class="figures">
+        <div><b>${hours}</b><span>Hours together</span></div>
+        <div><b>${days}</b><span>Days</span></div>
+        <div><b>${since}</b><span>Since</span></div>
+      </div>
+    </a>`;
+
+  function render() {
+    document.getElementById('boxlabel').textContent = st.boxes ? 'Your boxes' : 'Your box';
+    document.getElementById('boxlist').innerHTML =
+      box('The Harbor', 112, 34, 'Sept', st.away) +
+      (st.boxes ? box('The Cove', 9, 4, 'Nov', true) : '');
+    document.getElementById('ring').hidden = !st.ringoff;
+    document.getElementById('keep').innerHTML = st.unkept
+      ? `<p class="body" style="margin:0">Your days belong to this phone for now. Keep them with your Apple ID, and a new phone picks up where this one left off. Apple only tells us it's you, not your name or email.</p>
+         <div class="apple"> Continue with Apple</div>`
+      : `<div class="keep"><span class="seal"><svg width="16" height="16" viewBox="0 0 16 16"><path d="m3.5 8.5 3 3 6-7" fill="none" stroke="#1F1B16" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+         <div><b class="new">Kept with your Apple ID</b><p class="note">A new phone picks up where this one left off.</p></div></div>`;
+    document.body.classList.toggle('hide-new', st.clean);
+  }
+
+  document.querySelectorAll('.bar button').forEach(b => b.addEventListener('click', () => {
+    st[b.dataset.k] = !st[b.dataset.k];
+    b.setAttribute('aria-pressed', st[b.dataset.k]);
+    render();
+  }));
+  render();
+</script>

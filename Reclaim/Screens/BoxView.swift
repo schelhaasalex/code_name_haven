@@ -1,8 +1,12 @@
 import SwiftUI
 import ReclaimKit
 
-/// One box, from Settings: its name, what it has kept, what its radio is
-/// doing, and the way to let it go — quietly, at the foot.
+/// Screen 16a. One box, from Settings: what it has become, what its radio is
+/// doing, its name, and the way to let it go — quietly, at the foot.
+///
+/// It leads with the box's stage, because the place you did it in slowly
+/// becoming something is the product. Everyone's days at it added up, never
+/// whose.
 ///
 /// The name saves however the field is left: Done, a tap elsewhere, or Back.
 /// Only whoever first scanned the box can change it (`places_update_owner`).
@@ -25,11 +29,17 @@ struct BoxView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
-                Text(state.name(of: id)).font(Type.title).foregroundStyle(Palette.ink)
-                LabelledSection(label: t("box.name.label")) { nameField }
-                if let summary = state.boxSummaries[id] { kept(summary) }
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(state.name(of: id)).font(Type.title).foregroundStyle(Palette.ink)
+                    if let month = Say.month(from: state.boxSummaries[id]?.since) {
+                        Text(t("place.stage.since", "month", month))
+                            .font(Type.display(17)).foregroundStyle(Palette.muted)
+                    }
+                }
+                if let summary = state.boxSummaries[id] { become(summary) }
                 LabelledSection(label: t("box.radio.label")) { radio }
-                Spacer(minLength: 20)
+                LabelledSection(label: t("box.name.label")) { nameField }
+                Spacer(minLength: 8)
                 forget
             }
             .padding(.horizontal, 32)
@@ -76,31 +86,52 @@ struct BoxView: View {
         }
     }
 
-    /// Everyone's evenings at it, added up — never whose.
-    private func kept(_ summary: PlaceSummary) -> some View {
-        LabelledSection(label: t("box.kept.label")) {
-            PaperCard {
-                VStack(spacing: 14) {
-                    StatRow(title: t("box.kept.hours"), value: Say.duration(minutes: summary.wallClockMinutes))
-                    StatRow(title: t("box.kept.evenings"), value: "\(summary.evenings)")
-                    if let month = Say.month(from: summary.since) {
-                        StatRow(title: t("box.kept.since"), value: month)
+    /// What it has become: the stage in the display face, the track through
+    /// all of them, and what it has kept beneath. Before its first day, only
+    /// "Nothing here yet."
+    private func become(_ summary: PlaceSummary) -> some View {
+        let days = summary.evenings
+        return VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(t("box.become.label")).eyebrow(Palette.muted)
+                Text(days == 0 ? t("box.become.none") : t(BoxStage.key(summary.stage)))
+                    .font(Type.display(26)).foregroundStyle(Palette.ink)
+                StageTrack(marks: [t("box.become.start")] + BoxStage.days.map { "\($0)" },
+                           position: BoxStage.position(evenings: days),
+                           reached: BoxStage.reached(evenings: days) + 1)
+                    .padding(.top, 12)
+            }
+            .padding(18)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if days > 0 {
+                Figures(items: [
+                    Figures.Item(value: Say.duration(minutes: summary.wallClockMinutes), label: t("box.kept.hours")),
+                    Figures.Item(value: "\(days)", label: t("box.kept.evenings")),
+                ], size: 30)
+            }
+        }
+        .paperCard(padding: 0)
+    }
+
+    /// A dot and a sentence, with its fix beneath when there is one.
+    private var radio: some View {
+        let status = state.radio(of: id)
+        return HStack(alignment: .top, spacing: 12) {
+            StatusDot(style: StatusDot.style(status), size: 9).padding(.top, 6)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(t(radioKey(status))).font(Type.body(15)).foregroundStyle(Palette.ink2).lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+                if status == .off {
+                    TextAction(title: t("box.radio.settings"), tint: Palette.clay) {
+                        if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
                     }
+                } else if !state.hasRadio(id) {
+                    TextAction(title: t("box.radio.scan"), tint: Palette.clay) { scanning = true }
                 }
             }
         }
-    }
-
-    @ViewBuilder private var radio: some View {
-        let status = state.radio(of: id)
-        Text(t(radioKey(status))).font(Type.body(15)).foregroundStyle(Palette.ink2).lineSpacing(3)
-        if status == .off {
-            TextAction(title: t("box.radio.settings"), tint: Palette.clay) {
-                if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
-            }
-        } else if !state.hasRadio(id) {
-            TextAction(title: t("box.radio.scan"), tint: Palette.clay) { scanning = true }
-        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .paperCard()
     }
 
     private func radioKey(_ status: BoxLink.Radio?) -> String {
@@ -115,14 +146,10 @@ struct BoxView: View {
     }
 
     private var forget: some View {
-        Button { confirmingForget = true } label: {
-            Text(t("settings.forget")).font(Type.note).foregroundStyle(Palette.muted)
-                .frame(minHeight: 44)
-        }
-        .buttonStyle(.plain)
-        .padding(.top, 18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(alignment: .top) { Rectangle().fill(Palette.line).frame(height: 1) }
+        TextAction(title: t("settings.forget"), icon: "minus.circle") { confirmingForget = true }
+            .padding(.top, 18)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(alignment: .top) { Rectangle().fill(Palette.line).frame(height: 1) }
     }
 }
 

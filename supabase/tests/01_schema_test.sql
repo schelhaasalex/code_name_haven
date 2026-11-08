@@ -95,7 +95,7 @@ begin
     format('wall clock should be ~120, got %s', v_row.wall_clock_minutes);
   assert v_row.person_minutes between 355 and 365,
     format('person minutes should be ~360, got %s', v_row.person_minutes);
-  assert v_row.stage = 'new here', format('stage was %s', v_row.stage);
+  assert v_row.stage = 'on its way', format('stage was %s', v_row.stage);
   assert v_row.live_now = false, 'gathering should have closed when the last person left';
   raise notice 'PASS  2  1 evening, wall clock % min, person % min',
     v_row.wall_clock_minutes, v_row.person_minutes;
@@ -317,20 +317,23 @@ begin
 end $$;
 
 -- ============================================================ FINDING 9
--- The stage ladder only ever moves forward, and the thresholds match screen 9
--- (31 evenings is a reclaim house; a landmark starts at fifty).
+-- The stage ladder only ever moves forward, and the thresholds are the box's
+-- (0022): broken in at a week, settled in at a month, seasoned at a hundred
+-- days, part of the house at a year.
 
 do $$
 begin
-  assert app.place_stage(0)  = 'new here';
-  assert app.place_stage(4)  = 'new here';
-  assert app.place_stage(5)  = 'a regular table';
-  assert app.place_stage(19) = 'a regular table';
-  assert app.place_stage(20) = 'a reclaim house';
-  assert app.place_stage(31) = 'a reclaim house';
-  assert app.place_stage(49) = 'a reclaim house';
-  assert app.place_stage(50) = 'a landmark';
-  raise notice 'PASS  9  stage thresholds match screen 9';
+  assert app.place_stage(0)   = 'on its way';
+  assert app.place_stage(6)   = 'on its way';
+  assert app.place_stage(7)   = 'broken in';
+  assert app.place_stage(29)  = 'broken in';
+  assert app.place_stage(30)  = 'settled in';
+  assert app.place_stage(99)  = 'settled in';
+  assert app.place_stage(100) = 'seasoned';
+  assert app.place_stage(364) = 'seasoned';
+  assert app.place_stage(365) = 'part of the house';
+  assert app.place_stage(5000) = 'part of the house';
+  raise notice 'PASS  9  stage thresholds are the box''s';
 end $$;
 
 -- ============================================================ FINDING 10

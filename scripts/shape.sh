@@ -243,6 +243,19 @@ sql_steps=$(sed -n 's/.*unnest(array\[\([0-9, ]*\)\]).*/\1/p' supabase/migration
 [ "$swift_steps" = "$sql_steps" ] \
   || bad "EveningCharge.minutes is [$swift_steps] and app.charge_stage counts [$sql_steps]"
 
+# 20b. The box's stages, drawn on the phone and named by the server. The
+#     phone draws the track from BoxStage.days and the server names the stage
+#     from app.place_stage; if they differ, the gold mark sits past a stage
+#     the words haven't reached, or short of one they have.
+note "The box's stages are the same on the phone and the server"
+swift_days=$(sed -n 's/.*static let days = \[\([0-9, ]*\)\].*/\1/p' ReclaimKit/Sources/ReclaimKit/Support/BoxStage.swift | tr -d ' ')
+stage_sql=$(grep -l 'function app.place_stage' supabase/migrations/*.sql | sort | tail -1)
+sql_days=$(grep -o 'p_evenings >= [0-9]*' "$stage_sql" | grep -o '[0-9]*$' | sort -n | paste -sd, -)
+[ -n "$swift_days" ] || bad "couldn't read BoxStage.days"
+[ -n "$sql_days" ] || bad "couldn't read app.place_stage's thresholds"
+[ "$swift_days" = "$sql_days" ] \
+  || bad "BoxStage.days is [$swift_days] and app.place_stage ($stage_sql) counts [$sql_days]"
+
 # 21. Only the box starts an evening (CLAUDE.md rule 4). Every other way in —
 #     a button, a face-down phone, a guess from motion, a nearby phone, Siri —
 #     was built once and taken out, and each was one call to `setItDown` from
