@@ -7,3 +7,7 @@ kept one, `SplashView`.
 The ceremony prototype — the five-phone moment, rehearsed in a browser — went
 with the ceremony itself when the app became the box's (2026-11-06). It is in
 git history if it's ever wanted.
+
+`settings.html` is a proposal for screen 16, drawn at SwiftUI points beside
+the current page, with toggles for its states (two boxes, days not kept, the
+lock-screen ring off, a box out of range). Copy it would add is underlined.
