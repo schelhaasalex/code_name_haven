@@ -46,6 +46,7 @@ The current set:
 | `LabelledSection` | Eyebrow + a stack, used in Settings |
 | `StatRow` | Label on the left, a display-face number on the right |
 | `EveningMark` | One dot per evening you've had, tonight's among them, this week's darkest — on Home, behind the session, and on screen 8 |
+| `StarSheet` | What today's star is, opened by tapping it on Home |
 | `Ground` | The paper or night ground, gutters, safe area |
 
 **A component takes data, not `AppState`.** `EveningMark(layout:)`, not
