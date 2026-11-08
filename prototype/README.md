@@ -11,3 +11,7 @@ git history if it's ever wanted.
 `settings.html` is a proposal for screen 16, drawn at SwiftUI points beside
 the current page, with toggles for its states (two boxes, days not kept, the
 lock-screen ring off, a box out of range). Copy it would add is underlined.
+
+`box.html` is the same for screen 16a, the page tapping a box in Settings
+opens. It leads with the box's stage (`app.place_stage`), which no screen
+says yet.

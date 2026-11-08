@@ -236,7 +236,7 @@
   const st = { boxes: false, unkept: false, ringoff: false, away: false, clean: false };
 
   const box = (name, hours, days, since, away) => `
-    <div class="card box">
+    <a class="card box" href="box.html" style="display:block;color:inherit;text-decoration:none">
       <div class="top">
         <div><div class="name">${name}</div>
           <div class="radio"><span class="dot ${away ? 'away' : ''}"></span>${away ? 'Out of range' : 'Connected'}</div></div>
@@ -247,7 +247,7 @@
         <div><b>${days}</b><span>Days</span></div>
         <div><b>${since}</b><span>Since</span></div>
       </div>
-    </div>`;
+    </a>`;
 
   function render() {
     document.getElementById('boxlabel').textContent = st.boxes ? 'Your boxes' : 'Your box';
