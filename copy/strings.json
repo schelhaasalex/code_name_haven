@@ -26,9 +26,16 @@
   "time.evening": "{day} evening",
   "time.night": "{day} night",
 
-  "home.headline": "Ready when you are.",
+  "home.headline": "Put your phone in {place}.",
   "home.body": "Put your phone in the box. That's all there is to it.",
   "home.counted": "Today counts.",
+  "star.eyebrow": "Today's star",
+  "star.title": "Any slot in {place}. Fifteen minutes, and it fills in.",
+  "star.body": "It starts when your phone goes in, and counts whether or not anyone joins you.",
+  "star.counted.eyebrow": "Today",
+  "star.counted.title": "Today counts. It stays in your sky.",
+  "star.counted.body": "Put your phone in again whenever you like. Today's star is already yours.",
+  "star.close": "Got it",
   "home.evenings": "{count} days, since {month}.",
   "home.evenings.one": "One day, since {month}.",
   "home.sky": "{count} this week, {total} since {month}.",
@@ -179,6 +186,7 @@
   "onetap.decline": "Not for me",
 
   "home.a11y.settings": "Settings",
+  "home.a11y.star": "About today's star",
 
   "error.retry": "That didn't take. Try it again?",
   "unreachable.headline": "Not connected yet.",

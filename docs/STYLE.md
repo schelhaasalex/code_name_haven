@@ -53,6 +53,7 @@ The current set:
 | `NavRow` | A card that's a way somewhere else |
 | `NoticeCard` | The one thing on a page that needs doing, in clay, first |
 | `EveningMark` | One dot per evening you've had, tonight's among them, this week's darkest — on Home, behind the session, and on screen 8 |
+| `StarSheet` | What today's star is, opened by tapping it on Home |
 | `Ground` | The paper or night ground, gutters, safe area |
 
 **A component takes data, not `AppState`.** `EveningMark(layout:)`, not

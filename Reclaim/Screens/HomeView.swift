@@ -18,6 +18,7 @@ import ReclaimKit
 struct HomeView: View {
     @Environment(AppState.self) private var state
     @State private var scanning = false
+    @State private var aboutStar = false
 
     var body: some View {
         NavigationStack {
@@ -34,21 +35,19 @@ struct HomeView: View {
             .ground()
             .navigationDestination(for: Settings.self) { _ in SettingsView() }
             .fullScreenCover(isPresented: $scanning) { ScanView() }
+            .sheet(isPresented: $aboutStar) { StarSheet(place: placeName, counted: countedToday) }
         }
     }
 
     /// The one destination, so the link has something to say it is.
     struct Settings: Hashable {}
 
-    /// The box, quietly: it's where you are, not what this screen is about.
-    /// Before there is one, the app's own name.
+    /// The mark and the box, as the evening screen has them: it's where you
+    /// are, not what this screen is about. Before there is one, the app's
+    /// own name.
     private var header: some View {
         HStack {
-            if let place = state.boxPlace {
-                Text(state.name(of: place)).eyebrow(Palette.muted)
-            } else {
-                Eyebrow(text: t("app.name"))
-            }
+            Eyebrow(text: state.boxPlace == nil ? t("app.name") : placeName)
             Spacer()
             NavigationLink(value: Settings()) {
                 Image(systemName: "slider.horizontal.3")
@@ -77,11 +76,11 @@ struct HomeView: View {
             let layout = EveningMarkLayout.today(total: total.count, counted: countedToday)
             VStack(spacing: 28) {
                 EveningMark(layout: layout, size: 290, recent: thisWeek - (countedToday ? 1 : 0),
-                            seed: state.skySeed)
+                            pulse: true, onTonight: { aboutStar = true }, seed: state.skySeed)
                     .animation(.spring(response: 0.6, dampingFraction: 0.65), value: layout)
                 VStack(spacing: 8) {
                     Text(Say.partOfDay(.now)).eyebrow(Palette.clay)
-                    Text(t(countedToday ? "home.counted" : "home.headline"))
+                    Text(countedToday ? t("home.counted") : t("home.headline", "place", placeName))
                         .font(Type.display(26)).foregroundStyle(Palette.ink)
                     Text(Say.days(total: total.count, thisWeek: thisWeek,
                                   month: Say.month(from: total.first) ?? ""))
@@ -91,7 +90,13 @@ struct HomeView: View {
             }
             .frame(maxWidth: .infinity)
             .accessibilityElement(children: .combine)
+            .accessibilityAction(named: t("home.a11y.star")) { aboutStar = true }
         }
+    }
+
+    /// The box this phone was last at, by the name every phone calls it.
+    private var placeName: String {
+        state.boxPlace.map(state.name(of:)) ?? t("box.unnamed")
     }
 
     private var countedToday: Bool { state.evenings.contains(PlainDate.string(from: .now)) }
