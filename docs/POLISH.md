@@ -36,11 +36,6 @@ there are days to draw. Only the line under it changes:
 | A box, today waiting | *Put your phone in The Harbor.* | the days line |
 | A box, today counted | *Today counts.* | the days line |
 
-**The box is named once.** It is in the top-left eyebrow *and* the headline.
-Drop the eyebrow. The top of Home is then just the settings mark. The name
-appears while it's useful, in the instruction, and goes with it once today
-counts.
-
 **Zero days says nothing.** The line under the headline is currently
 `home.body` ("Put your phone in the box…"), which repeats the headline. At
 zero there's no line. Delete `home.body`.
@@ -125,11 +120,6 @@ happened.
 
 ## 16 — Settings
 
-**Privacy moves into Settings, and its screen goes.** It's two paragraphs
-behind a row of their own. They become the last section above the footer,
-under *What we can see*. That's one fewer screen, and one fewer place where
-"what does this app know" is kept.
-
 **Deleting the account goes home.** After it succeeds, Settings pops back to
 Home, now fresh, and says so once in the banner: *Your account has gone.
 This phone starts again from here.* Nothing else changes.
@@ -157,8 +147,7 @@ changes.
 ## Copy
 
 - Delete: `home.body`, `scan.eyebrow`, `box.kept.label`, `onetap.decline`,
-  `autoclosed.counts`, `session.together`, `lockscreen.together`,
-  `settings.privacy`.
+  `autoclosed.counts`, `session.together`, `lockscreen.together`.
 - Delete the keys that only survive in component previews, for things that
   are out of scope: `home.primary` (Set it down), `session.end` (End),
   `settings.signout`, `settings.nudge.title`, `places.somewhere.*`. Each
@@ -182,13 +171,11 @@ changes.
 | A haptic when someone joins | The phone is in a box |
 | Words vs digits past twelve | That's `Say.number`'s house style, and right |
 
-## Open
+## Decided
 
-1. **Privacy into Settings.** It removes a screen, but the App Store asks for a
-   privacy policy link, and the full policy belongs on the site. Inline here,
-   plus a link from App Store Connect, is enough?
-2. **The stage over the count.** *Three of you so far.* is in the voice table
-   as the example of on-brand. It stays, but in the smaller line. Is that the
-   right weight for it?
-3. **Home without the box's name on top** once today counts. Fine with
-   one box; with two, is "which box was I last at" worth the eyebrow?
+- **The box's name stays above the sky** (2026-11-09). It says where you
+  are, and with two boxes it says which.
+- **Privacy stays its own screen** (2026-11-09). It is a placeholder until the
+  website is live, and goes then.
+- **The stage over the count** is still open: *Three of you so far.* moves to
+  the smaller line.
