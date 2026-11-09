@@ -20,7 +20,7 @@ import ReclaimKit
 struct SessionView: View {
     @Environment(AppState.self) private var state
 
-    private var solo: Bool { state.members.count <= 1 }
+    private var solo: Bool { state.memberCount <= 1 }
 
     /// Today already counted, earlier: tonight's dot is that one, filled from
     /// the start.
@@ -71,7 +71,7 @@ struct SessionView: View {
                         .font(Type.body(16)).foregroundStyle(Palette.dim)
                 }
             }
-            .animation(.easeInOut(duration: 0.5), value: state.members.count)
+            .animation(.easeInOut(duration: 0.5), value: state.memberCount)
             .animation(.easeInOut(duration: 0.3), value: state.leavingUntil)
 
             Spacer(minLength: 28)
@@ -111,7 +111,7 @@ struct SessionView: View {
     private var sinceLine: String {
         let time = Say.time(state.startedAt ?? .now)
         return solo ? t("session.since", "time", time)
-                    : t("evening.together", "count", Say.count(state.members.count), "time", time)
+                    : t("evening.together", "count", Say.count(state.memberCount), "time", time)
     }
 
     /// "One evenings" was what VoiceOver read on a first evening.
@@ -127,5 +127,5 @@ struct SessionView: View {
 
 #Preview("Just you") {
     SessionView().environment(AppState(repo: PreviewRepository(
-        members: [Member(profileId: PreviewRepository.me, stillLive: true)])))
+        members: 1)))
 }

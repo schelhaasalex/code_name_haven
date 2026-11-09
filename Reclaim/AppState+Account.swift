@@ -39,7 +39,7 @@ extension AppState {
         keptElsewhere = nil
         do {
             try await repo.signIn(appleIdToken: other.idToken, nonce: other.nonce)
-            session = nil; gathering = nil; members = []; startedAt = nil
+            session = nil; gathering = nil; memberCount = 0; startedAt = nil
             evenings = []; eveningTotal = nil
             await load()
         } catch {
@@ -61,7 +61,7 @@ extension AppState {
             return false
         }
         for id in boxPlaces { forget(id) }
-        session = nil; gathering = nil; members = []; startedAt = nil
+        session = nil; gathering = nil; memberCount = 0; startedAt = nil
         evenings = []; eveningTotal = nil; kept = nil
         await load()
         banner = t("settings.deleted")

@@ -37,7 +37,7 @@ extension AppState {
 
     private func showLeaving(_ until: Date?) async {
         guard isLive else { return }
-        await LiveActivityController.update(startedAt: startedAt ?? .now, memberCount: max(1, members.count),
+        await LiveActivityController.update(startedAt: startedAt ?? .now, memberCount: max(1, memberCount),
                                             placeName: placeName, endingAt: until)
     }
 }

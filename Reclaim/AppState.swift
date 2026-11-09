@@ -86,7 +86,10 @@ public final class AppState {
     // the live evening
     public var session: Session?
     public var gathering: Gathering?
-    public var members: [Member] = []
+    /// How many people have joined the evening — everyone who put a phone
+    /// in, once, however many stretches. A number from the server, never a
+    /// list of who (rule 1): the count goes up, never down.
+    public var memberCount = 0
     /// Out of the box and counting down to the evening's end (`leaving`).
     public var leavingUntil: Date?
     public var startedAt: Date?

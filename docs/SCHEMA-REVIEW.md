@@ -67,7 +67,8 @@ not aggregates — it cannot express "readable in aggregate but not enumerable."
 **Fix.** `sessions` is `profile_id = auth.uid()` for select, full stop. The same
 for `profiles`. Co-presence is exposed only through `app.gathering_members` and
 `app.place_summary`, which are `SECURITY DEFINER`, check membership first, and
-return aggregates. This is a real constraint on the client: **it may not read
+return aggregates. (Since 0023 it is `app.gathering_count`, a number: the
+roster still handed every phone everyone else's account id and name.) This is a real constraint on the client: **it may not read
 other people's rows directly, ever.**
 
 ### 6. `join_secret_hash` was readable — column grants don't work that way

@@ -38,7 +38,7 @@ Dependencies: **`supabase-swift` only.**
 
 ```
 ReclaimKit/Sources/ReclaimKit/
-  Models/        Session, Gathering, Place, Profile, Member, PlaceSummary, EveningTotal
+  Models/        Session, Gathering, Place, Profile, PlaceSummary, EveningTotal
   Data/          Repository (protocol), SupabaseRepository, PreviewRepository
   Dock/          Box (the Portside protocol, "was it me"), BoxLink (the radio),
                  BoxPairing, Dock (links), DockSlot, DockLight + WLED (the lights)
@@ -89,7 +89,7 @@ own.
 | `dockPlace(secret:handle:)` | The box's place, found or made by whoever reads its tag or code first, and the reader one of its people (0013, 0017) |
 | `startOrJoin(place:source:)` | The phone went in: join the box's open evening, or open it |
 | `endSession(_:)` | The phone came out. Returns the minutes credited, capped |
-| `members(of:)` | Who's in the evening — a count on screen, never a roster |
+| `memberCount(of:)` | How many are in the evening — a number from `gathering_count` (0023), never who |
 | `summary(of:)` | The box's whole life: evenings, hours together, its stage |
 | `myEvenings()` | Your own evenings, as days |
 | `saveActivityToken`, `startActivityRemotely`, `saveLiveActivity` | The Live Activity's pushes (0015, 0016) |
@@ -109,7 +109,7 @@ Settings' "What we can see" says so. Nobody's client can read them back; the
 ## State
 
 One `AppState` on the environment. It holds the evening (`session`,
-`gathering`, `members`, `startedAt`), the boxes (`boxPlaces` in the order they
+`gathering`, `memberCount`, `startedAt`), the boxes (`boxPlaces` in the order they
 were met, `lastBox`, `boxSummaries`; `boxPlace` is the one Home leads with), your
 evenings (`evenings`, `eveningTotal`), and the two things that surface over
 Home: `justEnded` (screen 8) and `closedForYou` (screen 13).

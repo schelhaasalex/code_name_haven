@@ -60,7 +60,7 @@ extension AppState {
         if let s = session, isLive {
             await LiveActivityController.start(gatheringId: s.gatheringId,
                                                startedAt: startedAt ?? s.startedAt,
-                                               memberCount: max(1, members.count),
+                                               memberCount: max(1, memberCount),
                                                placeName: placeName)
         }
         guard DockSlot.current != nil else { return }

@@ -113,24 +113,6 @@ public struct Session: Codable, Identifiable, Hashable, Sendable {
     public var isLive: Bool { endedAt == nil }
 }
 
-/// One person in a gathering you are in. The ONLY thing the app ever learns
-/// about someone else's session — no dates, no history, no counts.
-public struct Member: Codable, Identifiable, Hashable, Sendable {
-    public let profileId: UUID
-    public let stillLive: Bool
-
-    public var id: UUID { profileId }
-
-    enum CodingKeys: String, CodingKey {
-        case profileId = "profile_id"
-        case stillLive = "still_live"
-    }
-
-    public init(profileId: UUID, stillLive: Bool) {
-        self.profileId = profileId; self.stillLive = stillLive
-    }
-}
-
 public struct PlaceSummary: Codable, Hashable, Sendable {
     /// COUNT(DISTINCT local_date) — a five-person dinner is one evening.
     public let evenings: Int

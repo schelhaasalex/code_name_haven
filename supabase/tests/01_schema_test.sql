@@ -106,7 +106,7 @@ end $$;
 -- you weren't there. Other people's session rows must be unreadable.
 
 do $$
-declare v_mine int; v_profiles int; v_members int;
+declare v_mine int; v_profiles int; v_members int; v_cols int;
 begin
   set local role authenticated;
   perform auth.login('22222222-2222-2222-2222-222222222222');
@@ -117,13 +117,20 @@ begin
   select count(*) into v_profiles from profiles;
   assert v_profiles = 1, format('Maya should see only her own profile, saw %s', v_profiles);
 
-  -- But co-presence still works, through the aggregate function.
-  select count(*) into v_members
-    from app.gathering_members((select gathering_id from sessions limit 1));
-  assert v_members = 3, format('gathering_members should show 3, got %s', v_members);
+  -- But co-presence still works, through the aggregate: a number, and
+  -- nothing that could be enumerated (0023).
+  v_members := public.gathering_count((select gathering_id from sessions limit 1));
+  assert v_members = 3, format('gathering_count should be 3, got %s', v_members);
 
   reset role;
-  raise notice 'PASS  3  own rows only (1 session, 1 profile), co-presence still returns 3';
+  select count(*) into v_cols
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public' and p.proname = 'gathering_count'
+     and p.prorettype = 'integer'::regtype and not p.proretset;
+  assert v_cols = 1, 'gathering_count returns one integer, never rows';
+  assert to_regproc('public.gathering_members') is null,
+    'the roster that returned everyone''s id and name is gone';
+  raise notice 'PASS  3  own rows only (1 session, 1 profile), co-presence is a count of 3';
 end $$;
 
 -- A stranger must not be able to read a gathering they were not in.
@@ -134,12 +141,12 @@ begin
   set local role authenticated;
   perform auth.login('00000000-0000-0000-0000-0000000000ff');
   begin
-    perform app.gathering_members(v_gathering);
+    perform app.gathering_count(v_gathering);
   exception when others then
     v_failed := true;
   end;
   reset role;
-  assert v_failed, 'a non-member must not read gathering members';
+  assert v_failed, 'a non-member must not count a gathering';
   raise notice 'PASS  3b non-members are refused';
 end $$;
 
@@ -157,26 +164,6 @@ begin
   reset role;
   assert v_failed, 'join_secret_hash must not be selectable by clients';
   raise notice 'PASS  3c join secret is not readable';
-end $$;
-
--- ============================================================ FINDING 4
--- Merging must not brick a card already stuck to a door.
-
-do $$
-declare v_a uuid; v_b uuid; v_resolved uuid;
-begin
-  perform auth.login('11111111-1111-1111-1111-111111111111');
-  v_a := (select id from places where handle = 'amber-otter');
-  v_b := app.create_place('quiet-heron', 'another-long-random-secret', 'The Kitchen');
-
-  perform app.merge_places(v_b, v_a);
-
-  v_resolved := app.resolve_place('another-long-random-secret');
-  assert v_resolved = v_a,
-    'the merged-away card must resolve to the surviving place';
-  assert (select merged_into from places where id = v_b) = v_a,
-    'merged_into should point at the survivor';
-  raise notice 'PASS  4  a merged card still resolves';
 end $$;
 
 -- ============================================================ FINDING 5
@@ -204,26 +191,6 @@ begin
   raise notice 'PASS  5  nine hours credited as 180 minutes';
 end $$;
 
--- ============================================================ FINDING 6
--- Retroactive credit is always solo and always placeless — nobody was
--- broadcasting, so co-presence cannot be invented after the fact.
-
-do $$
-declare v_id uuid; v_row record;
-begin
-  perform auth.login('22222222-2222-2222-2222-222222222222');
-  v_id := app.record_retroactive(now() - interval '3 hours', now() - interval '80 minutes', 'UTC');
-  select s.*, g.place_id into v_row
-    from sessions s join gatherings g on g.id = s.gathering_id where s.id = v_id;
-
-  assert v_row.retroactive, 'should be flagged retroactive';
-  assert v_row.place_id is null, 'a retroactive session must have no place';
-  assert v_row.duration_minutes = 100,
-    format('expected 100 minutes, got %s', v_row.duration_minutes);
-  assert v_row.qualifying, '100 minutes is well past the 15 minute floor';
-  raise notice 'PASS  6  retroactive session is solo, placeless, 100 min';
-end $$;
-
 -- ============================================================ FINDING 7
 -- A live session has not qualified yet, and there can only be one at a time.
 
@@ -249,71 +216,6 @@ begin
 
   perform app.end_session();
   raise notice 'PASS  7  one live session per person, never pre-qualified';
-end $$;
-
--- ============================================================ FINDING 8
--- Rhythms. A run survives a single missed day if a rest day is unspent for
--- that ISO week; the rest day covers the gap without counting as an evening.
-
-do $$
-declare v_gather uuid; v_row record; d date;
-begin
-  perform auth.login('22222222-2222-2222-2222-222222222222');
-  delete from sessions where profile_id = '22222222-2222-2222-2222-222222222222';
-
-  -- Six consecutive days ending today, with one day missing four days ago.
-  foreach d in array array[
-      current_date - 6, current_date - 5, current_date - 4,
-      -- current_date - 3 deliberately missing
-      current_date - 2, current_date - 1, current_date]
-  loop
-    insert into gatherings (place_id, started_by, started_at, ended_at)
-    values (null, '22222222-2222-2222-2222-222222222222',
-            d::timestamptz, d::timestamptz + interval '1 hour')
-    returning id into v_gather;
-    insert into sessions (profile_id, gathering_id, started_at, ended_at,
-                          duration_minutes, local_date, qualifying)
-    values ('22222222-2222-2222-2222-222222222222', v_gather,
-            d::timestamptz, d::timestamptz + interval '1 hour', 60, d, true);
-  end loop;
-
-  select * into v_row from app.my_rhythm();
-  assert v_row.state = 'in_rhythm', format('expected in_rhythm, got %s', v_row.state);
-  assert v_row.current_run_days = 6,
-    format('six evenings across a forgiven gap should be a run of 6, got %s',
-           v_row.current_run_days);
-  assert v_row.last_qualifying_date = current_date, 'last date should be today';
-  raise notice 'PASS  8  run of % across a forgiven gap, state %',
-    v_row.current_run_days, v_row.state;
-end $$;
-
--- Two missed days in one week breaks the run; the days already banked survive
--- as longest_run_days, which is what screen 14 promises.
-do $$
-declare v_gather uuid; v_row record; d date;
-begin
-  perform auth.login('33333333-3333-3333-3333-333333333333');
-  delete from sessions where profile_id = '33333333-3333-3333-3333-333333333333';
-
-  foreach d in array array[current_date - 20, current_date - 19, current_date - 18,
-                           current_date - 17, current_date - 16]
-  loop
-    insert into gatherings (place_id, started_by, started_at, ended_at)
-    values (null, '33333333-3333-3333-3333-333333333333',
-            d::timestamptz, d::timestamptz + interval '1 hour')
-    returning id into v_gather;
-    insert into sessions (profile_id, gathering_id, started_at, ended_at,
-                          duration_minutes, local_date, qualifying)
-    values ('33333333-3333-3333-3333-333333333333', v_gather,
-            d::timestamptz, d::timestamptz + interval '1 hour', 60, d, true);
-  end loop;
-
-  select * into v_row from app.my_rhythm();
-  assert v_row.state = 'between', format('expected between, got %s', v_row.state);
-  assert v_row.current_run_days = 0, 'a broken rhythm has no current run';
-  assert v_row.longest_run_days = 5,
-    format('the five days that happened must survive, got %s', v_row.longest_run_days);
-  raise notice 'PASS  8b between rhythms, five banked days survive';
 end $$;
 
 -- ============================================================ FINDING 9
@@ -387,26 +289,6 @@ begin
   raise notice 'PASS 10b ownerless fallback works';
 end $$;
 
--- ============================================================ FINDING 11
--- Naming a "Somewhere" bucket moves its history onto the new place.
-
-do $$
-declare v_place uuid; v_moved int;
-begin
-  perform auth.login('22222222-2222-2222-2222-222222222222');
-  v_place := app.name_somewhere('calm-badger', 'fourth-long-random-secret', 'The Deck');
-
-  select count(*) into v_moved
-    from gatherings g
-    join sessions s on s.gathering_id = g.id
-   where g.place_id = v_place
-     and s.profile_id = '22222222-2222-2222-2222-222222222222';
-
-  assert v_moved >= 6,
-    format('naming should have adopted the placeless history, moved %s', v_moved);
-  raise notice 'PASS 11  % placeless gatherings adopted by the new place', v_moved;
-end $$;
-
 -- ============================================================ THE CLIENT API
 -- 0005 exists because PostgREST only serves exposed schemas, and `app` is not
 -- one: every RPC would have 404'd. The failure reads like a missing function
@@ -417,12 +299,8 @@ declare v_missing text; v_wrapped int; v_anon int;
 begin
   for v_missing in
     select name from unnest(array[
-      'resolve_place', 'create_place', 'start_or_join', 'end_session',
-      'record_retroactive', 'gathering_members', 'place_summary', 'my_rhythm',
-      'name_somewhere', 'merge_places', 'move_evening',
-      'create_invite', 'accept_invite', 'has_company',
-      'open_nearby', 'nearby_offer', 'join_nearby', 'my_evenings',
-      'dock_place', 'save_activity_token', 'save_live_activity',
+      'start_or_join', 'end_session', 'gathering_count', 'place_summary',
+      'my_evenings', 'dock_place', 'save_activity_token', 'save_live_activity',
       'delete_my_account', 'note']) as name
     where not exists (
       select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
@@ -435,7 +313,25 @@ begin
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public'
      and has_function_privilege('authenticated', p.oid, 'execute');
-  assert v_wrapped = 23, format('expected 23 callable wrappers, found %s', v_wrapped);
+  assert v_wrapped = 10, format('expected 10 callable wrappers, found %s', v_wrapped);
+
+  -- Every way into an evening but the box is gone, not merely unused (0024):
+  -- each was still callable, and retroactive credit could add evenings
+  -- nobody spent at a box to its totals.
+  for v_missing in
+    select name from unnest(array[
+      'record_retroactive', 'move_evening', 'create_invite', 'accept_invite',
+      'has_company', 'open_nearby', 'nearby_offer', 'join_nearby', 'my_rhythm',
+      'name_somewhere', 'merge_places', 'create_place', 'resolve_place',
+      'gathering_members']) as name
+    where exists (
+      select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'public' and p.proname = name)
+  loop
+    assert false, format('public.%s should be gone', v_missing);
+  end loop;
+  assert to_regclass('public.invites') is null and to_regclass('public.nearby_keys') is null,
+    'invites and over-the-air keys should be gone';
 
   -- The scheduler's job is not a client's to call: nine hours of
   -- phone-on-the-side becoming 180 minutes has to happen TO you, not by you.
@@ -448,7 +344,7 @@ begin
    where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute');
   assert v_anon = 0, format('anon can execute %s functions in public', v_anon);
 
-  raise notice 'PASS 12  twenty-three wrappers callable by authenticated, none by anon';
+  raise notice 'PASS 12  ten wrappers callable by authenticated, none by anon, no way in but the box';
 end $$;
 
 -- ============================================================ FINDING 15
@@ -546,334 +442,25 @@ begin
   raise notice 'PASS 15  channels open to members only, uppercase topics match, anon and presence refused';
 end $$;
 
--- ============================================================ 16
--- Scanning in after setting your phone down. The host started as Somewhere;
--- a friend arrives and taps the card, opening an evening at the place. The
--- host scans too, and must end up in the SAME evening as the friend — with
--- their own start time, so no credit changes.
-
-do $$
-declare
-  v_host   uuid := '77777777-7777-7777-7777-777777777777';
-  v_friend uuid := '88888888-8888-8888-8888-888888888888';
-  v_place uuid; v_solo_place uuid;
-  v_host_gathering uuid; v_friend_gathering uuid; v_moved uuid;
-  v_started timestamptz; v_members int; v_failed boolean;
-begin
-  insert into auth.users (id, email) values (v_host, 'mover@example.test'),
-                                            (v_friend, 'guest@example.test');
-  insert into profiles (id, display_name) values (v_host, 'Mover'), (v_friend, 'Guest');
-
-  perform auth.login(v_friend);
-  v_place := app.create_place('open-hearth', 'a-card-on-the-hearth-secret', 'The Hearth');
-  perform app.start_or_join(v_place, 'tag', 'UTC');
-  select gathering_id into v_friend_gathering from sessions where profile_id = v_friend and ended_at is null;
-
-  perform auth.login(v_host);
-  perform app.start_or_join(null, 'app', 'UTC');
-  select gathering_id, started_at into v_host_gathering, v_started
-    from sessions where profile_id = v_host and ended_at is null;
-
-  v_moved := app.move_evening(v_place);
-  assert v_moved = v_friend_gathering, 'the host must land in the evening already open there';
-  assert (select gathering_id from sessions where profile_id = v_host and ended_at is null) = v_friend_gathering,
-    'the host''s session must have moved';
-  assert (select started_at from sessions where profile_id = v_host and ended_at is null) = v_started,
-    'moving must not change when the host started';
-  assert not exists (select 1 from gatherings where id = v_host_gathering),
-    'the empty placeless evening left behind must be gone';
-  select count(*) into v_members from app.gathering_members(v_friend_gathering);
-  assert v_members = 2, format('host and friend should share one evening, saw %s', v_members);
-  assert exists (select 1 from place_people where place_id = v_place and profile_id = v_host and left_at is null),
-    'the host must now belong to the place';
-
-  -- Already here: nothing moves.
-  assert app.move_evening(v_place) = v_friend_gathering, 'moving to where you are changes nothing';
-
-  -- Alone, with nothing open at the place: the evening itself becomes the place's.
-  perform app.end_session(null);
-  v_solo_place := app.create_place('quiet-landing', 'a-card-on-the-landing-secret', 'The Landing');
-  perform app.start_or_join(null, 'app', 'UTC');
-  select gathering_id into v_host_gathering from sessions where profile_id = v_host and ended_at is null;
-  assert app.move_evening(v_solo_place) = v_host_gathering, 'a solo evening should become the place''s, not be replaced';
-  assert (select place_id from gatherings where id = v_host_gathering) = v_solo_place, 'the evening now has the place';
-
-  -- Back into an evening you already left tonight: a second stretch beside
-  -- the first, never stitched to it — stitching would credit the gap (0014;
-  -- until then this was refused outright).
-  select started_at into v_started from sessions where profile_id = v_host and ended_at is null;
-  assert app.move_evening(v_place) = v_friend_gathering, 'back into the evening already open there';
-  assert (select count(*) from sessions where gathering_id = v_friend_gathering and profile_id = v_host) = 2,
-    'as a second stretch, not merged into the first';
-  assert (select started_at from sessions where profile_id = v_host and ended_at is null) = v_started,
-    'the new stretch keeps its own start, so the time away is not credited';
-  select count(*) into v_members from app.gathering_members(v_friend_gathering);
-  assert v_members = 2, format('still two people, however many stretches: saw %s', v_members);
-
-  -- No live evening: nothing to move.
-  perform app.end_session(null);
-  v_failed := false;
-  begin
-    perform app.move_evening(v_place);
-  exception when others then v_failed := true;
-  end;
-  assert v_failed, 'with nothing running there is nothing to move';
-
-  perform auth.logout();
-  raise notice 'PASS 16  scanning in mid-evening joins the evening already there, start time kept';
-end $$;
-
--- ============================================================ 17
--- Invitations. Alex invites a guest to the Porch by message. Accepting makes
--- the guest one of the Porch's people and STARTS NOTHING — a link opened on a
--- Tuesday is not someone sitting at the table.
-
-do $$
-declare
-  v_alex   uuid := '99999999-9999-9999-9999-999999999991';
-  v_guest  uuid := '99999999-9999-9999-9999-999999999992';
-  v_third  uuid := '99999999-9999-9999-9999-999999999993';
-  v_stray  uuid := '99999999-9999-9999-9999-999999999994';
-  v_place uuid; v_token text; v_row record; v_failed boolean; v_sessions int;
-begin
-  insert into auth.users (id, email) values (v_alex, 'inviter@example.test'), (v_guest, 'invited@example.test'),
-                                            (v_third, 'forwarded@example.test'), (v_stray, 'stray@example.test');
-  insert into profiles (id, display_name) values (v_alex, 'Alex'), (v_guest, 'Guest'),
-                                                 (v_third, 'Third'), (v_stray, 'Stray');
-
-  perform auth.login(v_alex);
-  v_place := app.create_place('warm-porch', 'a-card-on-the-porch-secret', 'The Porch');
-  v_token := app.create_invite(v_place);
-  assert length(v_token) >= 20, 'the token should be long and random';
-  assert not exists (select 1 from invites where token_hash = v_token),
-    'only the hash may be stored';
-
-  -- Someone who isn't one of the Porch's people can't bring anyone in.
-  perform auth.login(v_stray);
-  v_failed := false;
-  begin perform app.create_invite(v_place); exception when others then v_failed := true; end;
-  assert v_failed, 'a non-member must not be able to invite to a place';
-
-  perform auth.login(v_guest);
-  select * into v_row from app.accept_invite(v_token);
-  assert v_row.place_id = v_place, 'accepting should land in the Porch';
-  assert v_row.place_name = 'The Porch' and v_row.invited_by = 'Alex',
-    format('the welcome needs the place and who asked, got %s / %s', v_row.place_name, v_row.invited_by);
-  assert exists (select 1 from place_people where place_id = v_place and profile_id = v_guest and left_at is null),
-    'the guest must now be one of the Porch''s people';
-  select count(*) into v_sessions from sessions where profile_id = v_guest;
-  assert v_sessions = 0, 'accepting an invite must not start an evening';
-
-  -- Forwarded to a family group: still good within the week.
-  perform auth.login(v_third);
-  perform app.accept_invite(v_token);
-  assert (select uses from invites where place_id = v_place) = 2, 'both uses should be counted';
-
-  -- A wrong token, and an expired one, are refused.
-  v_failed := false;
-  begin perform app.accept_invite('not-a-real-token-at-all'); exception when others then v_failed := true; end;
-  assert v_failed, 'a made-up token must be refused';
-
-  update invites set expires_at = now() - interval '1 minute' where place_id = v_place;
-  perform auth.login(v_stray);
-  v_failed := false;
-  begin perform app.accept_invite(v_token); exception when others then v_failed := true; end;
-  assert v_failed, 'an expired invite must be refused';
-  assert not exists (select 1 from place_people where place_id = v_place and profile_id = v_stray),
-    'and must not have let anyone in';
-
-  -- Clients never touch the table itself.
-  perform auth.logout();
-  set local role authenticated;
-  v_failed := false;
-  begin perform 1 from invites limit 1; exception when insufficient_privilege then v_failed := true; end;
-  reset role;
-  assert v_failed, 'invites must not be readable by clients';
-
-  raise notice 'PASS 17  an invite joins the place and starts nothing; expired, forged and non-member invites refused';
-end $$;
-
--- ============================================================ 18
--- Company. Home keeps offering an invite until someone else shares one of
--- your places. The answer is a single boolean — never who, never how many.
-
-do $$
-declare
-  v_lone  uuid := 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1';
-  v_other uuid := 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2';
-  v_place uuid; v_token text;
-begin
-  insert into auth.users (id, email) values (v_lone, 'lone@example.test'), (v_other, 'other@example.test');
-  insert into profiles (id, display_name) values (v_lone, 'Lone'), (v_other, 'Other');
-
-  perform auth.login(v_lone);
-  assert not app.has_company(), 'no places, no company';
-  v_place := app.create_place('lone-table', 'a-card-on-the-lone-table', 'The Lone Table');
-  assert not app.has_company(), 'a place of your own is not company';
-  v_token := app.create_invite(v_place);
-
-  perform auth.login(v_other);
-  perform app.accept_invite(v_token);
-
-  perform auth.login(v_lone);
-  assert app.has_company(), 'someone else in your place is company';
-
-  -- They leave: on your own again, and the offer comes back.
-  update place_people set left_at = now() where place_id = v_place and profile_id = v_other;
-  assert not app.has_company(), 'someone who left is not company';
-
-  perform auth.logout();
-  raise notice 'PASS 18  company is one boolean: someone else, still there, in a place of yours';
-end $$;
-
--- ============================================================ FINDING 19
--- Proximity (0010). One phone already down at a table, another across it with
--- nothing to scan. What travels between them is a key that dies with the
--- evening — never a place id, which would outlive it by years.
-
-do $$
-declare
-  v_host  uuid := 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1';
-  v_guest uuid := 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2';
-  v_place uuid; v_key text; v_stale text; v_row record; v_failed boolean := false;
-  v_gathering uuid; v_sessions int;
-begin
-  insert into auth.users (id, email) values (v_host, 'host@example.test'), (v_guest, 'guest@example.test');
-  insert into profiles (id, display_name) values (v_host, 'Host'), (v_guest, 'Guest');
-
-  -- Nothing running: nothing to advertise, and NOT an error — the phone asks
-  -- whenever the radio wants a key and shouldn't have to know the answer.
-  perform auth.login(v_host);
-  assert app.open_nearby() is null, 'with no evening running there is nothing to advertise';
-
-  -- A placeless evening stays off the radio: joining one would make you one
-  -- of the people of a place that doesn't exist.
-  perform app.start_or_join(null, 'app', 'UTC');
-  assert app.open_nearby() is null, 'a placeless evening must not be findable';
-  perform app.end_session(null);
-
-  v_place := app.create_place('host-table', 'a-card-on-the-host-table', 'The Host Table');
-  perform app.start_or_join(v_place, 'app', 'UTC');
-  v_key := app.open_nearby();
-  assert v_key is not null, 'an evening at a place should be findable';
-  assert not exists (select 1 from nearby_keys where token_hash = v_key),
-    'the key itself must never be stored, only its hash';
-
-  -- The host is already at the table: there is nothing to offer them.
-  assert not exists (select 1 from app.nearby_offer(v_key)),
-    'no offer to someone already in the evening';
-
-  perform auth.login(v_guest);
-  select * into v_row from app.nearby_offer(v_key);
-  assert v_row.gathering is not null, 'the guest should be offered the evening';
-  assert v_row.people = 1, format('one phone down so far, got %s', v_row.people);
-
-  -- Everything the offer does NOT carry, asserted at the shape of the
-  -- function rather than at one call of it. The guest has not joined
-  -- anything yet: a place id in here would be a way into that house that
-  -- outlives the evening by years, and a name would be someone else's to
-  -- give. Adding either breaks this line on purpose.
-  assert (select proargnames from pg_proc
-           where proname = 'nearby_offer' and pronamespace = 'app'::regnamespace)
-         = array['p_token', 'gathering', 'people', 'since'],
-    'the offer must carry the evening, the count and the time — nothing else';
-
-  v_gathering := app.join_nearby(v_key, 'UTC');
-  assert v_gathering = v_row.gathering, 'joining should land in the evening that was offered';
-  select count(*) into v_sessions from sessions where gathering_id = v_gathering;
-  assert v_sessions = 2, format('expected two phones down, got %s', v_sessions);
-  assert exists (select 1 from place_people where place_id = v_place and profile_id = v_guest),
-    'joining over the air makes you one of the place''s people, as a card does';
-  assert (select source from sessions where gathering_id = v_gathering and profile_id = v_guest)
-         = 'nearby', 'the evening should record how it was joined';
-
-  -- The key is spent on the evening, not on the guest: a second phone may use
-  -- the same one, which is the five-people-at-a-table case.
-  perform auth.logout();
-  perform auth.login('44444444-4444-4444-4444-444444444444');
-  assert exists (select 1 from app.nearby_offer(v_key)), 'one key, several phones';
-  perform auth.logout();
-
-  -- The host picks their phone up first. The evening is the TABLE'S, not
-  -- theirs: the guest is still down, so it is still happening and still
-  -- findable.
-  perform auth.login(v_host);
-  perform app.end_session(null);
-  perform auth.login('44444444-4444-4444-4444-444444444444');
-  assert exists (select 1 from app.nearby_offer(v_key)),
-    'an evening someone is still sitting in is still open to join';
-
-  -- And it dies with the evening. This is the whole reason a key exists
-  -- rather than a place id.
-  perform auth.login(v_guest);
-  perform app.end_session(null);
-  perform auth.login('44444444-4444-4444-4444-444444444444');
-  assert not exists (select 1 from app.nearby_offer(v_key)), 'a key must not outlive the evening';
-  begin perform app.join_nearby(v_key, 'UTC'); exception when others then v_failed := true; end;
-  assert v_failed, 'joining an evening that has ended must be refused';
-
-  -- A forged key resolves to nothing.
-  assert not exists (select 1 from app.nearby_offer('not-a-real-key-at-all')),
-    'a forged key must offer nothing';
-
-  -- Expiry, the backstop for an evening that was never closed.
-  perform auth.login(v_host);
-  perform app.start_or_join(v_place, 'app', 'UTC');
-  v_stale := app.open_nearby();
-  update nearby_keys set expires_at = now() - interval '1 minute'
-   where token_hash = encode(extensions.digest(v_stale, 'sha256'), 'hex');
-  perform auth.login('44444444-4444-4444-4444-444444444444');
-  assert not exists (select 1 from app.nearby_offer(v_stale)), 'an expired key must offer nothing';
-
-  -- Nobody reads this table but the functions. Asserted as a privilege
-  -- rather than as a failed read, because the harness runs as the owner and
-  -- would be let through either way.
-  assert not has_table_privilege('authenticated', 'public.nearby_keys', 'select'),
-    'nearby keys must not be readable by a client';
-  assert not has_table_privilege('anon', 'public.nearby_keys', 'select'),
-    'nearby keys must not be readable by anon';
-
-  perform auth.logout();
-  raise notice 'PASS 19  a key over the air joins the evening, and is worthless once it ends';
-end $$;
-
--- The guest who was already having an evening of their own: the table they
--- walk up to takes it over rather than starting a second one (0007).
-do $$
-declare
-  v_host  uuid := 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3';
-  v_guest uuid := 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4';
-  v_place uuid; v_key text; v_was uuid; v_now uuid; v_started timestamptz;
-begin
-  insert into auth.users (id, email) values (v_host, 'host2@example.test'), (v_guest, 'guest2@example.test');
-  insert into profiles (id, display_name) values (v_host, 'Host2'), (v_guest, 'Guest2');
-
-  perform auth.login(v_host);
-  v_place := app.create_place('host-porch', 'a-card-on-the-host-porch', 'The Host Porch');
-  perform app.start_or_join(v_place, 'app', 'UTC');
-  v_key := app.open_nearby();
-
-  -- Their own evening, started before they walked in.
-  perform auth.login(v_guest);
-  perform app.start_or_join(null, 'app', 'UTC');
-  select gathering_id, started_at into v_was, v_started
-    from sessions where profile_id = v_guest and ended_at is null;
-
-  v_now := app.join_nearby(v_key, 'UTC');
-  assert v_now <> v_was, 'the guest should have moved to the host''s evening';
-  assert (select count(*) from sessions where profile_id = v_guest and ended_at is null) = 1,
-    'one live session per person, still';
-  assert (select started_at from sessions where profile_id = v_guest and ended_at is null) = v_started,
-    'moving an evening must not change what it started at, or what it counts';
-
-  perform auth.logout();
-  raise notice 'PASS 20  an evening of your own moves to the table rather than splitting it';
-end $$;
-
 -- ============================================================ 21
 -- Your evenings, all of them (0011). The end of an evening says "27 of them,
 -- since June" — distinct qualifying dates, your own only, and a number that
 -- only goes up.
+
+-- An evening already over, at no box, as the database would hold it. Written
+-- directly: the only way into an evening now is a phone in a box, in real time.
+create function pg_temp.evening(p_who uuid, p_from timestamptz, p_minutes int)
+returns void language sql as $$
+  with g as (
+    insert into gatherings (started_by, started_at, ended_at)
+    values (p_who, p_from, p_from + make_interval(mins => p_minutes))
+    returning id)
+  insert into sessions (profile_id, gathering_id, started_at, ended_at,
+                        duration_minutes, local_date, qualifying, source)
+  select p_who, g.id, p_from, p_from + make_interval(mins => p_minutes),
+         p_minutes, (p_from at time zone 'UTC')::date, p_minutes >= 15, 'tag'
+    from g
+$$;
 
 do $$
 declare
@@ -889,14 +476,13 @@ begin
   assert r.evenings = 0 and r.first_evening is null, 'nothing yet is zero, with no first evening';
 
   -- Two on the same day are one evening; a short one is kept, not counted.
-  perform app.record_retroactive('2026-06-03 19:00+00', '2026-06-03 20:00+00', 'UTC');
-  perform app.record_retroactive('2026-06-03 21:00+00', '2026-06-03 22:30+00', 'UTC');
-  perform app.record_retroactive('2026-06-10 19:00+00', '2026-06-10 19:10+00', 'UTC');
-  perform app.record_retroactive('2026-07-01 19:00+00', '2026-07-01 19:40+00', 'UTC');
+  perform pg_temp.evening(v_me, '2026-06-03 19:00+00', 60);
+  perform pg_temp.evening(v_me, '2026-06-03 21:00+00', 90);
+  perform pg_temp.evening(v_me, '2026-06-10 19:00+00', 10);
+  perform pg_temp.evening(v_me, '2026-07-01 19:00+00', 40);
 
   -- Someone else's evenings are theirs.
-  perform auth.login(v_other);
-  perform app.record_retroactive('2026-05-01 19:00+00', '2026-05-01 21:00+00', 'UTC');
+  perform pg_temp.evening(v_other, '2026-05-01 19:00+00', 120);
 
   perform auth.login(v_me);
   select * into r from public.my_evenings();
@@ -905,48 +491,6 @@ begin
 
   perform auth.logout();
   raise notice 'PASS 21  your evenings: distinct qualifying dates, your own, from the first';
-end $$;
-
-
--- ============================================================ 22
--- An evening you didn't start is still only an evening (0012). Retroactive
--- credit was capped by nothing, and screen 18 offered nine hours of sleep.
-
-do $$
-declare
-  v_me uuid := 'ffffffff-ffff-ffff-ffff-fffffffffff1';
-  r record; v_cap integer;
-begin
-  insert into auth.users (id, email) values (v_me, 'slept@example.test');
-  insert into profiles (id, display_name) values (v_me, 'Slept');
-  perform auth.login(v_me);
-  v_cap := app.auto_close_minutes();
-
-  -- The night from the TestFlight screenshot: 9:42pm to 6:46am.
-  perform app.record_retroactive('2026-09-22 21:42+00', '2026-09-23 06:46+00', 'UTC');
-  select duration_minutes, started_at, ended_at, qualifying into r
-    from sessions where profile_id = v_me;
-
-  assert r.duration_minutes = v_cap,
-    format('nine hours should be credited at the cap of %s, got %s', v_cap, r.duration_minutes);
-  assert r.ended_at = r.started_at + make_interval(mins => v_cap),
-    'the timestamps must agree with the minutes — one evening, one answer';
-  assert r.qualifying, 'it still counts';
-
-  -- The gathering it sits in says the same thing.
-  assert (select g.ended_at from gatherings g
-           join sessions s on s.gathering_id = g.id
-          where s.profile_id = v_me) = r.ended_at,
-    'the gathering and the session must end at the same moment';
-
-  -- An ordinary forgotten evening is untouched.
-  perform app.record_retroactive('2026-09-20 19:30+00', '2026-09-20 21:15+00', 'UTC');
-  assert (select duration_minutes from sessions
-           where profile_id = v_me and local_date = '2026-09-20') = 105,
-    'a real evening is credited exactly as it happened';
-
-  perform auth.logout();
-  raise notice 'PASS 22  retroactive credit is capped like auto-close, and agrees with its own clock';
 end $$;
 
 -- ============================================================ 23
@@ -1046,10 +590,8 @@ begin
   assert v_again = v_back, 'two taps are one stretch';
 
   -- Two people, however many stretches.
-  select count(*) into v_rows from app.gathering_members(v_gathering);
-  assert v_rows = 2, format('two people in the evening, listed %s times', v_rows);
-  assert (select still_live from app.gathering_members(v_gathering) where profile_id = v_here),
-    'and the one who came back is live';
+  v_rows := app.gathering_count(v_gathering);
+  assert v_rows = 2, format('two people in the evening, counted %s', v_rows);
 
   -- Another ten minutes: twenty in all, so the evening counted — both stretches.
   update sessions set started_at = now() - interval '10 minutes' where id = v_back;
@@ -1060,17 +602,6 @@ begin
   assert (select sum(duration_minutes) from sessions
            where gathering_id = v_gathering and profile_id = v_here) = 20,
     'and the time away is not credited';
-
-  -- Moving into an evening you were in earlier is a new stretch there too.
-  v_other := app.create_place('kind-hare', 'rejoin-other-secret', null);
-  perform app.start_or_join(v_other, 'app', 'UTC');
-  perform app.move_evening(v_place);
-  assert (select g.place_id from sessions s join gatherings g on g.id = s.gathering_id
-           where s.profile_id = v_here and s.ended_at is null) = v_place,
-    'moving back to where you were earlier tonight is allowed';
-  assert (select count(*) from sessions
-           where gathering_id = v_gathering and profile_id = v_here) = 3,
-    'as a third stretch';
 
   perform auth.logout();
   raise notice 'PASS 24  stepping out and coming back is a new stretch, counted once';

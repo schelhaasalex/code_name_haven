@@ -111,7 +111,7 @@ extension AppState {
     private func showOnLockScreen() async {
         guard isLive, !LiveActivityController.showing, let s = session else { return }
         let state = ReclaimActivityAttributes.ContentState(
-            startedAt: startedAt ?? s.startedAt, memberCount: max(1, members.count), placeName: placeName,
+            startedAt: startedAt ?? s.startedAt, memberCount: max(1, memberCount), placeName: placeName,
             stage: EveningCharge.stage(since: startedAt ?? s.startedAt))
         let title = placeName.map { t("starttap.banner.title", "place", $0) } ?? t("starttap.banner.unknown")
         guard let body = try? RemoteActivity.startBody(

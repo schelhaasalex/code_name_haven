@@ -23,7 +23,7 @@ extension AppState {
     /// The phone came out of the box and didn't go back (`leftBox`).
     func end() async {
         guard let s = session else { return }
-        let people = max(1, members.count)
+        let people = max(1, memberCount)
         let place = placeName
         let placeId = gathering?.placeId
         let estimate = Int(Date().timeIntervalSince(startedAt ?? s.startedAt) / 60)
@@ -50,11 +50,11 @@ extension AppState {
         if let id = gathering?.placeId, !places.contains(where: { $0.id == id }) {
             places = (try? await repo.myPlaces()) ?? places
         }
-        members = (try? await repo.members(of: s.gatheringId)) ?? []
+        memberCount = (try? await repo.memberCount(of: s.gatheringId)) ?? 0
         await LiveActivityController.start(
             gatheringId: s.gatheringId,
             startedAt: startedAt ?? s.startedAt,
-            memberCount: max(1, members.count),
+            memberCount: max(1, memberCount),
             placeName: placeName)
     }
 
@@ -75,7 +75,7 @@ extension AppState {
 
     func teardown() async {
         await LiveActivityController.end()
-        session = nil; gathering = nil; members = []; startedAt = nil
+        session = nil; gathering = nil; memberCount = 0; startedAt = nil
         // However it ended, the box goes dark for this phone — never waited on.
         Task { await DockSlot.undock() }
     }
@@ -83,10 +83,10 @@ extension AppState {
     /// Who's in the box with you. The count only goes up (rule 3).
     func refreshMembers() async {
         guard let id = session?.gatheringId else { return }
-        members = (try? await repo.members(of: id)) ?? members
+        memberCount = (try? await repo.memberCount(of: id)) ?? memberCount
         await LiveActivityController.update(
             startedAt: startedAt ?? .now,
-            memberCount: max(1, members.count),
+            memberCount: max(1, memberCount),
             placeName: placeName)
     }
 }

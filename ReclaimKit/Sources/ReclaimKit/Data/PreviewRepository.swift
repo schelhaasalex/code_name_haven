@@ -14,7 +14,8 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
     public var places: [Place]
     public var live: Session?
     public var gatheringNow: Gathering?
-    public var memberList: [Member]
+    /// How many are in the sample household's evening.
+    public var memberCountValue: Int
     public var summaryValue: PlaceSummary
     /// Your ended evenings, newest first.
     public var history: [Session] = []
@@ -32,8 +33,6 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
     public static let kitchenTable = UUID()
     /// The house's second box, unnamed: it goes by its default.
     public static let bedroom = UUID()
-    public static let maya = UUID()
-    public static let dad  = UUID()
     public static let me   = UUID()
 
     /// Screen 13's fixture. Credited AT THE CAP — three hours — rather than at
@@ -47,11 +46,7 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
 
     public init(
         live: Session? = nil,
-        members: [Member] = [
-            Member(profileId: PreviewRepository.maya, stillLive: true),
-            Member(profileId: PreviewRepository.dad,  stillLive: true),
-            Member(profileId: PreviewRepository.me,   stillLive: true)
-        ],
+        members: Int = 3,
         places: [Place] = [
             Place(id: PreviewRepository.kitchenTable, name: "The Kitchen Table", handle: "amber-otter",
                   createdBy: PreviewRepository.me)
@@ -60,7 +55,7 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
         self.profile = Profile(id: PreviewRepository.me)
         self.places = places
         self.live = live
-        self.memberList = members
+        self.memberCountValue = members
         self.earlierEvenings = places.isEmpty ? 0 : 24
         self.summaryValue = PlaceSummary(evenings: 31, wallClockMinutes: 4080,
                                          personMinutes: 12240, stage: "settled in",
@@ -90,9 +85,9 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
         if let i = places.firstIndex(where: { $0.id == id }) { places[i].name = name }
     }
 
-    public func members(of gathering: UUID) async throws -> [Member] {
-        guard startedHere.contains(gathering) else { return memberList }
-        return [Member(profileId: profile.id, stillLive: true)]
+    public func memberCount(of gathering: UUID) async throws -> Int {
+        guard startedHere.contains(gathering) else { return memberCountValue }
+        return 1
     }
     public func summary(of place: UUID) async throws -> PlaceSummary {
         guard place == Self.bedroom else { return summaryValue }
