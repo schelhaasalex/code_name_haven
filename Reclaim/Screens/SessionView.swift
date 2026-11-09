@@ -30,7 +30,8 @@ struct SessionView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Eyebrow(text: state.placeName ?? t("box.unnamed"),
+            // The box, or — when the app can't say which — when it was.
+            Eyebrow(text: state.placeName ?? Say.partOfDay(state.startedAt ?? .now),
                     mark: Palette.ember, tint: Palette.dust)
 
             Spacer(minLength: 12)
@@ -38,9 +39,10 @@ struct SessionView: View {
             mark.frame(maxWidth: .infinity)
             Spacer(minLength: 20)
 
-            // Alone, the headline is where the evening has got to, never a
-            // count: "Just you." at hero size made being alone the news.
-            // Together, the count has earned it. It changes at the ring's
+            // The headline is where the evening has got to, alone or not:
+            // "Just you." at hero size made being alone the news, and a count
+            // in its place meant a group never saw "Today counts." Who's
+            // there goes in the line under it. It changes at the ring's
             // steps, not every minute.
             VStack(alignment: .leading, spacing: 20) {
                 if let until = state.leavingUntil {
@@ -57,15 +59,15 @@ struct SessionView: View {
                         .font(Type.body(16)).foregroundStyle(Palette.dim)
                 } else {
                     TimelineView(.everyMinute) { context in
-                        Text(solo ? EveningCharge.line(minutes: state.startedAt.map {
-                                        context.date.timeIntervalSince($0) / 60 })
-                                  : t("session.together", "count", Say.count(state.members.count)))
+                        Text(EveningCharge.line(minutes: state.startedAt.map {
+                                 context.date.timeIntervalSince($0) / 60 }))
                             .font(Type.display(52, weight: .light))
                             .foregroundStyle(Palette.cream)
                             .lineSpacing(2)
                             .contentTransition(.opacity)
                     }
-                    Text(t("session.since", "time", Say.time(state.startedAt ?? .now)))
+                    Text(sinceLine)
+                        .contentTransition(.opacity)
                         .font(Type.body(16)).foregroundStyle(Palette.dim)
                 }
             }
@@ -103,6 +105,13 @@ struct SessionView: View {
             }
             .allowsHitTesting(false)
         }
+    }
+
+    /// "Since 7:27" alone; "Three of you · since 7:27" together.
+    private var sinceLine: String {
+        let time = Say.time(state.startedAt ?? .now)
+        return solo ? t("session.since", "time", time)
+                    : t("evening.together", "count", Say.count(state.members.count), "time", time)
     }
 
     /// "One evenings" was what VoiceOver read on a first evening.

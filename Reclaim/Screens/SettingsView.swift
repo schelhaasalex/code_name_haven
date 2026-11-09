@@ -10,6 +10,7 @@ import ReclaimKit
 /// household tuning its own minimum is setup by another name.
 struct SettingsView: View {
     @Environment(AppState.self) private var state
+    @Environment(\.dismiss) private var dismiss
     @State private var scanning = false
     @State private var confirmingDelete = false
     /// The Sign in with Apple request's nonce, kept for its answer.
@@ -53,7 +54,9 @@ struct SettingsView: View {
         .sheet(isPresented: $confirmingDelete) {
             ConfirmSheet(title: t("settings.delete.title"), message: t("settings.delete.body"),
                          confirm: t("settings.delete"), cancel: t("settings.delete.keep")) {
-                Task { await state.deleteAccount() }
+                // Gone: back to a Home that starts again, not a Settings
+                // page with nothing left in it.
+                Task { if await state.deleteAccount() { dismiss() } }
             }
         }
         .sheet(isPresented: Binding(get: { state.keptElsewhere != nil },

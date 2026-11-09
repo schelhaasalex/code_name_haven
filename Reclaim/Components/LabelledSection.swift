@@ -18,7 +18,7 @@ struct LabelledSection<Content: View>: View {
 
 #Preview {
     LabelledSection(label: t("settings.how.label")) {
-        Text(t("places.somewhere.title")).font(Type.body(15)).foregroundStyle(Palette.ink)
+        Text(t("settings.how.1")).font(Type.body(15)).foregroundStyle(Palette.ink)
     }
     .padding()
     .background(Palette.bone)

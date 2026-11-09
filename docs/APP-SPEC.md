@@ -191,8 +191,11 @@ with today's star landing in it — never the box's own count beside yours,
 which read as two numbers that disagreed. Out again within a minute, there is
 no receipt (`EveningLanding.earnsAReceipt`): the time is kept, but "No
 minutes, all yours." isn't a moment. **The evening screen** is rarely seen — a phone in
-a hand that isn't charging has left the box — so it says only who's there and
-since when, and that the evening ends when the phone comes out.
+a hand that isn't charging has left the box — so it says where the evening
+has got to, who's there and since when, and that the evening ends when the
+phone comes out. A box the app can't name is left unnamed: the receipt drops
+its *At …* line and the lock screen says only since when, rather than a name
+for a box that doesn't exist.
 
 ---
 
@@ -242,13 +245,15 @@ three hours. It still counts."* rather than charging an evening that's over.
 struct ContentState: Codable, Hashable {
     var startedAt: Date
     var memberCount: Int
-    var placeName: String?   // nil reads "Your box"
+    var placeName: String?   // nil: the box isn't named at all
     var stage: Int           // 0–4, the ring's segments
 }
 ```
 
-Lock screen: the ring-and-dot mark, its step's line (*"Settling in."*, *"Today counts."*…) alone or
-*"Three of you so far."* together, and *"The Kitchen Table · since 7:27"*.
+Lock screen: the ring-and-dot mark, its step's line (*"Settling in."*,
+*"Today counts."*…) alone or together, and under it *"The Kitchen Table · since
+7:27"* alone or *"Three of you · since 7:27"* together — the same shape as the
+evening screen and the wrist.
 **No ticking digits and nothing to press.**
 
 **The evening charges.** The ring is four segments, full at fifteen minutes,
@@ -270,7 +275,7 @@ Every user-facing string lives in `copy/strings.json`, keyed `screen.element`,
 bundled with the app. **Never hardcode a user-facing string in a view.**
 
 ```swift
-Text(t("home.body"))   // "Put your phone in the box. That's all there is to it."
+Text(t("home.counted"))   // "Today counts."
 ```
 
 ---

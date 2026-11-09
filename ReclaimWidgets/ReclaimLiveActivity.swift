@@ -86,11 +86,10 @@ struct ReclaimLiveActivity: Widget {
         .padding(20)
     }
 
-    /// The same headline as the session screen: where the evening has got
-    /// to when alone, the count when it's earned it.
+    /// The same headline as the session screen and the wrist: where the
+    /// evening has got to, alone or together. Who's there is the line below.
     private func headline(_ state: ReclaimActivityAttributes.ContentState) -> String {
-        state.memberCount <= 1 ? EveningCharge.line(stage: state.stage)
-                               : t("lockscreen.together", "count", Say.count(state.memberCount))
+        EveningCharge.line(stage: state.stage)
     }
 
     /// Counting down while the phone is out; otherwise the evening's line.
@@ -111,8 +110,14 @@ struct ReclaimLiveActivity: Widget {
         return since(state)
     }
 
+    /// Together, how many; alone, which box — and with no box to name, only
+    /// since when, rather than a name for a box that doesn't exist.
     private func since(_ state: ReclaimActivityAttributes.ContentState) -> String {
-        t("lockscreen.since", "place", state.placeName ?? t("box.unnamed"),
-          "time", Say.time(state.startedAt))
+        let time = Say.time(state.startedAt)
+        if state.memberCount > 1 {
+            return t("evening.together", "count", Say.count(state.memberCount), "time", time)
+        }
+        guard let place = state.placeName else { return t("wrist.since", "time", time) }
+        return t("lockscreen.since", "place", place, "time", time)
     }
 }

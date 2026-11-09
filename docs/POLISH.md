@@ -177,5 +177,12 @@ changes.
   are, and with two boxes it says which.
 - **Privacy stays its own screen** (2026-11-09). It is a placeholder until the
   website is live, and goes then.
-- **The stage over the count** is still open: *Three of you so far.* moves to
-  the smaller line.
+- **The stage over the count** (2026-11-09): built. *Three of you so far.*
+  becomes *Three of you · since 7:27*, under the stage.
+
+## Built
+
+On `claude/focused-noether-owbw27`: the stage over the count (6, 7), an
+unknown box said nothing about (8, 7), deleting the account going home (16),
+the part of the day keeping time and zero days saying nothing (2), and the
+copy cleanup. The rest above is optional.

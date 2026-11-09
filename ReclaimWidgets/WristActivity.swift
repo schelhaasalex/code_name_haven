@@ -46,6 +46,6 @@ struct WristActivity: View {
     private var since: String {
         let time = Say.time(state.startedAt)
         return state.memberCount <= 1 ? t("wrist.since", "time", time)
-                                      : t("wrist.together", "count", Say.count(state.memberCount), "time", time)
+                                      : t("evening.together", "count", Say.count(state.memberCount), "time", time)
     }
 }

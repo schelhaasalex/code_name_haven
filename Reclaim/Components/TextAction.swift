@@ -25,7 +25,7 @@ struct TextAction: View {
 
 #Preview {
     VStack(alignment: .leading) {
-        TextAction(title: t("settings.signout")) {}
+        TextAction(title: t("scan.later")) {}
         TextAction(title: t("settings.delete"), tint: Palette.clay) {}
     }
     .padding()

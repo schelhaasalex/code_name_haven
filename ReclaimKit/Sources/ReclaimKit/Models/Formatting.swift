@@ -42,7 +42,7 @@ public enum Say {
     /// say the same number twice.
     public static func days(total: Int, thisWeek: Int, month: String) -> String {
         switch total {
-        case 0: return t("home.body")
+        case 0: return ""
         case 1: return t("home.evenings.one", "month", month)
         case let n where thisWeek <= 0 || thisWeek >= n:
             return t("home.evenings", "count", number(n), "month", month)
