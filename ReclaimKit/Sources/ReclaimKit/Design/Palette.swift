@@ -4,7 +4,7 @@ import SwiftUI
 ///
 /// Reclaim commits to one visual world rather than tracking the system theme:
 /// the waiting screens are warm paper, the session screens are near-black. The
-/// switch between them IS the ceremony — it's the thing you see across a table
+/// switch between them IS the evening — it's the thing you see across a table
 /// out of the corner of your eye — so it can't be at the mercy of a setting.
 public enum Palette {
     // paper
@@ -17,21 +17,15 @@ public enum Palette {
     public static let line   = Color(hex: 0xE3DDD1)
     public static let hairline = Color(hex: 0xC9C0B0)
     public static let clay   = Color(hex: 0xB4512C)
-    public static let clayDeep = Color(hex: 0x8E3F22)
 
     // night
     public static let night  = Color(hex: 0x17140F)
-    public static let nightDeep = Color(hex: 0x0E0C09)
     public static let nightCard = Color(hex: 0x221D16)
     public static let cream  = Color(hex: 0xF3EDE1)
     public static let dust   = Color(hex: 0xA39685)
     public static let dim    = Color(hex: 0x8E8271)
     public static let edge   = Color(hex: 0x453C30)
     public static let ember  = Color(hex: 0xE08A4E)
-
-    // the rest day marker
-    public static let restFill   = Color(hex: 0xE9D8B8)
-    public static let restStroke = Color(hex: 0xC9A961)
 
     // the sky: the few stars that aren't the plain dot — a warm one and a
     // cool one, quiet enough on paper and on night that tonight's still leads

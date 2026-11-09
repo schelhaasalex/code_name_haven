@@ -2,8 +2,10 @@ import Foundation
 import ActivityKit
 import ReclaimKit
 
-/// Screens 7 and 19 — the pair that earn the native rewrite. Start without
-/// unlocking, end without unlocking, app never opened in between.
+/// Screen 7 — the evening on the lock screen and the wrist. Started by the app
+/// when it's awake and by a push when the box started the evening in the
+/// background; ended by the app when the phone comes out, and by the server
+/// for an evening it closed. Nothing on it to press.
 @MainActor
 enum LiveActivityController {
 
@@ -74,7 +76,7 @@ enum LiveActivityController {
         if let running = Activity<ReclaimActivityAttributes>.activities
             .first(where: { $0.attributes.gatheringId == gatheringId }) {
             current = running
-            await running.update(.init(state: state, staleDate: nil))
+            await running.update(.init(state: state, staleDate: staleDate(startedAt)))
             return
         }
         await end()
@@ -82,10 +84,10 @@ enum LiveActivityController {
         // Without a push token it still shows; it just doesn't charge.
         current = (try? Activity.request(
             attributes: ReclaimActivityAttributes(gatheringId: gatheringId),
-            content: .init(state: state, staleDate: nil), pushType: .token))
+            content: .init(state: state, staleDate: staleDate(startedAt)), pushType: .token))
             ?? (try? Activity.request(
                 attributes: ReclaimActivityAttributes(gatheringId: gatheringId),
-                content: .init(state: state, staleDate: nil)))
+                content: .init(state: state, staleDate: staleDate(startedAt))))
         if let current { watch(current) }
     }
 
@@ -96,14 +98,18 @@ enum LiveActivityController {
         await current.update(.init(
             state: .init(startedAt: startedAt, memberCount: memberCount, placeName: placeName,
                          stage: EveningCharge.stage(since: startedAt), endingAt: endingAt),
-            staleDate: nil))
+            staleDate: staleDate(startedAt)))
     }
 
-    /// Every activity, not just the one this launch remembers. The End button
-    /// relaunches the app in the background with no memory of the activity it
-    /// is ending — ending only `current` left it on the lock screen, counting
-    /// up for an evening that was over. Shared with the intent, which does
-    /// this for itself rather than waiting for the app to get here.
+    /// The server closes an evening nobody ended at its cap and ends this
+    /// with a push. If that push never arrives, iOS still knows from here
+    /// that the ring is out of date, and the face says it was closed.
+    private static func staleDate(_ startedAt: Date) -> Date {
+        startedAt.addingTimeInterval(AutoClosed.cap)
+    }
+
+    /// Every activity, not just the one this launch remembers: one a push
+    /// started, in a launch that never knew of it, ends too.
     static func end() async {
         await ReclaimActivity.endAll()
         current = nil

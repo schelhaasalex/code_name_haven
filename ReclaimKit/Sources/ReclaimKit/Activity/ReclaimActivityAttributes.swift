@@ -1,15 +1,15 @@
 import Foundation
 import ActivityKit
 
-/// The Live Activity — screens 7 and 19, and the reason the deployment target
-/// is iOS 17: an interactive End button on a Live Activity needs App Intents in
-/// widgets. Before 17 a Live Activity could only be looked at, and ending meant
-/// unlocking the phone you had just put down.
+/// The Live Activity — screen 7, on the lock screen, the Dynamic Island and
+/// the wrist. Nothing on it to press: the box is the only switch. A push can
+/// start one from iOS 17.2, and the Watch shows it from iOS 18.
 public struct ReclaimActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         public var startedAt: Date
         public var memberCount: Int
-        /// nil renders as "Somewhere", and counts exactly the same.
+        /// Nil when the app can't name the box: the face then says only
+        /// since when, never a name for a box that doesn't exist.
         public var placeName: String?
         /// How many of the ring's four segments are full (`EveningCharge`).
         /// Sent by the server as the evening goes on; the phone is asleep.
@@ -43,18 +43,9 @@ public struct ReclaimActivityAttributes: ActivityAttributes {
     public init(gatheringId: UUID) { self.gatheringId = gatheringId }
 }
 
-/// Ending every Live Activity there is, from either process.
-///
-/// THE END BUTTON RELAUNCHES THE APP COLD. It is tapped from a lock screen on
-/// a phone that has been face down for an hour, by which point the app has
-/// usually been terminated — so the process that services the intent has no
-/// memory of the evening, no `AppState` with a session in it, and nothing to
-/// tear down. It ended the row in the database and left the activity sitting
-/// on the lock screen, counting up for an evening that was over, which from
-/// the lock screen is indistinguishable from a button that does nothing.
-///
-/// So the teardown lives here, where both the intent and the app can reach it,
-/// and the intent does it itself rather than hoping the app gets there.
+/// Ending every Live Activity there is — not only the one this launch
+/// started. The box often starts an evening by push while the app is asleep,
+/// so the launch that ends it may never have known the activity existed.
 public enum ReclaimActivity {
     public static func endAll() async {
         for activity in Activity<ReclaimActivityAttributes>.activities {

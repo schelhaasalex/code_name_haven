@@ -79,12 +79,20 @@ struct HomeView: View {
                             pulse: true, onTonight: { aboutStar = true }, seed: state.skySeed)
                     .animation(.spring(response: 0.6, dampingFraction: 0.65), value: layout)
                 VStack(spacing: 8) {
-                    Text(Say.partOfDay(.now)).eyebrow(Palette.clay)
+                    // Keeps time: "afternoon" becomes "evening" at five
+                    // without the app being opened again.
+                    TimelineView(.everyMinute) { context in
+                        Text(Say.partOfDay(context.date)).eyebrow(Palette.clay)
+                    }
                     Text(countedToday ? t("home.counted") : t("home.headline", "place", placeName))
                         .font(Type.display(26)).foregroundStyle(Palette.ink)
-                    Text(Say.days(total: total.count, thisWeek: thisWeek,
-                                  month: Say.month(from: total.first) ?? ""))
-                        .font(Type.body(14)).foregroundStyle(Palette.muted)
+                    // Nothing at all before the first day: the headline has
+                    // already said the one thing there is to do.
+                    let days = Say.days(total: total.count, thisWeek: thisWeek,
+                                        month: Say.month(from: total.first) ?? "")
+                    if !days.isEmpty {
+                        Text(days).font(Type.body(14)).foregroundStyle(Palette.muted)
+                    }
                 }
                 .multilineTextAlignment(.center)
             }

@@ -126,9 +126,9 @@ public final class SupabaseRepository: Repository, @unchecked Sendable {
             .execute().value
     }
 
-    public func members(of gathering: UUID) async throws -> [Member] {
+    public func memberCount(of gathering: UUID) async throws -> Int {
         struct P: Encodable { let p_gathering: UUID }
-        return try await client.rpc("gathering_members", params: P(p_gathering: gathering))
+        return try await client.rpc("gathering_count", params: P(p_gathering: gathering))
             .execute().value
     }
 

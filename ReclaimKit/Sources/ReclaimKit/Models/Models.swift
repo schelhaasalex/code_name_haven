@@ -10,24 +10,14 @@ public enum SessionSource: String, Codable, Sendable {
     case app, tag, control, siri, shortcut, retroactive, nearby
 }
 
+/// Yours. Made silently on the first launch; nothing about it is set by hand,
+/// so the app reads only which account it is. (The table still has the
+/// name and nudge columns from before; nothing writes them.)
 public struct Profile: Codable, Identifiable, Hashable, Sendable {
     public let id: UUID
-    public var displayName: String?
-    public var nudgeEnabled: Bool
-    public var nudgeHour: Int
 
-    enum CodingKeys: String, CodingKey {
-        case id
-        case displayName = "display_name"
-        case nudgeEnabled = "nudge_enabled"
-        case nudgeHour = "nudge_hour"
-    }
-
-    public init(id: UUID, displayName: String?, nudgeEnabled: Bool = true, nudgeHour: Int = 19) {
+    public init(id: UUID) {
         self.id = id
-        self.displayName = displayName
-        self.nudgeEnabled = nudgeEnabled
-        self.nudgeHour = nudgeHour
     }
 }
 
@@ -61,7 +51,7 @@ public struct Place: Codable, Identifiable, Hashable, Sendable {
 
 public struct Gathering: Codable, Identifiable, Hashable, Sendable {
     public let id: UUID
-    /// Nil is "Somewhere", and counts exactly the same.
+    /// Nil only for evenings from before every evening was at a box.
     public let placeId: UUID?
     public let startedBy: UUID?
     public let startedAt: Date
@@ -96,11 +86,10 @@ public struct Session: Codable, Identifiable, Hashable, Sendable {
     public let localDate: String
     public let qualifying: Bool
     public let autoClosed: Bool
-    public let retroactive: Bool
     public let source: SessionSource
 
     enum CodingKeys: String, CodingKey {
-        case id, qualifying, retroactive, source
+        case id, qualifying, source
         case profileId = "profile_id"
         case gatheringId = "gathering_id"
         case startedAt = "started_at"
@@ -113,35 +102,15 @@ public struct Session: Codable, Identifiable, Hashable, Sendable {
     public init(id: UUID, profileId: UUID, gatheringId: UUID,
                 startedAt: Date, endedAt: Date? = nil, durationMinutes: Int? = nil,
                 localDate: String, qualifying: Bool = false, autoClosed: Bool = false,
-                retroactive: Bool = false, source: SessionSource = .app) {
+                source: SessionSource = .app) {
         self.id = id; self.profileId = profileId; self.gatheringId = gatheringId
         self.startedAt = startedAt; self.endedAt = endedAt
         self.durationMinutes = durationMinutes; self.localDate = localDate
         self.qualifying = qualifying; self.autoClosed = autoClosed
-        self.retroactive = retroactive; self.source = source
+        self.source = source
     }
 
     public var isLive: Bool { endedAt == nil }
-}
-
-/// One person in a gathering you are in. The ONLY thing the app ever learns
-/// about someone else's session — no dates, no history, no counts.
-public struct Member: Codable, Identifiable, Hashable, Sendable {
-    public let profileId: UUID
-    public let displayName: String?
-    public let stillLive: Bool
-
-    public var id: UUID { profileId }
-
-    enum CodingKeys: String, CodingKey {
-        case profileId = "profile_id"
-        case displayName = "display_name"
-        case stillLive = "still_live"
-    }
-
-    public init(profileId: UUID, displayName: String?, stillLive: Bool) {
-        self.profileId = profileId; self.displayName = displayName; self.stillLive = stillLive
-    }
 }
 
 public struct PlaceSummary: Codable, Hashable, Sendable {

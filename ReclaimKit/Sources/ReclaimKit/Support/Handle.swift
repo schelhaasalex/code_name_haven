@@ -24,8 +24,4 @@ public enum Handle {
     public static func generate() -> String {
         "\(adjectives.randomElement()!)-\(creatures.randomElement()!)"
     }
-
-    public static func pretty(_ handle: String) -> String {
-        handle.split(separator: "-").map(\.capitalized).joined(separator: " ")
-    }
 }

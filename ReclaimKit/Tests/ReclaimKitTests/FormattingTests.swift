@@ -134,31 +134,19 @@ final class FormattingTests: XCTestCase {
         XCTAssertEqual(Say.days(total: 36, thisWeek: 0, month: "September"), "36 days, since September.")
         XCTAssertEqual(Say.days(total: 3, thisWeek: 3, month: "November"), "Three days, since November.")
         XCTAssertEqual(Say.days(total: 1, thisWeek: 1, month: "November"), "One day, since November.")
-        XCTAssertEqual(Say.days(total: 0, thisWeek: 0, month: ""), t("home.body"))
+        XCTAssertEqual(Say.days(total: 0, thisWeek: 0, month: ""), "", "the headline already says it")
     }
 
     /// Six screens opened a sentence with "three days…" in lowercase.
     func testASentenceOpeningWithACountStartsWithACapital() {
         XCTAssertEqual(t("home.sky", "count", Say.number(3), "total", "36", "month", "May"), "Three this week, 36 since May.")
-        XCTAssertEqual(t("session.together", "count", Say.count(3)), "Three of you so far.")
+        XCTAssertEqual(t("evening.together", "count", Say.count(3), "time", "7:27"), "Three of you · since 7:27")
     }
 
     /// Mid-sentence it stays lowercase, and a name stays how its owner wrote it.
     func testOnlyAnOpeningCountIsCapitalised() {
         XCTAssertTrue(t("end.receipt", "duration", "an hour", "count", Say.number(3)).contains("the three of you"))
         XCTAssertEqual(t("end.where", "place", "the porch"), "At the porch.")
-    }
-
-    /// The nudge hour, in the phone's own style — not a fixed "7:00pm".
-    func testAnHourIsSaidTheWayThePhoneSaysIt() {
-        var us = Calendar(identifier: .gregorian)
-        us.timeZone = TimeZone(identifier: "UTC")!
-        us.locale = Locale(identifier: "en_US")
-        // iOS puts a narrow no-break space before "PM", not a plain one.
-        XCTAssertEqual(Say.hour(19, calendar: us).replacingOccurrences(of: "\u{202F}", with: " "), "7 PM")
-        var nl = us
-        nl.locale = Locale(identifier: "nl_NL")
-        XCTAssertEqual(Say.hour(19, calendar: nl), "19")
     }
 
     /// "Since 7:27 PM" or "Since 19:27" — when you started, never a count.

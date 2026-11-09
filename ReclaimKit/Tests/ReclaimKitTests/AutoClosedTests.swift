@@ -25,4 +25,26 @@ final class AutoClosedTests: XCTestCase {
         XCTAssertEqual(AutoClosed.latest(in: [newer, older]), newer,
                        "the order the rows arrive in must not decide this")
     }
+
+    /// The lock screen goes quiet at the cap, so it has to be the server's
+    /// cap: the last migration that defines `app.auto_close_minutes`.
+    func testTheCapIsTheServers() throws {
+        let migrations = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("supabase/migrations")
+        let files = try FileManager.default.contentsOfDirectory(atPath: migrations.path)
+            .filter { $0.hasSuffix(".sql") }.sorted()
+        var cap: Int?
+        for file in files {
+            let sql = try String(contentsOf: migrations.appendingPathComponent(file), encoding: .utf8)
+            guard let at = sql.range(of: "function app.auto_close_minutes()") else { continue }
+            let rest = sql[at.upperBound...]
+            if let body = rest.range(of: #"select (\d+)"#, options: .regularExpression) {
+                cap = Int(rest[body].dropFirst("select ".count))
+            }
+        }
+        XCTAssertEqual(cap, AutoClosed.capMinutes)
+        XCTAssertEqual(AutoClosed.cap, TimeInterval(AutoClosed.capMinutes * 60))
+    }
 }

@@ -2,7 +2,7 @@ import Foundation
 
 /// Which slot this phone is in, if any — remembered, because the moment it
 /// comes out is answered by something that wasn't there when it went in: a
-/// Shortcut, a relaunch, the end of the evening.
+/// relaunch, the box's radio, the end of the evening.
 ///
 /// This phone's own fact about itself. Nothing here is sent anywhere.
 public enum DockSlot {
@@ -26,8 +26,7 @@ public enum DockSlot {
         UserDefaults.standard.set(date, forKey: sinceKey)
     }
 
-    /// Out, and its light with it. Safe to call when nothing is docked — the
-    /// charger-disconnected Shortcut runs at the bedside too.
+    /// Out, and its light with it. Safe to call when nothing is docked.
     public static func undock() async {
         guard let slot = current else { return }
         UserDefaults.standard.removeObject(forKey: slotKey)

@@ -23,8 +23,8 @@ struct StatRow: View {
 
 #Preview {
     PaperCard {
-        StatRow(title: t("places.somewhere.title"),
-                subtitle: t("places.somewhere.action"),
+        StatRow(title: t("box.default.1"),
+                subtitle: t("autoclosed.capped"),
                 value: Say.duration(minutes: 134))
     }
     .padding()

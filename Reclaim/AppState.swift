@@ -41,7 +41,9 @@ public final class AppState {
     /// Listening for the box's radio after its code or a tag was read, and
     /// what came of it. Only the scanner shows it; nil until a first read.
     public var pairing: Pairing?
-    public enum Pairing: Equatable { case listening, paired, notHeard }
+    /// `bluetoothOff` is its own answer: "bring it closer" is the wrong advice
+    /// to a phone that can't hear anything at all.
+    public enum Pairing: Equatable { case listening, paired, notHeard, bluetoothOff }
     /// What each box has become: every evening anyone has had at it. Missing
     /// until the database has said, and nothing claims a number before then.
     public var boxSummaries: [UUID: PlaceSummary] = [:]
@@ -53,6 +55,8 @@ public final class AppState {
     public var eveningTotal: EveningTotal?
     /// Screen 13: an evening the server had to close, said once.
     public var closedForYou: Session?
+    /// Something that didn't go through, said quietly over whatever is
+    /// showing (`Banner`, from `RootView`) and gone after a moment.
     public var banner: String?
     /// Tied to an Apple ID, so the evenings outlive this phone. Nil until
     /// asked (`AppState+Account`).
@@ -82,7 +86,10 @@ public final class AppState {
     // the live evening
     public var session: Session?
     public var gathering: Gathering?
-    public var members: [Member] = []
+    /// How many people have joined the evening — everyone who put a phone
+    /// in, once, however many stretches. A number from the server, never a
+    /// list of who (rule 1): the count goes up, never down.
+    public var memberCount = 0
     /// Out of the box and counting down to the evening's end (`leaving`).
     public var leavingUntil: Date?
     public var startedAt: Date?
@@ -109,9 +116,6 @@ public final class AppState {
         if let lastBox, boxPlaces.contains(lastBox) { return lastBox }
         return boxPlaces.last
     }
-    public var otherBoxes: [UUID] { boxPlaces.filter { $0 != boxPlace } }
-    public var box: Place? { boxPlace.flatMap(place) }
-    public var boxSummary: PlaceSummary? { boxPlace.flatMap { boxSummaries[$0] } }
 
     public func place(_ id: UUID) -> Place? { places.first { $0.id == id } }
 

@@ -3,7 +3,7 @@ import ReclaimKit
 
 /// The warm paper ground, or the near-black one, plus gutters and safe area.
 ///
-/// The switch between them IS the ceremony — it's what you see across a table
+/// The switch between them IS the evening — it's what you see across a table
 /// out of the corner of an eye — so it lives in one place and no screen sets
 /// its own background.
 struct Ground: ViewModifier {

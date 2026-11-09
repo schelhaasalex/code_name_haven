@@ -39,7 +39,9 @@ public protocol Repository: Sendable {
     // ---- anything involving anyone else: RPC only ----
     func startOrJoin(place: UUID?, source: SessionSource) async throws -> UUID
     @discardableResult func endSession(_ id: UUID?) async throws -> Int?
-    func members(of gathering: UUID) async throws -> [Member]
+    /// How many people have joined an evening you're in: a count, never
+    /// who (`gathering_count`, 0023).
+    func memberCount(of gathering: UUID) async throws -> Int
     /// The box's whole life: every evening anyone has had at it, and how long
     /// it was gathered. An aggregate — never whose.
     func summary(of place: UUID) async throws -> PlaceSummary

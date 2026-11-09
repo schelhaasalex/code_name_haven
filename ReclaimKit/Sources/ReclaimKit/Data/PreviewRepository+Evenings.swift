@@ -91,7 +91,7 @@ extension PreviewRepository {
         Session(id: s.id, profileId: s.profileId, gatheringId: s.gatheringId,
                 startedAt: s.startedAt, endedAt: end, durationMinutes: minutes,
                 localDate: s.localDate, qualifying: minutes >= Self.qualifyingMinutes,
-                autoClosed: false, retroactive: s.retroactive, source: s.source)
+                autoClosed: false, source: s.source)
     }
 
     /// The date the evening STARTED, in the person's own zone — how the

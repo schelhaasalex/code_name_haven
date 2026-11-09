@@ -27,7 +27,7 @@ extension View {
 }
 
 #Preview {
-    PaperCard { Text(t("settings.nudge.title")).font(Type.body(15)) }
+    PaperCard { Text(t("settings.kept.title")).font(Type.body(15)) }
         .padding()
         .background(Palette.bone)
 }

@@ -23,8 +23,8 @@ struct PrimaryButton: View {
 
 #Preview {
     VStack(spacing: 12) {
-        PrimaryButton(title: t("home.primary")) {}
-        PrimaryButton(title: t("session.end"), night: true) {}
+        PrimaryButton(title: t("pair.scan")) {}
+        PrimaryButton(title: t("end.done"), night: true) {}
             .padding().background(Palette.night)
     }
     .padding()

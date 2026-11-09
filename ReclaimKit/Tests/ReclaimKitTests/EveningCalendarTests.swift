@@ -53,8 +53,7 @@ final class EveningCalendarTests: XCTestCase {
     func testNothingIsMissedBeforeTheFirstEvening() {
         let week = EveningCalendar.week(evenings: [], today: date("2026-09-24"), calendar: calendar())
         XCTAssertEqual(week, [.before, .before, .before, .before, .future, .future, .future])
-        let grid = EveningCalendar.grid(evenings: [], weeks: 4, today: date("2026-09-24"), calendar: calendar())
-        XCTAssertFalse(grid.contains(.missed), "a first-day grid must not be four weeks of misses")
+        XCTAssertFalse(week.contains(.missed), "a first week must not be a row of misses")
     }
 
     /// First evening on Wednesday: Monday and Tuesday came before it, Thursday
@@ -95,42 +94,5 @@ final class EveningCalendarTests: XCTestCase {
             today: date("2026-09-24"),
             calendar: calendar())
         XCTAssertEqual(EveningCalendar.count(days), 2)
-    }
-
-    // MARK: - The grid
-
-    func testTheGridIsWholeWeeksEndingWithThisOne() {
-        let today = date("2026-09-24")   // Thursday
-        let grid = EveningCalendar.grid(
-            evenings: ["2026-09-21", "2026-09-03"],
-            weeks: 4, today: today, calendar: calendar())
-        XCTAssertEqual(grid.count, 28)
-
-        // The last row is the same seven days as the dot week on Home, so the
-        // columns of the grid are weekdays.
-        let week = EveningCalendar.week(
-            evenings: ["2026-09-21", "2026-09-03"], today: today, calendar: calendar())
-        XCTAssertEqual(Array(grid.suffix(7)), week)
-
-        // 3 September is a Thursday three weeks back: row 1, column 4.
-        XCTAssertEqual(grid[3], .docked)
-        XCTAssertEqual(EveningCalendar.count(grid), 2)
-    }
-
-    func testTheGridOutlinesTheRestOfThisWeek() {
-        let grid = EveningCalendar.grid(
-            evenings: [], weeks: 4, today: date("2026-09-21"), calendar: calendar())
-        XCTAssertEqual(Array(grid.suffix(6)),
-                       Array(repeating: EveningCalendar.Day.future, count: 6))
-        XCTAssertFalse(grid.dropLast(7).contains(.future))
-    }
-
-    func testTheGridTakesAnyNumberOfWeeks() {
-        for weeks in 1...12 {
-            XCTAssertEqual(
-                EveningCalendar.grid(evenings: [], weeks: weeks,
-                                     today: date("2026-09-24"), calendar: calendar()).count,
-                weeks * 7)
-        }
     }
 }

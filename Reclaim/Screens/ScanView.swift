@@ -70,7 +70,7 @@ struct ScanView: View {
         case .found:
             switch state.pairing {
             case .paired:   return .paired
-            case .notHeard: return .quiet
+            case .notHeard, .bluetoothOff: return .quiet
             default:        return .listening
             }
         }
@@ -86,7 +86,7 @@ struct ScanView: View {
             }
             .accessibilityLabel(t("scan.close"))
         }
-        .opacity(stage == .found && state.pairing != .notHeard ? 0 : 1)
+        .opacity(stage == .found && !heardNothing ? 0 : 1)
     }
 
     // MARK: The words
@@ -119,6 +119,7 @@ struct ScanView: View {
             switch state.pairing {
             case .paired:   return ("scan.paired.headline", "scan.paired.body")
             case .notHeard: return ("scan.notheard.headline", "scan.notheard.body")
+            case .bluetoothOff: return ("scan.off.headline", "scan.off.body")
             default:        return ("scan.found.headline", "scan.found.body")
             }
         }
@@ -131,14 +132,13 @@ struct ScanView: View {
                 PrimaryButton(title: t("scan.again")) { stage = .looking }
                 TextAction(title: t("scan.later")) { dismiss() }
             case .denied:
-                PrimaryButton(title: t("scan.settings")) {
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(url)
-                    }
-                }
+                PrimaryButton(title: t("scan.settings"), action: openSettings)
                 TextAction(title: t("scan.later")) { dismiss() }
             default:
-                if stage == .found, state.pairing == .notHeard, let place = state.lastBox {
+                if stage == .found, state.pairing == .bluetoothOff, let place = state.lastBox {
+                    PrimaryButton(title: t("scan.settings"), action: openSettings)
+                    TextAction(title: t("scan.again")) { state.pairBox(place: place) }
+                } else if stage == .found, state.pairing == .notHeard, let place = state.lastBox {
                     PrimaryButton(title: t("scan.again")) { state.pairBox(place: place) }
                     TextAction(title: t("scan.later")) { dismiss() }
                 }
@@ -146,6 +146,13 @@ struct ScanView: View {
         }
         .frame(minHeight: 120, alignment: .bottom)
         .transition(.opacity)
+    }
+
+    /// Listened, and heard no box: the close button comes back.
+    private var heardNothing: Bool { state.pairing == .notHeard || state.pairing == .bluetoothOff }
+
+    private func openSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
     }
 
     // MARK: The camera

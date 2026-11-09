@@ -38,7 +38,7 @@ Dependencies: **`supabase-swift` only.**
 
 ```
 ReclaimKit/Sources/ReclaimKit/
-  Models/        Session, Gathering, Place, Profile, Member, PlaceSummary, EveningTotal
+  Models/        Session, Gathering, Place, Profile, PlaceSummary, EveningTotal
   Data/          Repository (protocol), SupabaseRepository, PreviewRepository
   Dock/          Box (the Portside protocol, "was it me"), BoxLink (the radio),
                  BoxPairing, Dock (links), DockSlot, DockLight + WLED (the lights)
@@ -89,7 +89,7 @@ own.
 | `dockPlace(secret:handle:)` | The box's place, found or made by whoever reads its tag or code first, and the reader one of its people (0013, 0017) |
 | `startOrJoin(place:source:)` | The phone went in: join the box's open evening, or open it |
 | `endSession(_:)` | The phone came out. Returns the minutes credited, capped |
-| `members(of:)` | Who's in the evening — a count on screen, never a roster |
+| `memberCount(of:)` | How many are in the evening — a number from `gathering_count` (0023), never who |
 | `summary(of:)` | The box's whole life: evenings, hours together, its stage |
 | `myEvenings()` | Your own evenings, as days |
 | `saveActivityToken`, `startActivityRemotely`, `saveLiveActivity` | The Live Activity's pushes (0015, 0016) |
@@ -109,7 +109,7 @@ Settings' "What we can see" says so. Nobody's client can read them back; the
 ## State
 
 One `AppState` on the environment. It holds the evening (`session`,
-`gathering`, `members`, `startedAt`), the boxes (`boxPlaces` in the order they
+`gathering`, `memberCount`, `startedAt`), the boxes (`boxPlaces` in the order they
 were met, `lastBox`, `boxSummaries`; `boxPlace` is the one Home leads with), your
 evenings (`evenings`, `eveningTotal`), and the two things that surface over
 Home: `justEnded` (screen 8) and `closedForYou` (screen 13).
@@ -119,6 +119,10 @@ account if there isn't one, reconciles what the phone thinks is running with
 what the database says (`Reconciliation`), and runs the foreground check
 (below). A failed read keeps what was known: offline is not "nothing is
 running".
+
+Anything a person asked for that didn't go through — a rename, keeping their
+days, deleting the account, a card that couldn't be read from a link — sets
+`banner`, which `RootView` shows as a line at the top for four seconds.
 
 ---
 
@@ -187,8 +191,11 @@ with today's star landing in it — never the box's own count beside yours,
 which read as two numbers that disagreed. Out again within a minute, there is
 no receipt (`EveningLanding.earnsAReceipt`): the time is kept, but "No
 minutes, all yours." isn't a moment. **The evening screen** is rarely seen — a phone in
-a hand that isn't charging has left the box — so it says only who's there and
-since when, and that the evening ends when the phone comes out.
+a hand that isn't charging has left the box — so it says where the evening
+has got to, who's there and since when, and that the evening ends when the
+phone comes out. A box the app can't name is left unnamed: the receipt drops
+its *At …* line and the lock screen says only since when, rather than a name
+for a box that doesn't exist.
 
 ---
 
@@ -230,18 +237,23 @@ server at three hours, and screen 13 says so once.
 Started by the app when it's awake, or by push when the box started the
 evening in the background (`start-live-activity`, migration 0015). Ended by the
 app when the phone comes out, and by the server for an evening it closed.
+Its stale date is the server's cap (`AutoClosed.cap`), so if that closing push
+never arrives the face still goes quiet at three hours and says *"Closed at
+three hours. It still counts."* rather than charging an evening that's over.
 
 ```swift
 struct ContentState: Codable, Hashable {
     var startedAt: Date
     var memberCount: Int
-    var placeName: String?   // nil reads "Your box"
+    var placeName: String?   // nil: the box isn't named at all
     var stage: Int           // 0–4, the ring's segments
 }
 ```
 
-Lock screen: the ring-and-dot mark, its step's line (*"Settling in."*, *"Today counts."*…) alone or
-*"Three of you so far."* together, and *"The Kitchen Table · since 7:27"*.
+Lock screen: the ring-and-dot mark, its step's line (*"Settling in."*,
+*"Today counts."*…) alone or together, and under it *"The Kitchen Table · since
+7:27"* alone or *"Three of you · since 7:27"* together — the same shape as the
+evening screen and the wrist.
 **No ticking digits and nothing to press.**
 
 **The evening charges.** The ring is four segments, full at fifteen minutes,
@@ -263,7 +275,7 @@ Every user-facing string lives in `copy/strings.json`, keyed `screen.element`,
 bundled with the app. **Never hardcode a user-facing string in a view.**
 
 ```swift
-Text(t("home.body"))   // "Put your phone in the box. That's all there is to it."
+Text(t("home.counted"))   // "Today counts."
 ```
 
 ---

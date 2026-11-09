@@ -59,6 +59,11 @@ extension AppState {
                 if let mine, mine != peripheral { self.boxLink.letGo(of: mine) }
                 BoxPairing.met(place, peripheral: peripheral)
             }
+            if peripheral == nil, self.boxLink.bluetoothOff {
+                self.pairing = .bluetoothOff
+                self.note(.bluetoothOff, place: place)
+                return
+            }
             self.pairing = peripheral == nil ? .notHeard : .paired
             self.note(peripheral == nil ? .pairNotHeard : .paired, place: place)
         }
@@ -106,12 +111,12 @@ extension AppState {
     private func showOnLockScreen() async {
         guard isLive, !LiveActivityController.showing, let s = session else { return }
         let state = ReclaimActivityAttributes.ContentState(
-            startedAt: startedAt ?? s.startedAt, memberCount: max(1, members.count), placeName: placeName,
+            startedAt: startedAt ?? s.startedAt, memberCount: max(1, memberCount), placeName: placeName,
             stage: EveningCharge.stage(since: startedAt ?? s.startedAt))
-        let place = placeName ?? t("box.unnamed")
+        let title = placeName.map { t("starttap.banner.title", "place", $0) } ?? t("starttap.banner.unknown")
         guard let body = try? RemoteActivity.startBody(
             gatheringId: s.gatheringId, state: state,
-            title: t("starttap.banner.title", "place", place), body: t("starttap.banner.body"))
+            title: title, body: t("starttap.banner.body"))
         else { return }
         try? await repo.startActivityRemotely(body: body)
     }

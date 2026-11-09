@@ -31,7 +31,6 @@ public enum Type {
     public static var hero: Font      { display(44) }
     public static var title: Font     { display(34) }
     public static var subhead: Font   { display(24) }
-    public static var timer: Font     { display(92, weight: .light) }
     public static var lede: Font      { body(16) }
     public static var note: Font      { body(13) }
     public static var label: Font     { body(12, weight: .semibold) }

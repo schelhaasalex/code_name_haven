@@ -15,8 +15,6 @@ struct SessionEndView: View {
     let ended: AppState.Ended
 
     @State private var landed = false
-    /// The box's own total, from `place_summary`. Until it arrives — or if
-    /// it never does — the line just names the box. Nothing waits on it.
 
     private var landing: EveningLanding { ended.landing }
 
@@ -42,8 +40,12 @@ struct SessionEndView: View {
             Text(receiptLine)
                 .font(Type.display(44)).foregroundStyle(Palette.ink)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(t("end.where", "place", ended.place ?? t("box.unnamed")))
-                .font(Type.body(17)).foregroundStyle(Palette.ink2)
+            // Which box, when the app knows; nothing rather than a name for
+            // a box that doesn't exist.
+            if let place = ended.place {
+                Text(t("end.where", "place", place))
+                    .font(Type.body(17)).foregroundStyle(Palette.ink2)
+            }
         }
     }
 
