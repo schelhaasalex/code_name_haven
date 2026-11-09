@@ -237,6 +237,7 @@ scripts/shape.sh      # about a second, no toolchain, no network
 | The box's lights can be found | iOS won't browse for a Bonjour service missing from `NSBonjourServices`, and says nothing — the box just never lights |
 | A Live Activity can be started by push | Without `aps-environment`, iOS never hands out a push-to-start token, and an evening the box started shows nothing on the lock screen |
 | The ring charges the same on the phone and the server | The phone steps the ring while it's awake and the server after; two lists of steps that differ make it jump back a segment |
+| An evening is closed at the same cap everywhere | The lock screen goes quiet at the cap by itself, in case the push that ends it never comes; a cap in the push that differs from the server's says "closed" over an evening still going |
 | Only the box starts an evening | Rule 4. A button, face-down, a motion guess, a nearby phone and Siri were each one call to `setItDown` from somewhere new |
 | Every link the app makes opens it | The site claims every path but the home page. Phones cache `apple-app-site-association` for days, apart from the app, and a path added later (`/d/`, the slot links' first home) opened Safari until that cache refreshed |
 

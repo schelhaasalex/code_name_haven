@@ -29,6 +29,27 @@ export interface LiveActivityStart {
   alert: { title: string; body: string };
 }
 
+/**
+ * Where the server closes an evening nobody ended: `app.auto_close_minutes`,
+ * and `AutoClosed.capMinutes` on the phone. `scripts/shape.sh` checks all
+ * three agree.
+ */
+export const capMinutes = 180;
+
+/** 1970 to 2001, in seconds: the phone's JSONEncoder counts a Date from 2001. */
+const appleEpoch = 978_307_200;
+
+/**
+ * When the face should go quiet if the push that ends it never comes — the
+ * cap, from the evening's own start. Every push carries it: an update without
+ * one clears the one the phone set, and the box starts most evenings by push,
+ * where the phone never set one at all. Nothing when the state has no start.
+ */
+export function staleDate(contentState: unknown): number | undefined {
+  const startedAt = (contentState as { startedAt?: unknown } | null)?.startedAt;
+  return typeof startedAt === "number" ? Math.round(appleEpoch + startedAt + capMinutes * 60) : undefined;
+}
+
 const host: Record<Environment, string> = {
   sandbox: "https://api.sandbox.push.apple.com",
   production: "https://api.push.apple.com",
@@ -73,6 +94,7 @@ export function startRequest(
       "attributes-type": start.attributesType,
       attributes: start.attributes,
       "content-state": start.contentState,
+      "stale-date": staleDate(start.contentState),
       alert: { title: start.alert.title, body: start.alert.body },
     },
   };
@@ -105,6 +127,7 @@ export function changeRequest(
   const aps: Record<string, unknown> = { timestamp: now, event, "content-state": contentState };
   // Ended means gone: an evening that's over doesn't linger on the lock screen.
   if (event === "end") aps["dismissal-date"] = now;
+  else aps["stale-date"] = staleDate(contentState);
   return {
     url: `${host[environment]}/3/device/${token}`,
     init: {
