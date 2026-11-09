@@ -59,6 +59,11 @@ extension AppState {
                 if let mine, mine != peripheral { self.boxLink.letGo(of: mine) }
                 BoxPairing.met(place, peripheral: peripheral)
             }
+            if peripheral == nil, self.boxLink.bluetoothOff {
+                self.pairing = .bluetoothOff
+                self.note(.bluetoothOff, place: place)
+                return
+            }
             self.pairing = peripheral == nil ? .notHeard : .paired
             self.note(peripheral == nil ? .pairNotHeard : .paired, place: place)
         }

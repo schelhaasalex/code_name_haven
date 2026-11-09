@@ -19,6 +19,14 @@ extension AppState {
         return Self.defaultNames.indices.contains(i) ? Self.defaultNames[i] : t("box.unnamed")
     }
 
+    /// The box an evening was at, by name — for one that isn't running, so
+    /// isn't `gathering`. Nil if the gathering can't be read, or was at no box.
+    public func placeName(ofGathering id: UUID) async -> String? {
+        guard let place = (try? await repo.gathering(id))?.placeId,
+              self.place(place) != nil || boxPlaces.contains(place) else { return nil }
+        return name(of: place)
+    }
+
     /// Its card or a tag was read: on this phone's list, and the box Home
     /// leads with.
     func meet(_ id: UUID) {

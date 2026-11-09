@@ -74,7 +74,7 @@ enum LiveActivityController {
         if let running = Activity<ReclaimActivityAttributes>.activities
             .first(where: { $0.attributes.gatheringId == gatheringId }) {
             current = running
-            await running.update(.init(state: state, staleDate: nil))
+            await running.update(.init(state: state, staleDate: staleDate(startedAt)))
             return
         }
         await end()
@@ -82,10 +82,10 @@ enum LiveActivityController {
         // Without a push token it still shows; it just doesn't charge.
         current = (try? Activity.request(
             attributes: ReclaimActivityAttributes(gatheringId: gatheringId),
-            content: .init(state: state, staleDate: nil), pushType: .token))
+            content: .init(state: state, staleDate: staleDate(startedAt)), pushType: .token))
             ?? (try? Activity.request(
                 attributes: ReclaimActivityAttributes(gatheringId: gatheringId),
-                content: .init(state: state, staleDate: nil)))
+                content: .init(state: state, staleDate: staleDate(startedAt))))
         if let current { watch(current) }
     }
 
@@ -96,7 +96,14 @@ enum LiveActivityController {
         await current.update(.init(
             state: .init(startedAt: startedAt, memberCount: memberCount, placeName: placeName,
                          stage: EveningCharge.stage(since: startedAt), endingAt: endingAt),
-            staleDate: nil))
+            staleDate: staleDate(startedAt)))
+    }
+
+    /// The server closes an evening nobody ended at its cap and ends this
+    /// with a push. If that push never arrives, iOS still knows from here
+    /// that the ring is out of date, and the face says it was closed.
+    private static func staleDate(_ startedAt: Date) -> Date {
+        startedAt.addingTimeInterval(AutoClosed.cap)
     }
 
     /// Every activity, not just the one this launch remembers. The End button

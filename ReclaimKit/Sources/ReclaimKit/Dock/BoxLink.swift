@@ -63,6 +63,12 @@ public final class BoxLink: NSObject {
         start()
     }
 
+    /// Bluetooth is off, or not allowed for this app: no box can be heard,
+    /// however close it is.
+    public var bluetoothOff: Bool {
+        manager?.state == .poweredOff || manager?.state == .unauthorized
+    }
+
     /// Nil when there's nothing to say yet: no radio paired, or Bluetooth
     /// never started on this launch.
     public func radio(of peripheral: UUID?) -> Radio? {

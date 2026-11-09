@@ -28,6 +28,22 @@ struct RootView: View {
         }
         .animation(.easeInOut(duration: 0.45), value: state.isLive)
         .animation(.easeInOut(duration: 0.45), value: state.justEnded)
+        // Anything that didn't go through, over whatever is showing. Under the
+        // splash, so the first two seconds stay the splash's.
+        .overlay(alignment: .top) {
+            if let message = state.banner {
+                Banner(message: message)
+                    .padding(.horizontal, 20)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .onTapGesture { state.banner = nil }
+                    .task(id: message) {
+                        AccessibilityNotification.Announcement(message).post()
+                        try? await Task.sleep(for: .seconds(4))
+                        state.banner = nil
+                    }
+            }
+        }
+        .animation(.easeInOut(duration: 0.35), value: state.banner)
         // Screen 0, over the top rather than in the switch: the splash is on a
         // clock of its own and holds nothing up. Everything below it is already
         // loading, already live, already reachable.

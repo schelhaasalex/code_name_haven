@@ -120,6 +120,10 @@ what the database says (`Reconciliation`), and runs the foreground check
 (below). A failed read keeps what was known: offline is not "nothing is
 running".
 
+Anything a person asked for that didn't go through — a rename, keeping their
+days, deleting the account, a card that couldn't be read from a link — sets
+`banner`, which `RootView` shows as a line at the top for four seconds.
+
 ---
 
 ## Screens
@@ -230,6 +234,9 @@ server at three hours, and screen 13 says so once.
 Started by the app when it's awake, or by push when the box started the
 evening in the background (`start-live-activity`, migration 0015). Ended by the
 app when the phone comes out, and by the server for an evening it closed.
+Its stale date is the server's cap (`AutoClosed.cap`), so if that closing push
+never arrives the face still goes quiet at three hours and says *"Closed at
+three hours. It still counts."* rather than charging an evening that's over.
 
 ```swift
 struct ContentState: Codable, Hashable {

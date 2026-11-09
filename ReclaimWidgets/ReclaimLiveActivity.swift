@@ -11,7 +11,7 @@ import ReclaimKit
 struct ReclaimLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: ReclaimActivityAttributes.self) { context in
-            face(context.state)
+            face(context.state, stale: context.isStale)
                 .activityBackgroundTint(Palette.nightCard)
                 .activitySystemActionForegroundColor(Palette.cream)
         } dynamicIsland: { context in
@@ -21,7 +21,7 @@ struct ReclaimLiveActivity: Widget {
                 }
                 DynamicIslandExpandedRegion(.center) {
                     VStack(alignment: .leading, spacing: 4) {
-                        headlineText(context.state)
+                        headlineText(context.state, stale: context.isStale)
                             .font(.system(size: 15, weight: .medium))
                             .foregroundStyle(Palette.cream)
                             .lineLimit(1)
@@ -50,11 +50,12 @@ struct ReclaimLiveActivity: Widget {
     /// On iOS 18 the same activity can show on a paired Watch, where it asks
     /// for the small family. Before 18 there is no family to ask about.
     @ViewBuilder
-    private func face(_ state: ReclaimActivityAttributes.ContentState) -> some View {
+    private func face(_ state: ReclaimActivityAttributes.ContentState, stale: Bool) -> some View {
         if #available(iOS 18.0, *) {
-            ActivityFace(lockScreen: lockScreen(state), wrist: WristActivity(state: state))
+            ActivityFace(lockScreen: lockScreen(state, stale: stale),
+                         wrist: WristActivity(state: state, stale: stale))
         } else {
-            lockScreen(state)
+            lockScreen(state, stale: stale)
         }
     }
 
@@ -63,11 +64,15 @@ struct ReclaimLiveActivity: Widget {
     /// doing. It says what you're doing, where, and since when — except for
     /// the five seconds after the phone comes out, when the one thing worth
     /// knowing is when it ends, and that putting it back carries on.
-    private func lockScreen(_ state: ReclaimActivityAttributes.ContentState) -> some View {
+    ///
+    /// Past the cap, and the server's ending never arrived: it says what the
+    /// server did, quieter.
+    private func lockScreen(_ state: ReclaimActivityAttributes.ContentState, stale: Bool) -> some View {
         HStack(spacing: 16) {
             RingMark(stage: state.stage, memberCount: state.memberCount, size: 44)
+                .opacity(stale ? 0.5 : 1)
             VStack(alignment: .leading, spacing: 5) {
-                headlineText(state)
+                headlineText(state, stale: stale)
                     .font(Type.display(22))
                     .foregroundStyle(Palette.cream)
                     .lineLimit(2)
@@ -90,8 +95,10 @@ struct ReclaimLiveActivity: Widget {
 
     /// Counting down while the phone is out; otherwise the evening's line.
     @ViewBuilder
-    private func headlineText(_ state: ReclaimActivityAttributes.ContentState) -> some View {
-        if let end = state.endingAt, end > .now {
+    private func headlineText(_ state: ReclaimActivityAttributes.ContentState, stale: Bool) -> some View {
+        if stale {
+            Text(t("lockscreen.closed"))
+        } else if let end = state.endingAt, end > .now {
             Text("\(t("leaving.headline")) \(Text(timerInterval: Date.now...end, countsDown: true))")
                 .monospacedDigit()
         } else {

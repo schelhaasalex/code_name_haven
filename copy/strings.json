@@ -40,6 +40,7 @@
   "home.evenings.one": "One day, since {month}.",
   "home.sky": "{count} this week, {total} since {month}.",
   "box.unnamed": "The Landing",
+  "box.yours": "Your box",
   "box.default.1": "The Harbor",
   "box.default.2": "The Cove",
   "box.default.3": "The Mooring",
@@ -55,6 +56,8 @@
   "scan.paired.body": "Put your phone in any slot. That's all there is to it.",
   "scan.notheard.headline": "Not hearing it yet.",
   "scan.notheard.body": "Bring your phone right up to the box, and check the box has power.",
+  "scan.off.headline": "Your phone can't hear the box.",
+  "scan.off.body": "It listens over Bluetooth, which is off or not allowed for this app. Turn it on in Settings, then try again.",
   "scan.failed.headline": "That didn't go through.",
   "scan.failed.body": "Check you're online, and scan the card again.",
   "scan.denied.headline": "The camera is off for this app.",
@@ -75,6 +78,7 @@
   "session.end": "End",
 
   "lockscreen.together": "{count} so far.",
+  "lockscreen.closed": "Closed at three hours. It still counts.",
   "lockscreen.since": "{place} · since {time}",
   "wrist.since": "Since {time}",
   "wrist.together": "{count} · since {time}",
@@ -105,11 +109,10 @@
 
   "place.stage.house": "Part of the house",
 
-  "autoclosed.eyebrow": "Last night",
   "autoclosed.headline": "We closed this one for you.",
   "autoclosed.body": "Your phone went into the box at {time} and we never heard it come out. We've counted three hours and stopped there rather than guess.",
   "autoclosed.capped": "Counted to the cap",
-  "autoclosed.counts": "It still counts toward last night.",
+  "autoclosed.counts": "It still counts.",
   "autoclosed.accept": "Fine by me",
   "autoclosed.remove": "That wasn't a real one — remove it",
 

@@ -20,6 +20,9 @@ extension BoxLink {
             while ContinuousClock.now - began < Self.giveUp {
                 try? await Task.sleep(for: .seconds(1))
                 guard let self, self.paired != nil else { return }
+                // Off, or refused at the prompt: nothing will be heard, so
+                // say so now rather than after twelve seconds of listening.
+                if self.bluetoothOff { break }
                 if ContinuousClock.now - began >= Self.listen,
                    let closest = Box.closest(self.heard, except: self.except) {
                     self.finishPairing(self.candidates[closest])

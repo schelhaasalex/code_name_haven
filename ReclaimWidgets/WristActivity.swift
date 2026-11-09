@@ -14,10 +14,13 @@ import ReclaimKit
 /// still end the evening.
 struct WristActivity: View {
     let state: ReclaimActivityAttributes.ContentState
+    /// Past the cap with no ending pushed: the server has closed it.
+    var stale = false
 
     var body: some View {
         HStack(spacing: 10) {
             RingMark(stage: state.stage, memberCount: state.memberCount, size: 30)
+                .opacity(stale ? 0.5 : 1)
             VStack(alignment: .leading, spacing: 2) {
                 Text(headline)
                     .font(Type.display(16))
@@ -36,7 +39,9 @@ struct WristActivity: View {
     }
 
     /// Where the evening has got to. The count moves to the line below.
-    private var headline: String { EveningCharge.line(stage: state.stage) }
+    private var headline: String {
+        stale ? t("lockscreen.closed") : EveningCharge.line(stage: state.stage)
+    }
 
     private var since: String {
         let time = Say.time(state.startedAt)
