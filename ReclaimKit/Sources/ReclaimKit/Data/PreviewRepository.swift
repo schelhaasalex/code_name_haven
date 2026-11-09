@@ -42,7 +42,7 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
         id: UUID(), profileId: PreviewRepository.me, gatheringId: UUID(),
         startedAt: Date(timeIntervalSinceNow: -60 * 60 * 14),
         endedAt: Date(timeIntervalSinceNow: -60 * 60 * 11),
-        durationMinutes: 180, localDate: PlainDate.string(from: .now),
+        durationMinutes: 180, localDate: PlainDate.local(.now),
         qualifying: true, autoClosed: true)
 
     public init(

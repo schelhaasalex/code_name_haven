@@ -85,7 +85,8 @@ extension AppState {
         let at = Date()
         let charging = await ChargingWatch.shared.charging(within: 6)
         let fresh = Box.justStarted(chargingSince: ChargingWatch.shared.since, at: at)
-        guard Box.isThisPhone(charging: charging, wasCharging: !fresh, rssi: rssi) else { return }
+        guard Box.isThisPhone(charging: charging, wasCharging: !fresh,
+                              unbroken: ChargingWatch.shared.unbroken, rssi: rssi) else { return }
 
         // Two slots filling at once leaves which one was this phone a guess;
         // the box lights its own slots, so the guess only matters to this phone.

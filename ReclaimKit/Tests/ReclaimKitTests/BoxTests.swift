@@ -98,6 +98,15 @@ final class BoxTests: XCTestCase {
         XCTAssertFalse(Box.isThisPhone(charging: true, wasCharging: true, rssi: -42))
     }
 
+    /// Seen charging last night, unplugged while the app slept, and in the
+    /// box this morning: right beside it, so it's this one.
+    func testAChargingStretchTheAppSleptThroughIsDecidedByCloseness() {
+        XCTAssertTrue(Box.isThisPhone(charging: true, wasCharging: true, unbroken: false, rssi: -42))
+        XCTAssertFalse(Box.isThisPhone(charging: true, wasCharging: true, unbroken: false, rssi: -78))
+        // Asleep through it and nothing read: not enough to start anything.
+        XCTAssertFalse(Box.isThisPhone(charging: true, wasCharging: true, unbroken: false, rssi: nil))
+    }
+
     /// In a pocket, in the same room.
     func testAPhoneNotChargingIsNotIn() {
         XCTAssertFalse(Box.isThisPhone(charging: false, wasCharging: false, rssi: -42))
