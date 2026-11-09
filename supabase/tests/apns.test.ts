@@ -10,7 +10,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { apnsToken, changeRequest, outcome, startRequest } from "../functions/_shared/apns.ts";
+import { apnsToken, changeRequest, outcome, staleDate, startRequest } from "../functions/_shared/apns.ts";
 
 const dir = mkdtempSync(join(tmpdir(), "apns-"));
 execFileSync("openssl", ["genpkey", "-algorithm", "EC", "-pkeyopt", "ec_paramgen_curve:P-256",
@@ -55,6 +55,7 @@ test("a start is a liveactivity push to the bundle's liveactivity topic, with no
   assert.equal(aps.timestamp, 1_800_000_000);
   assert.equal(aps["attributes-type"], "ReclaimActivityAttributes");
   assert.deepEqual(aps["content-state"], { startedAt: 783_000_000, memberCount: 1, placeName: "Low Vole" });
+  assert.equal(aps["stale-date"], 978_307_200 + 783_000_000 + 3 * 60 * 60, "quiet at the cap");
   assert.equal(aps.sound, undefined, "nothing buzzes during an evening");
   assert.equal(aps.alert.sound, undefined);
 });
@@ -83,10 +84,20 @@ test("a step of the ring is an update to the activity's own token, silent", () =
   assert.equal(aps["content-state"].stage, 1);
   assert.equal(aps.alert, undefined, "a step never alerts");
   assert.equal(aps["dismissal-date"], undefined, "and dismisses nothing");
+  assert.equal(aps["stale-date"], 978_307_200 + 783_000_000 + 3 * 60 * 60,
+    "and keeps the cap, which an update without one would clear");
 });
 
 test("an end dismisses at once", () => {
   const aps = JSON.parse(changeRequest("b", "end", {}, "ff", "sandbox", "x", 1_800_000_000).init.body as string).aps;
   assert.equal(aps.event, "end");
   assert.equal(aps["dismissal-date"], 1_800_000_000);
+});
+
+test("the cap is counted from the phone's own start, in Apple's epoch", () => {
+  // 2026-11-09 19:00:00 UTC, as the phone's JSONEncoder writes it.
+  const startedAt = Date.UTC(2026, 10, 9, 19) / 1000 - 978_307_200;
+  assert.equal(staleDate({ startedAt }), Date.UTC(2026, 10, 9, 22) / 1000);
+  assert.equal(staleDate({}), undefined);
+  assert.equal(staleDate(null), undefined);
 });

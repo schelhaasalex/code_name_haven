@@ -243,6 +243,19 @@ sql_steps=$(sed -n 's/.*unnest(array\[\([0-9, ]*\)\]).*/\1/p' supabase/migration
 [ "$swift_steps" = "$sql_steps" ] \
   || bad "EveningCharge.minutes is [$swift_steps] and app.charge_stage counts [$sql_steps]"
 
+# 20a. Where an evening nobody ended is closed. The server closes it at
+#     app.auto_close_minutes; the lock screen goes quiet at the same moment,
+#     from the phone (AutoClosed.capMinutes) or from a push (apns.ts). If they
+#     differ, the face says "closed" over an evening that's still going.
+note "An evening is closed at the same cap everywhere"
+swift_cap=$(sed -n 's/.*static let capMinutes = \([0-9]*\).*/\1/p' ReclaimKit/Sources/ReclaimKit/Support/AutoClosed.swift)
+push_cap=$(sed -n 's/^export const capMinutes = \([0-9]*\);.*/\1/p' supabase/functions/_shared/apns.ts)
+cap_sql=$(grep -l 'function app.auto_close_minutes' supabase/migrations/*.sql | sort | tail -1)
+sql_cap=$(grep -A1 'function app.auto_close_minutes' "$cap_sql" | grep -o 'select [0-9]*' | grep -o '[0-9]*')
+[ -n "$swift_cap" ] && [ -n "$push_cap" ] && [ -n "$sql_cap" ] || bad "couldn't read the cap from all three places"
+[ "$swift_cap" = "$sql_cap" ] && [ "$push_cap" = "$sql_cap" ] \
+  || bad "the cap is $sql_cap minutes on the server, $swift_cap in AutoClosed, $push_cap in apns.ts"
+
 # 20b. The box's stages, drawn on the phone and named by the server. The
 #     phone draws the track from BoxStage.days and the server names the stage
 #     from app.place_stage; if they differ, the gold mark sits past a stage
