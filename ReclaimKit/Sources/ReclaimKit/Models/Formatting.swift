@@ -100,18 +100,6 @@ public enum Say {
         return t(part, "day", weekday.string(from: day))
     }
 
-    /// "7 PM", "19:00" — an hour of the day in the phone's own style. The
-    /// nudge hour used to be written into Settings as "7:00pm", whatever it was.
-    public static func hour(_ hour: Int, calendar: Calendar = .current) -> String {
-        let f = DateFormatter()
-        f.calendar = calendar
-        f.timeZone = calendar.timeZone
-        f.locale = calendar.locale ?? .current
-        f.setLocalizedDateFormatFromTemplate("j")
-        let date = calendar.date(from: DateComponents(year: 2026, month: 1, day: 1, hour: hour)) ?? .now
-        return f.string(from: date)
-    }
-
     /// "7:27 PM", "19:27" — a moment, in the phone's own style. The session
     /// screen says when you started rather than how long it has been: a
     /// start time is a fact that doesn't tick.

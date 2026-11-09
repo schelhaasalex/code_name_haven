@@ -48,16 +48,16 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
     public init(
         live: Session? = nil,
         members: [Member] = [
-            Member(profileId: PreviewRepository.maya, displayName: "Maya", stillLive: true),
-            Member(profileId: PreviewRepository.dad,  displayName: "Dad",  stillLive: true),
-            Member(profileId: PreviewRepository.me,   displayName: "Alex", stillLive: true)
+            Member(profileId: PreviewRepository.maya, stillLive: true),
+            Member(profileId: PreviewRepository.dad,  stillLive: true),
+            Member(profileId: PreviewRepository.me,   stillLive: true)
         ],
         places: [Place] = [
             Place(id: PreviewRepository.kitchenTable, name: "The Kitchen Table", handle: "amber-otter",
                   createdBy: PreviewRepository.me)
         ]
     ) {
-        self.profile = Profile(id: PreviewRepository.me, displayName: "Alex")
+        self.profile = Profile(id: PreviewRepository.me)
         self.places = places
         self.live = live
         self.memberList = members
@@ -92,7 +92,7 @@ public final class PreviewRepository: Repository, @unchecked Sendable {
 
     public func members(of gathering: UUID) async throws -> [Member] {
         guard startedHere.contains(gathering) else { return memberList }
-        return [Member(profileId: profile.id, displayName: profile.displayName, stillLive: true)]
+        return [Member(profileId: profile.id, stillLive: true)]
     }
     public func summary(of place: UUID) async throws -> PlaceSummary {
         guard place == Self.bedroom else { return summaryValue }

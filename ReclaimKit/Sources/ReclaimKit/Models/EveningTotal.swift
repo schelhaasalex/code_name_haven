@@ -2,7 +2,7 @@ import Foundation
 
 /// Every evening you've had, as a number and a first date (migration 0011).
 ///
-/// The same unit as the dot week and the rhythm: distinct qualifying
+/// The same unit as this week's stars on Home: distinct qualifying
 /// `local_date`s, so a five-person dinner is one. It only goes up.
 public struct EveningTotal: Codable, Hashable, Sendable {
     public let count: Int

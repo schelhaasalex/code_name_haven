@@ -28,8 +28,4 @@ final class HandleTests: XCTestCase {
         XCTAssertGreaterThan(seen.count, 100)
     }
 
-    func testPrettyIsForReadingAloud() {
-        XCTAssertEqual(Handle.pretty("amber-otter"), "Amber Otter")
-        XCTAssertEqual(Handle.pretty("wren"), "Wren")
-    }
 }

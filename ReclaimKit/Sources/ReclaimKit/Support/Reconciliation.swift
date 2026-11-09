@@ -14,9 +14,10 @@ public enum Reconciliation: Equatable, Sendable {
     case keep
     /// Still the same evening. Catch up on who joined while the app was away.
     case refresh
-    /// An evening this phone didn't start here: Siri, a tag, Control Centre.
+    /// An evening this launch didn't start: the box started it while the
+    /// app was asleep, or a tag read by the system.
     case adopt(Session)
-    /// Ended elsewhere — the Live Activity, Siri, or closed at the cap.
+    /// Ended elsewhere — by a launch that has since gone, or closed at the cap.
     case end
     /// Nothing running, nothing to do but listen at your places.
     case idle

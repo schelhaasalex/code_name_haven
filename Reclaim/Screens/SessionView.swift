@@ -1,7 +1,7 @@
 import SwiftUI
 import ReclaimKit
 
-/// Screens 6 and 12. In session — with five people, or with one.
+/// Screen 6. In the box — with five people, or with one.
 ///
 /// Rarely seen: the phone is in the box, and a phone in a hand that isn't
 /// charging has left it, so opening the app mostly ends the evening and shows
@@ -127,5 +127,5 @@ struct SessionView: View {
 
 #Preview("Just you") {
     SessionView().environment(AppState(repo: PreviewRepository(
-        members: [Member(profileId: PreviewRepository.me, displayName: "Alex", stillLive: true)])))
+        members: [Member(profileId: PreviewRepository.me, stillLive: true)])))
 }

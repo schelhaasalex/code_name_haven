@@ -1,10 +1,8 @@
 import Foundation
 
-/// The dot week on Home and the four-week grid on screen 10.
-///
-/// This was the same date arithmetic written twice inside two `View`s, where it
-/// could be neither shared nor tested. It is pure functions over plain values
-/// so that both can happen.
+/// This week, for Home's sky: which of its days counted, so the line under
+/// the sky can say how many. Pure functions over plain values, so it can be
+/// tested without a phone.
 ///
 /// Everything here works in distinct `local_date` strings, because a
 /// five-person dinner is ONE evening. Counting sessions instead of dates is the
@@ -14,10 +12,6 @@ public enum EveningCalendar {
     public enum Day: Equatable, Sendable {
         case docked
         case missed
-        /// A day a rhythm survived. Nothing here produces one: only the
-        /// database knows WHICH day a rest day forgave, and `my_rhythm`
-        /// returns whether one is available, not when it was spent.
-        case rest
         /// Later this week. Drawn as an outline — it hasn't happened yet, and
         /// an un-happened day is not a missed one.
         case future
@@ -47,30 +41,6 @@ public enum EveningCalendar {
 
     /// `weeks` whole weeks ending with this one, Monday-first, oldest first.
     ///
-    /// Whole weeks rather than a rolling 28 days, so every column is the same
-    /// weekday and the last row is the same seven days as the dot week on Home.
-    /// The rest of this week is `.future` — drawn, but not as a failure.
-    public static func grid(
-        evenings: Set<String>,
-        weeks: Int = 4,
-        today: Date = .now,
-        calendar: Calendar = .current
-    ) -> [Day] {
-        var cal = calendar
-        cal.firstWeekday = 2
-        let days = weeks * 7
-        guard let thisWeek = cal.dateInterval(of: .weekOfYear, for: today),
-              let start = cal.date(byAdding: .day, value: -7 * (weeks - 1),
-                                   to: cal.startOfDay(for: thisWeek.start))
-        else { return [] }
-        let dates = dateFormatter(for: cal)
-        return (0..<days).map { offset in
-            guard let day = cal.date(byAdding: .day, value: offset, to: start) else { return .future }
-            return classify(day, evenings: evenings, first: evenings.min(), today: today,
-                            calendar: cal, dates: dates)
-        }
-    }
-
     /// `first` is the earliest evening in the set — the earliest the app knows
     /// of. `local_date` strings sort as dates, so `min()` is the first one.
     /// With a long gap older than what's loaded, days before the gap read as

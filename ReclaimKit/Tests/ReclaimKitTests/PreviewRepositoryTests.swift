@@ -30,7 +30,7 @@ final class PreviewRepositoryTests: XCTestCase {
         _ = try await repo.startOrJoin(place: nil, source: .app)
         let live = try await repo.liveSession()
         let members = try await repo.members(of: try XCTUnwrap(live).gatheringId)
-        XCTAssertEqual(members.map(\.displayName), ["Alex"])
+        XCTAssertEqual(members.map(\.profileId), [PreviewRepository.me])
     }
 
     /// Ended at once, it's credited but doesn't count — under fifteen minutes.

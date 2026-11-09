@@ -149,18 +149,6 @@ final class FormattingTests: XCTestCase {
         XCTAssertEqual(t("end.where", "place", "the porch"), "At the porch.")
     }
 
-    /// The nudge hour, in the phone's own style — not a fixed "7:00pm".
-    func testAnHourIsSaidTheWayThePhoneSaysIt() {
-        var us = Calendar(identifier: .gregorian)
-        us.timeZone = TimeZone(identifier: "UTC")!
-        us.locale = Locale(identifier: "en_US")
-        // iOS puts a narrow no-break space before "PM", not a plain one.
-        XCTAssertEqual(Say.hour(19, calendar: us).replacingOccurrences(of: "\u{202F}", with: " "), "7 PM")
-        var nl = us
-        nl.locale = Locale(identifier: "nl_NL")
-        XCTAssertEqual(Say.hour(19, calendar: nl), "19")
-    }
-
     /// "Since 7:27 PM" or "Since 19:27" — when you started, never a count.
     func testATimeIsSaidTheWayThePhoneSaysIt() {
         var us = Calendar(identifier: .gregorian)

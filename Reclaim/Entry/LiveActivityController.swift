@@ -2,8 +2,10 @@ import Foundation
 import ActivityKit
 import ReclaimKit
 
-/// Screens 7 and 19 — the pair that earn the native rewrite. Start without
-/// unlocking, end without unlocking, app never opened in between.
+/// Screen 7 — the evening on the lock screen and the wrist. Started by the app
+/// when it's awake and by a push when the box started the evening in the
+/// background; ended by the app when the phone comes out, and by the server
+/// for an evening it closed. Nothing on it to press.
 @MainActor
 enum LiveActivityController {
 
@@ -106,11 +108,8 @@ enum LiveActivityController {
         startedAt.addingTimeInterval(AutoClosed.cap)
     }
 
-    /// Every activity, not just the one this launch remembers. The End button
-    /// relaunches the app in the background with no memory of the activity it
-    /// is ending — ending only `current` left it on the lock screen, counting
-    /// up for an evening that was over. Shared with the intent, which does
-    /// this for itself rather than waiting for the app to get here.
+    /// Every activity, not just the one this launch remembers: one a push
+    /// started, in a launch that never knew of it, ends too.
     static func end() async {
         await ReclaimActivity.endAll()
         current = nil

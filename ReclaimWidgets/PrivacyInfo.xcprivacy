@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  The widget extension collects nothing itself. It reads one flag from the App
-  Group the app writes (SessionFlag) so the Control Centre toggle can draw
-  itself without the network: UserDefaults, reason 1C8F.1.
+  The widget extension collects nothing and reads no defaults of its own. It
+  links ReclaimKit, which keeps the phone's own notes in UserDefaults for the
+  app, so the API is declared: reason CA92.1.
 -->
 <plist version="1.0">
 <dict>
@@ -19,7 +19,7 @@
       <key>NSPrivacyAccessedAPIType</key>
       <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
       <key>NSPrivacyAccessedAPITypeReasons</key>
-      <array><string>1C8F.1</string></array>
+      <array><string>CA92.1</string></array>
     </dict>
   </array>
 </dict>

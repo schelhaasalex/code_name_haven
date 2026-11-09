@@ -2,16 +2,14 @@ import SwiftUI
 import WidgetKit
 import ReclaimKit
 
-/// Tonight, on the wrist, while the phone is somewhere else — in the box, face
-/// down, in a pocket. The Watch shows it in the Smart Stack; nothing about it
-/// is set up on the Watch.
+/// The evening on the wrist, while the phone is in the box. The Watch shows
+/// it in the Smart Stack; nothing about it is set up on the Watch.
 ///
 /// The evening charges here: the ring steps through its four segments and
-/// the headline with it — Settling in, Tonight counts, Unwinding, Present,
+/// the headline with it — Settling in, Today counts, Unwinding, Present,
 /// Recharged — each pushed by the server as it's reached. No ticking digits,
 /// and nothing that creeps: four changes in an evening is a mark, not a timer.
-/// No End button — the wrist is for looking, and the lock screen and the app
-/// still end the evening.
+/// Nothing to press — taking the phone out of the box ends the evening.
 struct WristActivity: View {
     let state: ReclaimActivityAttributes.ContentState
     /// Past the cap with no ending pushed: the server has closed it.

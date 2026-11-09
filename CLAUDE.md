@@ -70,7 +70,7 @@ exclamation-point cheeriness, never guilt.
 | On-brand | Off-brand |
 |---|---|
 | "Docked. See you in a bit." | "Session started! 🎉" |
-| "Three of you so far." | "Sam and Ellie haven't joined yet!" |
+| "Three of you · since 7:27" | "Sam and Ellie haven't joined yet!" |
 | "That rhythm ended. Yesterday still counts." | "You broke your streak." |
 | "We closed this one for you. It still counts." | "Your session ran 9 hours!" |
 | "Nothing here yet." | "Let's get started! Complete these 3 steps." |

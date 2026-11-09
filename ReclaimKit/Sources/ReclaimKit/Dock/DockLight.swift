@@ -36,7 +36,7 @@ public final class DockLight: @unchecked Sendable {
     }
 
     /// The same, for a process that may be suspended the moment it returns —
-    /// an intent run by a Shortcut. Finishes when the light has been told, or
+    /// a background wake from the box. Finishes when the light has been told, or
     /// when it's clear it can't be; never throws, and never takes long.
     public func settle(slot: Int, on: Bool) async {
         await withCheckedContinuation { done in

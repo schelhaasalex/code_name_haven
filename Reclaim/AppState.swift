@@ -113,9 +113,6 @@ public final class AppState {
         if let lastBox, boxPlaces.contains(lastBox) { return lastBox }
         return boxPlaces.last
     }
-    public var otherBoxes: [UUID] { boxPlaces.filter { $0 != boxPlace } }
-    public var box: Place? { boxPlace.flatMap(place) }
-    public var boxSummary: PlaceSummary? { boxPlace.flatMap { boxSummaries[$0] } }
 
     public func place(_ id: UUID) -> Place? { places.first { $0.id == id } }
 
