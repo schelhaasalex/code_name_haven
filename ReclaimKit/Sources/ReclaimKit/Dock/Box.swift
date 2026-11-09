@@ -139,8 +139,20 @@ public enum Box {
     ///
     /// An unknown signal strength doesn't count against it: charging that
     /// began in the same breath as a slot filling is most of the evidence.
-    public static func isThisPhone(charging: Bool, wasCharging: Bool, rssi: Int?) -> Bool {
-        guard charging, !wasCharging else { return false }
+    ///
+    /// "Already charging" is only as good as the app's watching. iOS tells
+    /// only a running app about the battery, so a phone seen charging last
+    /// night, unplugged while the app slept and put in the box this morning
+    /// looked like it had never stopped — and nothing happened. When the app
+    /// slept through part of the stretch (`unbroken` false), the phone's
+    /// closeness decides instead, and has to be read to count.
+    public static func isThisPhone(charging: Bool, wasCharging: Bool, unbroken: Bool = true,
+                                   rssi: Int?) -> Bool {
+        guard charging else { return false }
+        if wasCharging {
+            guard !unbroken, let rssi else { return false }
+            return rssi >= nearby
+        }
         guard let rssi else { return true }
         return rssi >= nearby
     }

@@ -111,6 +111,15 @@ final class FormattingTests: XCTestCase {
         XCTAssertNil(Say.month(from: "not a date"))
     }
 
+    /// 8pm in New York is already tomorrow in UTC. Today is the phone's.
+    func testTodayIsTheDayOnThePhonesClock() {
+        var ny = Calendar(identifier: .gregorian)
+        ny.timeZone = TimeZone(identifier: "America/New_York")!
+        let evening = ny.date(from: DateComponents(year: 2026, month: 11, day: 8, hour: 20))!
+        XCTAssertEqual(PlainDate.local(evening, calendar: ny), "2026-11-08")
+        XCTAssertEqual(PlainDate.string(from: evening), "2026-11-09")
+    }
+
     func testPlainDateRoundTrips() {
         let date = PlainDate.date(from: "2026-09-21")
         XCTAssertNotNil(date)

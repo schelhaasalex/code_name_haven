@@ -97,11 +97,6 @@ extension PreviewRepository {
     /// The date the evening STARTED, in the person's own zone — how the
     /// database computes `local_date`.
     static func localDate(_ date: Date, calendar: Calendar = .current) -> String {
-        let f = DateFormatter()
-        f.calendar = calendar
-        f.timeZone = calendar.timeZone
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "yyyy-MM-dd"
-        return f.string(from: date)
+        PlainDate.local(date, calendar: calendar)
     }
 }

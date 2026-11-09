@@ -99,7 +99,7 @@ struct HomeView: View {
         state.boxPlace.map(state.name(of:)) ?? t("box.unnamed")
     }
 
-    private var countedToday: Bool { state.evenings.contains(PlainDate.string(from: .now)) }
+    private var countedToday: Bool { state.evenings.contains(PlainDate.local(.now)) }
 
     /// Days this week that counted, today's among them once it has.
     private var thisWeek: Int {

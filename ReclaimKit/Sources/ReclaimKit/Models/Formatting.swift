@@ -160,4 +160,17 @@ public enum PlainDate {
 
     public static func string(from date: Date) -> String { formatter.string(from: date) }
     public static func date(from string: String) -> Date? { formatter.date(from: string) }
+
+    /// The day `date` falls on by this phone's clock — what the database
+    /// stamps a session with (`local_date`, in the zone the phone sent).
+    /// Not `string(from:)`: that's UTC, and in New York UTC's tomorrow begins
+    /// at 7pm, so a day that had counted showed as an open star all evening.
+    public static func local(_ date: Date, calendar: Calendar = .current) -> String {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .iso8601)
+        f.timeZone = calendar.timeZone
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd"
+        return f.string(from: date)
+    }
 }
