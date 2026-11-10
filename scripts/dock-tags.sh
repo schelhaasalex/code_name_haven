@@ -71,7 +71,7 @@ cli() {
 built=false
 build() {
   $built && return
-  echo "Building firmware/box for $fqbn…"
+  echo "Building firmware/box for ${fqbn}…"
   local log=$work/compile.log
   cli compile --fqbn "$fqbn" --build-path "$work/build" firmware/box >"$log" 2>&1 \
     || { cat "$log" >&2; die "The firmware didn't compile. No card made."; }
@@ -81,7 +81,7 @@ build() {
 
 flash_box() { # port
   build
-  echo "Flashing $1…"
+  echo "Flashing ${1}…"
   local log=$work/upload.log
   if ! cli upload --fqbn "$fqbn" --input-dir "$work/build" -p "$1" firmware/box >"$log" 2>&1; then
     cat "$log" >&2
