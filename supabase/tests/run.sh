@@ -47,6 +47,7 @@ psql -v ON_ERROR_STOP=1 -q -d "$DB" \
   -f "$ROOT/supabase/migrations/0021_pilot_notes.sql" \
   -f "$ROOT/supabase/migrations/0022_box_stages.sql" \
   -f "$ROOT/supabase/migrations/0023_gathering_count.sql" \
-  -f "$ROOT/supabase/migrations/0024_box_only.sql"
+  -f "$ROOT/supabase/migrations/0024_box_only.sql" \
+  -f "$ROOT/supabase/migrations/0025_box_codes.sql"
 
 psql -v ON_ERROR_STOP=1 -q -d "$DB" -f "$ROOT/supabase/tests/01_schema_test.sql"

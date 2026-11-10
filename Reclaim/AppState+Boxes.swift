@@ -12,6 +12,16 @@ extension AppState {
     /// household meets its boxes.
     static var defaultNames: [String] { [t("box.default.1"), t("box.default.2"), t("box.default.3")] }
 
+    /// A fresh code for a second phone to scan off this one's screen, as it
+    /// would the card: the same link, an hour long (migration 0025). It names
+    /// the box when this launch read a card that did; without that, the other
+    /// phone pairs with the closest box, and it is standing beside it. Nil if
+    /// the server couldn't be asked.
+    public func boxCode(for place: UUID) async -> URL? {
+        guard let secret = try? await repo.boxCode(place: place) else { return nil }
+        return Dock.url(secret: secret, box: cardBoxes[place])
+    }
+
     /// A box's name: its own, or the one it goes by.
     public func name(of id: UUID) -> String {
         if let name = place(id)?.name, !name.isEmpty { return name }

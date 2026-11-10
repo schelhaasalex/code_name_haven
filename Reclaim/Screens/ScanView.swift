@@ -113,6 +113,7 @@ struct ScanView: View {
     /// Copy keys for the stage, and for the radio once the card has been read.
     private var keys: (headline: String, body: String) {
         switch stage {
+        case .failed where state.codeRanOut: return ("scan.ranout.headline", "scan.ranout.body")
         case .failed: return ("scan.failed.headline", "scan.failed.body")
         case .denied: return ("scan.denied.headline", "scan.denied.body")
         default:
@@ -162,7 +163,9 @@ struct ScanView: View {
         state.pairing = nil
         stage = .found
         Task {
-            if await !state.dock(Dock.Link(secret: link.secret, slot: nil)) { stage = .failed }
+            // The box it names, kept: a card or a phone's code read here pairs
+            // with that box, as it does read by the Camera. Never a slot.
+            if await !state.dock(Dock.Link(secret: link.secret, slot: nil, box: link.box)) { stage = .failed }
         }
     }
 

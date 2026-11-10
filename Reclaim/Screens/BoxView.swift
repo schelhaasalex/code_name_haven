@@ -22,6 +22,10 @@ struct BoxView: View {
     /// Confirmed in the sheet: once it has gone, the box goes, and this page.
     @State private var forgotten = false
     @State private var scanning = false
+    /// Showing the box's code for another phone, and the code once it came.
+    @State private var showingCode = false
+    @State private var code: URL?
+    @State private var codeFailed = false
     /// Renamed a moment ago, for the field's check.
     @State private var saved = false
     @FocusState private var editing: Bool
@@ -39,6 +43,7 @@ struct BoxView: View {
                 if let summary = state.boxSummaries[id] { become(summary) }
                 LabelledSection(label: t("box.radio.label")) { radio }
                 LabelledSection(label: t("box.name.label")) { nameField }
+                LabelledSection(label: t("box.add.label")) { addPhone }
                 Spacer(minLength: 8)
                 forget
             }
@@ -55,6 +60,10 @@ struct BoxView: View {
         .onChange(of: editing) { _, now in if !now { save() } }
         .onDisappear { save() }
         .fullScreenCover(isPresented: $scanning) { ScanView() }
+        .sheet(isPresented: $showingCode) {
+            BoxCodeSheet(link: code, failed: codeFailed) { Task { await makeCode() } }
+                .task { await makeCode() }
+        }
         .sheet(isPresented: $confirmingForget, onDismiss: { if forgotten { state.forget(id); dismiss() } }) {
             ConfirmSheet(title: t("settings.forget.title"), message: t("settings.forget.body"),
                          confirm: t("settings.forget"), cancel: t("settings.forget.keep")) {
@@ -72,6 +81,25 @@ struct BoxView: View {
             Text(state.name(of: id)).font(Type.body(16)).foregroundStyle(Palette.ink)
             Text(t("box.name.locked")).font(Type.note).foregroundStyle(Palette.muted)
         }
+    }
+
+    /// Anyone in the box can let another phone in: a fresh code each time,
+    /// an hour long, scanned off this screen as the card would be.
+    private var addPhone: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(t("box.add.body")).font(Type.body(15)).foregroundStyle(Palette.ink2).lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+            TextAction(title: t("box.add.action"), tint: Palette.clay) { showingCode = true }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .paperCard()
+    }
+
+    private func makeCode() async {
+        code = nil
+        codeFailed = false
+        code = await state.boxCode(for: id)
+        codeFailed = code == nil
     }
 
     private func save() {

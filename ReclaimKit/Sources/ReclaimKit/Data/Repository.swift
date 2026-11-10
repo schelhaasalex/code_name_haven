@@ -52,6 +52,10 @@ public protocol Repository: Sendable {
     /// (migrations 0013, 0017), and you one of its people. Nil means the
     /// handle was taken: draw another and ask again.
     func dockPlace(secret: String, handle: String) async throws -> UUID?
+    /// A fresh code for a box you are in, an hour long, for a second phone to
+    /// scan off your screen as it would the card (migration 0025). The secret
+    /// only: `Dock.url` makes the link.
+    func boxCode(place: UUID) async throws -> String
 
     // ---- the lock screen (migrations 0015, 0016) ----
     /// This device's push-to-start token, filed as yours.
