@@ -6,8 +6,8 @@ import Foundation
 /// The dock is a peripheral with one service. `slotState` is a byte per slot
 /// (empty, charging, full), read on connect and notified on every change;
 /// `event` says the same thing as one JSON message per change; `command` takes
-/// the app's JSON. The dock lights its own slots from its own sensors — the
-/// phone only has to work out whether it is the one that just went in.
+/// the app's JSON. The phone only has to work out whether it is the one that
+/// just went in.
 ///
 /// The ids are the dock's own (the last group spells "port"). They live here
 /// and in `firmware/box/box.ino`, nowhere else, and `scripts/shape.sh` checks
@@ -21,7 +21,7 @@ public enum Box {
     public static let slotStateCharacteristic = "6E400010-B5A3-F393-E0A9-0000706F7274"
     /// One JSON object per change: `{"v":1,"slot":1,"event":"docked",…}`.
     public static let eventCharacteristic = "6E400011-B5A3-F393-E0A9-0000706F7274"
-    /// JSON from the app: the time, a light, a ping.
+    /// JSON from the app: the time, or a ping.
     public static let commandCharacteristic = "6E400020-B5A3-F393-E0A9-0000706F7274"
 
     /// What a box calls itself over the air: `Portside-` and the last four

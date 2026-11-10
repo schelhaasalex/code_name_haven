@@ -51,7 +51,4 @@ public enum Dock {
             .flatMap { Box.isID($0) ? $0.uppercased() : nil }
         return Link(secret: parts[1], box: box)
     }
-
-    /// The light controller numbers its segments from zero; the box, from one.
-    public static func segment(forSlot slot: Int) -> Int { slot - 1 }
 }
