@@ -38,21 +38,23 @@ extension AppState {
     }
 
     /// The first read of a box's tag or code teaches this phone which box is
-    /// its own — the place at once, and the radio a few seconds later: the
-    /// closest dock right then that isn't one of its other boxes. Asks about Bluetooth, the first time
-    /// — at the box, where the question makes sense.
+    /// its own — the place at once, and the radio as soon as it's heard: the
+    /// box the card names, or for a card that names none, the closest dock a
+    /// few seconds in that isn't one of its other boxes. Asks about Bluetooth,
+    /// the first time — at the box, where the question makes sense.
     ///
     /// Every read listens again, even for the box this phone already knows:
     /// its radio can change under the same tags and code — a new board, a
     /// reflash — and a phone that kept the old one would wait for it forever.
     /// Until a radio is heard, the one it knew stays.
-    func pairBox(place: UUID) {
+    func pairBox(place: UUID, box: String? = nil) {
+        if let box { cardBoxes[place] = box }
         let known = BoxPairing.all
         let mine = known.first { $0.place == place }?.peripheral
         let others = Set(known.filter { $0.place != place }.compactMap(\.peripheral))
         BoxPairing.met(place)
         pairing = .listening
-        boxLink.pair(except: others) { [weak self] peripheral in
+        boxLink.pair(except: others, named: cardBoxes[place]) { [weak self] peripheral in
             guard let self, BoxPairing.all.contains(where: { $0.place == place }) else { return }
             if let peripheral {
                 // The box's radio changed under the same card: let the old one go.

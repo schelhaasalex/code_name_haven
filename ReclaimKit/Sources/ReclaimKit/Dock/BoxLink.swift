@@ -53,6 +53,10 @@ public final class BoxLink: NSObject {
     var except: Set<UUID> = []
     var heard: [UUID: Int] = [:]
     var candidates: [UUID: CBPeripheral] = [:]
+    /// The box the card names (`Dock.Link.box`), and what each dock heard
+    /// calls itself, so pairing can take that box and no other.
+    var wanted: String?
+    var names: [UUID: String] = [:]
 
     public override init() { super.init() }
 

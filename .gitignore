@@ -20,3 +20,8 @@ xcuserdata/
 # Written by xcodegen from project.yml
 Reclaim/Info.plist
 ReclaimWidgets/Info.plist
+
+# scripts/dock-tags.sh output. boxes.csv holds every box's join secret.
+boxes.csv
+box-*.png
+box-code.png

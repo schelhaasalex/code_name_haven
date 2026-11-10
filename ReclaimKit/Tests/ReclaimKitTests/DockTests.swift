@@ -13,6 +13,23 @@ final class DockTests: XCTestCase {
         }
     }
 
+    /// The factory's cards and tags say which box they belong to.
+    func testACardNamesItsBox() {
+        let code = Dock.url(secret: "box", box: "0a1b2c3d", domain: domain)
+        XCTAssertEqual(code.absoluteString, "https://links.example/p/box?b=0A1B2C3D")
+        XCTAssertEqual(Dock.link(from: code, domain: domain), Dock.Link(secret: "box", slot: nil, box: "0A1B2C3D"))
+        let tag = Dock.url(secret: "box", slot: 3, box: "0A1B2C3D", domain: domain)
+        XCTAssertEqual(tag.absoluteString, "https://links.example/p/box/3?b=0A1B2C3D")
+        XCTAssertEqual(Dock.link(from: tag, domain: domain), Dock.Link(secret: "box", slot: 3, box: "0A1B2C3D"))
+    }
+
+    /// A `b` that isn't a box's name still opens the box; it just pairs with
+    /// the closest, as the first cards do.
+    func testANonsenseBoxIsIgnoredNotFatal() {
+        let url = URL(string: "https://links.example/p/box/2?b=not-a-box")!
+        XCTAssertEqual(Dock.link(from: url, domain: domain), Dock.Link(secret: "box", slot: 2, box: nil))
+    }
+
     /// Tags written before slot links moved under `/p/` keep working.
     func testTheFirstSlotLinksStillRead() {
         let url = URL(string: "https://links.example/d/box/2")!

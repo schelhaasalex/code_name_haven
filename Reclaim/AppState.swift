@@ -41,6 +41,9 @@ public final class AppState {
     /// Listening for the box's radio after its code or a tag was read, and
     /// what came of it. Only the scanner shows it; nil until a first read.
     public var pairing: Pairing?
+    /// The box each card named (`Dock.Link.box`), so "Try again" listens for
+    /// the same one. This launch only: the next read of the card says it again.
+    var cardBoxes: [UUID: String] = [:]
     /// `bluetoothOff` is its own answer: "bring it closer" is the wrong advice
     /// to a phone that can't hear anything at all.
     public enum Pairing: Equatable { case listening, paired, notHeard, bluetoothOff }

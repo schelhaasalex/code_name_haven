@@ -87,6 +87,31 @@ final class BoxTests: XCTestCase {
         XCTAssertNil(Box.closest([kitchen: -45], except: [kitchen]), "nothing new heard")
     }
 
+    /// Two boxes side by side on a packing line: the card names its own, and
+    /// the louder one beside it is not it.
+    func testACardThatNamesItsBoxPairsWithThatBox() {
+        let mine = UUID(), beside = UUID()
+        let names = [mine: "Portside-0A1B2C3D", beside: "Portside-99887766"]
+        XCTAssertEqual(Box.closest([mine: -70, beside: -40], named: "0a1b2c3d", names: names), mine)
+    }
+
+    /// The named box is certain, so a weak signal is still the right box —
+    /// and a card whose box isn't heard pairs with nothing, never the closest.
+    func testANamedBoxIsNeverSwappedForAnother() {
+        let mine = UUID(), beside = UUID()
+        let names = [mine: "Portside-0A1B2C3D", beside: "Portside-99887766"]
+        XCTAssertEqual(Box.closest([mine: -88], named: "0A1B2C3D", names: names), mine)
+        XCTAssertNil(Box.closest([beside: -35], named: "0A1B2C3D", names: names))
+        XCTAssertNil(Box.closest([UUID(): -35], named: "0A1B2C3D"), "a dock with no name isn't the named one")
+    }
+
+    func testABoxsIdentityIsItsRadioName() {
+        XCTAssertEqual(Box.name(of: "0a1b2c3d"), "Portside-0A1B2C3D")
+        XCTAssertTrue(Box.isID("0A1B2C3D"))
+        XCTAssertTrue(Box.isID("A1B2"), "the first boards named themselves with four")
+        for bad in ["", "A1B", "0A1B2C3DE", "XYZW", "0A1B-2C3"] { XCTAssertFalse(Box.isID(bad), bad) }
+    }
+
     // MARK: - Was it this phone?
 
     func testThePhoneThatJustStartedChargingBesideTheBoxIsIn() {

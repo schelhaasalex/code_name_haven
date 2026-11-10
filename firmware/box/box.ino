@@ -65,13 +65,17 @@ const int AVERAGE_OVER = 10;      // samples, one per 100 ms
 const int LEDS_PER_SLOT = 2;
 
 // ---------------------------------------------------------------- the protocol, as in Box.swift
-#define SERVICE_UUID   "6e400001-b5a3-f393-e0a9-0000706f7274"
-#define SLOT_STATE_UUID "6e400010-b5a3-f393-e0a9-0000706f7274"
-#define EVENT_UUID     "6e400011-b5a3-f393-e0a9-0000706f7274"
-#define COMMAND_UUID   "6e400020-b5a3-f393-e0a9-0000706f7274"
+// Generated for this product on 2026-11-10, replacing the Nordic-style
+// placeholders the first boards used. A box flashed before then can't be
+// heard by an app built after it, and the other way round: flash both.
+// scripts/shape.sh checks these match Box.swift.
+#define SERVICE_UUID   "19720001-5143-4e2b-ac61-8a8714025c60"
+#define SLOT_STATE_UUID "19720010-5143-4e2b-ac61-8a8714025c60"
+#define EVENT_UUID     "19720011-5143-4e2b-ac61-8a8714025c60"
+#define COMMAND_UUID   "19720020-5143-4e2b-ac61-8a8714025c60"
 const int PROTOCOL = 1;
 // Said in every hello, so the pilot can tell which boxes are on which build.
-const char *FIRMWARE = "0.5";
+const char *FIRMWARE = "0.6";
 
 // Slot state bytes. A presence sensor can only say "something is there", and
 // a phone drawing current is charging, so every phone in reads as charging.
@@ -198,13 +202,18 @@ class CommandCallbacks : public NimBLECharacteristicCallbacks {
 // Slots filled from the USB cable, for testing on a desk with no sensors
 // wired: send 1–4 to toggle that slot, 0 to empty them all. A box in a drawer
 // has nothing on the other end of its USB, so this never fires there.
+//
+// And `i`, for the factory: the box says who it is, as `id Portside-XXXXXXXX`,
+// so scripts/dock-tags.sh can print that box's own card.
 uint8_t pretend = 0;
+char name[24];                    // Portside-XXXXXXXX, set once in setup()
 
 void readSerial() {
   while (Serial.available()) {
     char c = Serial.read();
     if (c >= '1' && c < '1' + SLOTS) pretend ^= (1 << (c - '1'));
     else if (c == '0') pretend = 0;
+    else if (c == 'i') Serial.printf("id %s\n", name);
   }
 }
 
@@ -273,12 +282,14 @@ void setup() {
 #endif
 
   NimBLEDevice::init("");
-  // Portside-XXXX, the last two bytes of the radio's address, so two boxes in
-  // one house can be told apart in a scanner. Phones find the box by its
-  // service, never its name.
+  // Portside-XXXXXXXX, the last four bytes of the radio's address. That is
+  // the box's identity: the factory prints it into the box's card (`?b=`),
+  // and a phone reading the card pairs with the box of that name rather than
+  // the closest one. Four bytes, not two: across a production run, two boxes
+  // sharing two bytes is likely; sharing four is not. Phones still find boxes
+  // by their service; the name only says which one.
   const uint8_t *mac = NimBLEDevice::getAddress().getVal();
-  char name[16];
-  snprintf(name, sizeof name, "Portside-%02X%02X", mac[1], mac[0]);
+  snprintf(name, sizeof name, "Portside-%02X%02X%02X%02X", mac[3], mac[2], mac[1], mac[0]);
   NimBLEDevice::setDeviceName(name);
 
   NimBLEServer *server = NimBLEDevice::createServer();
