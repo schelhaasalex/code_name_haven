@@ -1,0 +1,94 @@
+<!doctype html>
+<!--
+  The card that comes with a box: A6, two-sided, front then back.
+  scripts/dock-tags.sh fills in the {{…}} markers and prints it to PDF with
+  headless Chrome. Change the words here, not in the script. Every one of
+  them follows CLAUDE.md's voice and knowledge test: the card is printed, and
+  can't be corrected after it ships.
+
+  {{FRAUNCES}} {{WORKSANS}}  the fonts, as data: URIs (fonts/, both OFL)
+  {{QR}}                      the box's code, a PNG data: URI
+  {{BOX}}                     "Box 0A1B2C3D", or empty for a prototype card
+  {{STORE}}                   "No app yet? …" once links/index.html has a
+                              STORE_URL, and empty until then — the page that
+                              scan opens has no way to the app before that
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Card</title>
+<style>
+  @font-face { font-family: "Fraunces"; src: url({{FRAUNCES}}) format("truetype"), url("fonts/Fraunces.ttf"); }
+  @font-face { font-family: "Work Sans"; src: url({{WORKSANS}}) format("truetype"), url("fonts/WorkSans.ttf"); }
+  @page { size: 105mm 148mm; margin: 0; }
+
+  /* The app's Palette. */
+  :root {
+    --paper: #F7F4EE; --white: #FFFDF8; --line: #E3DDD1;
+    --ink: #1F1B16; --ink2: #4A4239; --muted: #6B6155; --clay: #B4512C;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--paper); }
+  body { font-family: "Work Sans"; color: var(--ink);
+         -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .face { width: 105mm; height: 148mm; padding: 10mm; background: var(--paper);
+          display: flex; flex-direction: column; break-after: page; overflow: hidden; }
+  .face:last-child { break-after: auto; }
+
+  /* Front */
+  .mark { width: 6mm; height: 6mm; border: 0.4mm solid var(--clay); border-radius: 50%;
+          display: grid; place-items: center; }
+  .mark::after { content: ""; width: 1.6mm; height: 1.6mm; background: var(--clay); border-radius: 50%; }
+  h1 { font-family: "Fraunces"; font-weight: 400; font-size: 30pt; line-height: 1;
+       letter-spacing: -0.01em; margin-top: 9mm; }
+  .lede { font-size: 10.5pt; line-height: 1.45; color: var(--ink2); margin-top: 4mm; max-width: 74mm; }
+  .qrwrap { flex: 1; display: grid; place-items: center; }
+  .qr { background: var(--white); border: 1px solid var(--line); border-radius: 3mm; padding: 3mm; }
+  .qr img { display: block; width: 40mm; height: 40mm; image-rendering: pixelated; }
+  .foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 6mm;
+          font-size: 9pt; line-height: 1.35; color: var(--muted); min-height: 1.35em; }
+  .foot .box { font-variant-numeric: tabular-nums; white-space: nowrap; margin-left: auto; }
+
+  /* Back */
+  .caps { font-size: 7.5pt; font-weight: 500; letter-spacing: 0.16em; color: var(--clay); }
+  .rows { margin-top: 8mm; display: flex; flex-direction: column; gap: 7mm; flex: 1; }
+  .row { display: grid; grid-template-columns: 17mm 1fr; gap: 4mm; align-items: start; }
+  .big { font-family: "Fraunces"; font-size: 18pt; line-height: 1; }
+  .unit { font-size: 8pt; color: var(--muted); margin-top: 1mm; }
+  .say { font-size: 10.5pt; line-height: 1.45; color: var(--ink2); }
+  .keep { border-top: 1px solid var(--line); padding-top: 4mm; }
+  .keep b { display: block; font-family: "Fraunces"; font-weight: 400; font-size: 13pt; }
+  .keep span { display: block; font-size: 9pt; line-height: 1.4; color: var(--muted); margin-top: 1.5mm; }
+</style>
+</head>
+<body>
+
+<section class="face">
+  <div class="mark" aria-hidden="true"></div>
+  <h1>Start here.</h1>
+  <p class="lede">Scan this with your phone beside the box. That&rsquo;s the only setup there is.</p>
+  <div class="qrwrap"><div class="qr"><img src="{{QR}}" alt=""></div></div>
+  <div class="foot"><span>{{STORE}}</span><span class="box">{{BOX}}</span></div>
+</section>
+
+<section class="face">
+  <div class="caps">HOW IT WORKS</div>
+  <div class="rows">
+    <div class="row"><div><div class="big">In</div><div class="unit">a slot</div></div>
+      <p class="say">Put your phone in any slot and it begins. Nothing to press.</p></div>
+    <div class="row"><div><div class="big">15</div><div class="unit">minutes</div></div>
+      <p class="say">It counts from fifteen minutes in, whether or not anyone joins you.</p></div>
+    <div class="row"><div><div class="big">5</div><div class="unit">seconds</div></div>
+      <p class="say">Take it out and it ends, unless it&rsquo;s back within five seconds.</p></div>
+    <div class="row"><div><div class="big">4</div><div class="unit">slots</div></div>
+      <p class="say">Anyone at home can scan this card too. The box keeps everyone&rsquo;s time, added up.</p></div>
+  </div>
+  <div class="keep">
+    <b>Keep this card with your box.</b>
+    <span>It&rsquo;s the box&rsquo;s key: whoever scans it can join. Lost it? Anyone already in can show it from the app.</span>
+  </div>
+</section>
+
+</body>
+</html>
