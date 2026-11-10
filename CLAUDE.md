@@ -89,7 +89,7 @@ copy/          strings.json — every user-facing string
 supabase/      migrations/ (applied, tested), functions/ (Edge Functions) and tests/
 scripts/       shape.sh — the style rules, as a check rather than a hope
                generate.sh — the project, with a build number nobody has to remember
-               dock-tags.sh — a new box's four slot links and its printed code
+               dock-tags.sh — a box's four slot links and printed code; at the factory, boxes.csv
 prototype/     splash.html — the three splash screens, side by side
 firmware/      box/box.ino — the box's Bluetooth radio and slot sensors (ESP32)
 ReclaimKit/    shared Swift package: models, data, the box, copy, design
@@ -239,6 +239,7 @@ scripts/shape.sh      # about a second, no toolchain, no network
 | The ring charges the same on the phone and the server | The phone steps the ring while it's awake and the server after; two lists of steps that differ make it jump back a segment |
 | An evening is closed at the same cap everywhere | The lock screen goes quiet at the cap by itself, in case the push that ends it never comes; a cap in the push that differs from the server's says "closed" over an evening still going |
 | Only the box starts an evening | Rule 4. A button, face-down, a motion guess, a nearby phone and Siri were each one call to `setItDown` from somewhere new |
+| The box and the phone use the same Bluetooth ids | They live in `Box.swift` and `box.ino`; a box on one set is never heard by an app on the other, and nothing says why |
 | Every link the app makes opens it | The site claims every path but the home page. Phones cache `apple-app-site-association` for days, apart from the app, and a path added later (`/d/`, the slot links' first home) opened Safari until that cache refreshed |
 
 It runs in CI on every pull request, and from a `Stop` hook in

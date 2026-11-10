@@ -34,7 +34,7 @@ extension AppState {
             return false
         }
         meet(place)
-        pairBox(place: place)
+        pairBox(place: place, box: link.box)
         places = (try? await repo.myPlaces()) ?? places
         await nameIfUnnamed(place)
         boxSummaries[place] = (try? await repo.summary(of: place)) ?? boxSummaries[place]

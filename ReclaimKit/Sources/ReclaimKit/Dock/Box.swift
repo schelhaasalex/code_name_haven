@@ -9,8 +9,9 @@ import Foundation
 /// the app's JSON. The dock lights its own slots from its own sensors — the
 /// phone only has to work out whether it is the one that just went in.
 ///
-/// The ids are the dock's, and may change before production; they live here
-/// and in `firmware/box/box.ino`, nowhere else.
+/// The ids are the dock's own (the last group spells "port"). They live here
+/// and in `firmware/box/box.ino`, nowhere else, and `scripts/shape.sh` checks
+/// the two agree: change them and every box in the field needs reflashing.
 ///
 /// Plain values, so every decision here is tested without a radio.
 public enum Box {
@@ -22,6 +23,17 @@ public enum Box {
     public static let eventCharacteristic = "6E400011-B5A3-F393-E0A9-0000706F7274"
     /// JSON from the app: the time, a light, a ping.
     public static let commandCharacteristic = "6E400020-B5A3-F393-E0A9-0000706F7274"
+
+    /// What a box calls itself over the air: `Portside-` and the last four
+    /// bytes of its radio's address, in hex. That is the box's identity, and
+    /// the factory prints it into the box's card as `?b=` (`Dock.Link.box`).
+    public static func name(of id: String) -> String { "Portside-" + id.uppercased() }
+
+    /// A box's identity as a card carries it: eight hex digits — or four, the
+    /// name the first boards gave themselves.
+    public static func isID(_ text: String) -> Bool {
+        [4, 8].contains(text.count) && text.allSatisfy(\.isHexDigit)
+    }
 
     /// Which slots have a phone in them. Charging and full are both a phone.
     public struct Slots: Equatable, Sendable {
@@ -115,12 +127,23 @@ public enum Box {
     /// length away. Weaker than this is a dock across the room, or next door.
     public static let pairable = -75
 
-    /// The strongest dock heard while pairing, if any was close enough —
-    /// leaving out the radios of this phone's other boxes. With the kitchen's
-    /// box already paired, the bedroom's card read in the doorway between them
-    /// finds the bedroom's, even if the kitchen's is louder.
-    public static func closest(_ heard: [UUID: Int], except known: Set<UUID> = []) -> UUID? {
-        heard.filter { $0.value >= pairable && !known.contains($0.key) }.max { $0.value < $1.value }?.key
+    /// The dock to pair with: the one the card names, if it names one, and
+    /// otherwise the strongest heard while pairing, if any was close enough —
+    /// leaving out the radios of this phone's other boxes either way. With the
+    /// kitchen's box already paired, the bedroom's card read in the doorway
+    /// between them finds the bedroom's, even if the kitchen's is louder.
+    ///
+    /// A card that names its box is certain, so it isn't held to `pairable`:
+    /// the named box across the room is still the right one, and the box
+    /// beside it on a shop shelf or a packing line is still the wrong one.
+    public static func closest(_ heard: [UUID: Int], except known: Set<UUID> = [],
+                               named id: String? = nil, names: [UUID: String] = [:]) -> UUID? {
+        let mine = heard.filter { !known.contains($0.key) }
+        if let id {
+            let wanted = name(of: id).uppercased()
+            return mine.filter { names[$0.key]?.uppercased() == wanted }.max { $0.value < $1.value }?.key
+        }
+        return mine.filter { $0.value >= pairable }.max { $0.value < $1.value }?.key
     }
 
     /// Closer than this, and the phone is in the box rather than in the room.

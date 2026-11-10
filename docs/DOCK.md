@@ -37,10 +37,22 @@ same moment still make one place. Whoever made it can name it, in Settings.
 ## Building one
 
 **Tags and code.** `scripts/dock-tags.sh` prints four slot links and the box's
-code under a fresh secret, and draws the code as `box-code.png` to print and
-stick on the box. Write each slot link onto its slot's tag as a URL record (NFC
-Tools does this). Use one secret per box, and **never lock the tags**: the
-domain is a testing address until there is a real one. Put each tag where the
+code under a fresh secret, and draws the code to print and stick on the box.
+Write each slot link onto its slot's tag as a URL record (NFC Tools does this).
+Use one secret per box, and **never lock the tags**: the domain is a testing
+address until there is a real one.
+
+**At the factory**, each card names its box. Plug the finished box in over USB
+and run `scripts/dock-tags.sh /dev/cu.usbmodem…`: the box says who it is
+(`Portside-XXXXXXXX`, the end of its radio's address), and the script makes
+that box's secret, its links with `?b=XXXXXXXX` on the end, its code as
+`box-XXXXXXXX.png`, and a row in `boxes.csv` — box, code, slot 1–4, the file a
+tag encoder or card printer takes. Box ids typed as arguments work the same.
+Pack the card with the box it was printed for. **`boxes.csv` holds every box's
+join secret**: keep it out of git (`.gitignore` does) and anywhere public.
+A card that names its box pairs a phone with that box and no other; one that
+doesn't (the first boxes, and the script run with no arguments) pairs with the
+closest, as before. Put each tag where the
 top of the phone's back sits on the pad, a few centimetres toward the top edge
 from the coil. A tag on top of the coil either doesn't read or gets warm.
 
@@ -64,6 +76,7 @@ now claims every path except the home page. Old `/d/` tags still read.
   `xcrun simctl openurl booted reclaim://d/<anything>/2` is a phone going into
   slot 2, and `reclaim://d/<anything>` is the box's code.
 - On a desk: the radio's serial monitor takes `1`–`4` to fill or empty a slot
+  (and `i` to say which box it is)
   with no sensor wired.
 
 ## Known gaps
@@ -105,7 +118,7 @@ on each pad speaks too. The ids are placeholders until production, and live in
 
 | | UUID | |
 |---|---|---|
-| Service | `6e400001-b5a3-f393-e0a9-0000706f7274` | advertised; phones scan for this, never the name |
+| Service | `6e400001-b5a3-f393-e0a9-0000706f7274` | advertised; phones scan for this |
 | Slot state | `6e400010-…` | read, notify. A byte per slot: 0 empty, 1 charging, 2 full |
 | Event | `6e400011-…` | notify. `{"v":1,"slot":1,"event":"docked","t":…}`; also `undocked`, `full`, `pong`, and `hello` — `{"v":1,"event":"hello","boots":7,"up":120,"reset":1,"fw":"0.5"}`, 1.5 s after a phone sends the time: restarts (kept in flash), seconds up, ESP-IDF reset reason, firmware |
 | Command | `6e400020-…` | write. `{"cmd":"time","epoch":…}` (sent on every connect), `light`, `ping` |
@@ -114,8 +127,15 @@ The phone subscribes to slot state and events, reads the slot state once, and
 sends the time. A slot state change and its event say the same thing, and the
 phone acts on whichever arrives first. `full` changes nothing: a phone that has
 stopped drawing much — at 100%, or paused at 80% — is still in. The box
-advertises as `Portside-XXXX`, the end of its radio's address. It has no id of
-its own; pairing goes by which dock is closest.
+advertises as `Portside-XXXXXXXX`, the last four bytes of its radio's address,
+in its scan response. That name is the box's identity: a card that carries it
+(`?b=`) pairs only with the dock of that name (`Box.closest(named:)`), and a
+card that doesn't pairs with the closest. Firmware before 0.6 used two bytes
+(`Portside-XXXX`).
+
+The ids live in `Box.swift` and `box.ino` and nowhere else;
+`scripts/shape.sh` checks the two agree. A box and an app on different ids
+never hear each other, with no error.
 
 This box reports every phone in a slot as charging, and leaves `mA` and `V`
 out of its events: a presence sensor can only say something is there, and the
@@ -192,11 +212,9 @@ current sensor is only asked whether the phone is drawing.
 - **Five phones per box.** The C3's radio holds five connections plus its
   advertisement. A sixth phone in the house can't stay connected, and uses
   the tag. An ESP32-S3 doesn't lift this; a different radio would.
-- **Two boxes side by side** can pair a phone with the wrong one when it meets
-  the first of them: pairing goes by the closest dock, and the box has no id to
-  check it against. Meeting the second is safe — the phone skips the boxes it
-  already knows. A box id the phone can read and match to the card would
-  close this; it's a small addition to the protocol, for Ryan.
+- **Two boxes side by side** can still pair a phone with the wrong one when
+  its card names no box — the first cards, and any made without an id. Cards
+  made at the factory name their box, and pair with nothing else.
 - **Two phones in the same second** both start correctly, but each may record
   the other's slot number. The box lights its own slots, so only the phone's
   note of which slot it's in can be wrong.

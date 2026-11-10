@@ -209,9 +209,11 @@ Home), or by the Camera app, which opens the app through Associated Domains —
 as does any slot's tag (`/p/<secret>/<slot>`). With the app not installed the
 same link is a page saying to get it and scan the card from inside (`links/`). Either,
 read first, finds or makes the box's place and makes this phone one of its
-people; the app then listens for docks for three seconds and keeps the closest
-(`Box.closest`) as its radio — on every read, so a box whose board was
-swapped under the same card is found again. The scanner shows those seconds:
+people; the app then listens for the box the card names (`?b=`, the box's
+radio name, printed at the factory) and keeps it the moment it's heard — or,
+for a card that names none, listens three seconds and keeps the closest
+(`Box.closest`) — on every read, so a box whose board was swapped under the
+same card is found again. The scanner shows those seconds:
 *Listening for your box.*, *There it is.* — or *Not hearing it yet*
 and a retry. A tag also starts the evening: it's read with
 the phone going into the slot. The code starts nothing.

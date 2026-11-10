@@ -12,6 +12,11 @@ import Foundation
 /// A tag is read with the phone in the slot, so it is the phone going in. The
 /// code is read with the phone in a hand: it pairs, and starts nothing.
 ///
+/// Cards and tags made at the factory also say which box they belong to, as
+/// `?b=<id>` — the box's radio name (`Box.name(of:)`) — so a phone pairs with
+/// that box and not merely the closest one. The first cards and tags have no
+/// `b`, and pair with the closest, as they always did.
+///
 /// Under `/p/` because a phone only opens the app for paths it has already
 /// been told about, and it is told rarely: iOS caches the site's
 /// apple-app-site-association for days, apart from the app. The first slot
@@ -26,14 +31,20 @@ public enum Dock {
         public let secret: String
         /// Nil for the box's code: the phone is in a hand, not a slot.
         public let slot: Int?
+        /// The box's radio, as the factory printed it; nil on the first cards.
+        public let box: String?
 
-        public init(secret: String, slot: Int?) { self.secret = secret; self.slot = slot }
+        public init(secret: String, slot: Int?, box: String? = nil) {
+            self.secret = secret; self.slot = slot; self.box = box
+        }
     }
 
     /// What goes on a slot's tag, or with no slot, in the box's code.
     /// `scripts/dock-tags.sh` writes the same shapes.
-    public static func url(secret: String, slot: Int? = nil, domain: String = Links.domain) -> URL {
-        URL(string: "https://\(domain)/p/\(secret)" + (slot.map { "/\($0)" } ?? ""))!
+    public static func url(secret: String, slot: Int? = nil, box: String? = nil,
+                           domain: String = Links.domain) -> URL {
+        URL(string: "https://\(domain)/p/\(secret)" + (slot.map { "/\($0)" } ?? "")
+                    + (box.map { "?b=\($0.uppercased())" } ?? ""))!
     }
 
     /// The box, and the slot if it was a tag, from a link — or from
@@ -52,9 +63,14 @@ public enum Dock {
             return nil
         }
         guard let secret = rest.first, !secret.isEmpty else { return nil }
-        guard rest.count == 2 else { return Link(secret: secret, slot: nil) }
+        // A `b` that isn't a box's name is ignored, not fatal: the card still
+        // opens its box, and pairs with the closest dock as the first ones did.
+        let box = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?.first { $0.name == "b" }?.value
+            .flatMap { Box.isID($0) ? $0.uppercased() : nil }
+        guard rest.count == 2 else { return Link(secret: secret, slot: nil, box: box) }
         guard let n = Int(rest[rest.startIndex + 1]), slots.contains(n) else { return nil }
-        return Link(secret: secret, slot: n)
+        return Link(secret: secret, slot: n, box: box)
     }
 
     /// The light controller numbers its segments from zero; the box, from one.

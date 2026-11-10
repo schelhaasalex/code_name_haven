@@ -53,6 +53,10 @@ public final class BoxLink: NSObject {
     var except: Set<UUID> = []
     var heard: [UUID: Int] = [:]
     var candidates: [UUID: CBPeripheral] = [:]
+    /// The box the card names (`Dock.Link.box`), and what each dock heard
+    /// calls itself, so pairing can take that box and no other.
+    var wanted: String?
+    var names: [UUID: String] = [:]
 
     public override init() { super.init() }
 
@@ -144,7 +148,7 @@ public final class BoxLink: NSObject {
     }
 
     func measured(_ rssi: Int?, of peripheral: CBPeripheral) {
-        if let rssi { discoveredCandidate(peripheral, rssi: rssi) }
+        if let rssi { discoveredCandidate(peripheral, rssi: rssi, name: peripheral.name) }
         let id = peripheral.identifier
         guard let now = pending.removeValue(forKey: id) else { return }
         let before = slots[id] ?? Box.Slots(bits: 0)

@@ -21,7 +21,10 @@ extension BoxLink: CBCentralManagerDelegate {
                                            didDiscover peripheral: CBPeripheral,
                                            advertisementData: [String: Any], rssi: NSNumber) {
         let strength = rssi.intValue
-        Task { @MainActor in self.discoveredCandidate(peripheral, rssi: strength) }
+        // The box's name is in its scan response; iOS hands it over here, and
+        // keeps it as the peripheral's name once it has seen one.
+        let name = advertisementData[CBAdvertisementDataLocalNameKey] as? String ?? peripheral.name
+        Task { @MainActor in self.discoveredCandidate(peripheral, rssi: strength, name: name) }
     }
 
     nonisolated public func centralManager(_ manager: CBCentralManager,

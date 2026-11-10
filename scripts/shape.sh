@@ -285,6 +285,18 @@ for f in $(grep -l 'setItDown(' $(find Reclaim ReclaimWidgets -name '*.swift') 2
   esac
 done
 
+# 22. The box and the phone speak with the same ids. They live in Box.swift
+#     and firmware/box/box.ino and nowhere else; a box flashed with one set is
+#     simply never heard by an app built with the other — no error, no light,
+#     just a phone that never pairs.
+note "The box and the phone use the same Bluetooth ids"
+swift_ids=$(grep -oE '"[0-9A-Fa-f]{8}-[0-9A-Fa-f-]{27}"' ReclaimKit/Sources/ReclaimKit/Dock/Box.swift | tr -d '"' | tr 'a-f' 'A-F' | sort | paste -sd, -)
+ino_ids=$(grep -E '^#define [A-Z_]+_UUID' firmware/box/box.ino | grep -oE '"[0-9A-Fa-f-]{36}"' | tr -d '"' | tr 'a-f' 'A-F' | sort | paste -sd, -)
+[ -n "$swift_ids" ] || bad "couldn't read the ids in Box.swift"
+[ -n "$ino_ids" ] || bad "couldn't read the ids in box.ino"
+[ "$swift_ids" = "$ino_ids" ] \
+  || bad "Box.swift's Bluetooth ids [$swift_ids] differ from box.ino's [$ino_ids]"
+
 echo
 if [ "$FAIL" -eq 0 ]; then
   echo "Shape is fine."
