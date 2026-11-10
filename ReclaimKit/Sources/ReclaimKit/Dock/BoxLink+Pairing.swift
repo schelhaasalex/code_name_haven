@@ -1,14 +1,14 @@
 import Foundation
 import CoreBluetooth
 
-/// Pairing: listening for docks after a box's card or tag is read, and keeping
+/// Pairing: listening for docks after a box's card is read, and keeping
 /// the one the card names — at once, as soon as it's heard — or, for a card
 /// that names none, the closest after a few seconds that isn't already another
 /// of this phone's boxes (`Box.closest`).
 extension BoxLink {
 
     /// Finds the dock this phone is closest to, other than `except`. Called
-    /// the moment a box's card or tag is read, in the foreground and at the
+    /// the moment a box's card is read, in the foreground and at the
     /// box — so a box that can't be heard (no radio yet, Bluetooth off) is
     /// simply not paired.
     public func pair(except known: Set<UUID> = [], named id: String? = nil,

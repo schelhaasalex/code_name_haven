@@ -14,14 +14,14 @@ final class BoxCodeTests: XCTestCase {
     func testAPhonesCodeReadsAsTheCard() {
         let url = Dock.url(secret: secret, box: "0ACEC38D", domain: domain)
         XCTAssertEqual(Dock.link(from: url, domain: domain),
-                       Dock.Link(secret: secret, slot: nil, box: "0ACEC38D"))
+                       Dock.Link(secret: secret, box: "0ACEC38D"))
     }
 
     /// Without the box's name — a phone that hasn't read the card on this
     /// launch — it is the first cards' shape, and pairs with the closest box.
     func testACodeWithoutTheBoxStillReads() {
         let url = Dock.url(secret: secret, domain: domain)
-        XCTAssertEqual(Dock.link(from: url, domain: domain), Dock.Link(secret: secret, slot: nil, box: nil))
+        XCTAssertEqual(Dock.link(from: url, domain: domain), Dock.Link(secret: secret, box: nil))
     }
 
     /// Square, with the four-module margin the standard asks for: a phone

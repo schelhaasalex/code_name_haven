@@ -48,7 +48,7 @@ public protocol Repository: Sendable {
     /// Every evening you've had, and the first (migration 0011). Your own
     /// rows only, counted as days.
     func myEvenings() async throws -> EveningTotal
-    /// A box's place, found or made by whoever reads its tag or code first
+    /// A box's place, found or made by whoever reads its code first
     /// (migrations 0013, 0017), and you one of its people. Nil means the
     /// handle was taken: draw another and ask again.
     func dockPlace(secret: String, handle: String) async throws -> UUID?

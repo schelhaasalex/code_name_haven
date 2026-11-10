@@ -1,8 +1,8 @@
 # The box
 
 Four slots in a drawer. Each slot has a MagSafe-style charging pad, a sensor,
-an NFC tag under where the top of the phone lands, and a light on the outside.
-The box has a small Bluetooth radio, and a code printed on it.
+and a light on the outside. The box has a small Bluetooth radio, and comes
+with a card carrying its code. No NFC: the slots' tags went on 2026-11-10.
 
 Putting your phone in the box **is** the evening starting, and taking it out
 is the evening ending — five seconds later (`Box.outGrace`), unless it's
@@ -10,11 +10,12 @@ back by then. Nothing else starts or ends one.
 
 ## What happens
 
-1. **Meeting it, once.** Point the camera at the box's code, or hold the phone
-   to any slot's tag. The app finds or makes the box's place, makes you one of
-   its people, asks about Bluetooth, and keeps the dock it's closest to as its
-   box. The code starts nothing; a tag is read with the phone going in, so it
-   starts the evening too.
+1. **Meeting it, once.** Scan the box's card, from the app or the Camera —
+   or, without the card, the code a phone already in the box shows (Settings
+   → the box → "Show its code", an hour long). The app finds or makes the
+   box's place, makes you one of its people, asks about Bluetooth, and keeps
+   the box the card names (or, for a card that names none, the dock it's
+   closest to). The code starts nothing.
 2. **In.** A phone lands on a pad. The box lights the slot and tells every
    connected phone. The one that just started charging, with the box right
    beside it, starts its evening — locked, in the background, nobody touching
@@ -28,53 +29,59 @@ another Wi-Fi: the light stays off and the evening counts all the same.
 
 ## The box's place
 
-The tags and the code carry one secret: the box's join credential. The box has
+The card carries one secret: the box's join credential. The box has
 no owner until someone reads it. The first phone to read it makes its place,
 and every phone after that is one of its people (`dock_place`, migrations 0013
-and 0017). The secret is unique in the database, so two phones going in at the
-same moment still make one place. Whoever made it can name it, in Settings.
+and 0017). The secret is unique in the database, so two phones reading it at
+the same moment still make one place. Whoever made it can name it, in Settings.
+
+A phone in the box can show a code of its own (`box_code`, 0025): the same
+link with a fresh secret, good for an hour, for a phone without the card. Its
+hash is kept after it runs out, so an old one is refused rather than taken as
+a new box's first scan. If the card is lost and nobody is in the box any more,
+the factory's `boxes.csv` still has its secret, and the card can be printed
+again.
 
 ## Building one
 
-**Tags and code.** `scripts/dock-tags.sh` prints four slot links and the box's
-code under a fresh secret, and draws the code to print and stick on the box.
-Write each slot link onto its slot's tag as a URL record (NFC Tools does this).
-Use one secret per box, and **never lock the tags**: the domain is a testing
-address until there is a real one.
+**The card.** `scripts/dock-tags.sh` makes the box's code under a fresh
+secret, and draws it to print on the card. Use one secret per box. Its slot
+links are no longer written anywhere, and do nothing (the station drops them
+next). The domain is a testing address until there is a real one.
 
 **At the factory**, each card names its box. Plug the finished box in over USB
 and run `scripts/dock-tags.sh /dev/cu.usbmodem…`: the box says who it is
 (`Portside-XXXXXXXX`, the end of its radio's address), and the script makes
 that box's secret, its links with `?b=XXXXXXXX` on the end, its code as
-`box-XXXXXXXX.png`, and a row in `boxes.csv` — box, code, slot 1–4, the file a
-tag encoder or card printer takes. Box ids typed as arguments work the same.
+`box-XXXXXXXX.png`, and a row in `boxes.csv` — the file a card printer takes.
+Box ids typed as arguments work the same.
 Pack the card with the box it was printed for. **`boxes.csv` holds every box's
 join secret**: keep it out of git (`.gitignore` does) and anywhere public.
 A card that names its box pairs a phone with that box and no other; one that
 doesn't (the first boxes, and the script run with no arguments) pairs with the
-closest, as before. Put each tag where the
-top of the phone's back sits on the pad, a few centimetres toward the top edge
-from the coil. A tag on top of the coil either doesn't read or gets warm.
+closest, as before.
 
 **Lights.** Either the box's own strip, on the radio's `LIGHT_PIN`, or a WLED
 controller on the home Wi-Fi with four segments of two LEDs each — slot 1 is
-segment 0, through to slot 4 as segment 3. With WLED the app switches a slot's
-segment on when its tag is read, and never turns the controller off.
+segment 0, through to slot 4 as segment 3. The app only ever switched a WLED
+segment on when a slot's tag was read, so with the tags gone it lights
+nothing; the lights go next (docs/FACTORY.md, step 6).
 
-**Links live under `/p/`.** A slot is `/p/<secret>/<slot>`; the box's code is
-`/p/<secret>`, the shape the first printed cards had, so every phone that
-ever opened one already opens it. Slot links were `/d/` at first, and a phone
-installed before `/d/` existed kept sending them to Safari: iOS caches the
-site's `apple-app-site-association` for days, separately from the app. The site
-now claims every path except the home page. Old `/d/` tags still read.
+**Links live under `/p/`.** The box's code is `/p/<secret>`, the shape the
+first printed cards had, so every phone that ever opened one already opens it.
+The slots' links (`/p/<secret>/<slot>`, and `/d/` before that) are no box's
+now, and open nothing. The site claims every path except the home page: iOS
+caches its `apple-app-site-association` for days, separately from the app, and
+the `/d/` links went to Safari on phones installed before they existed.
 
 **Site.** `links/` must be deployed for these links to open the app.
 
 ## Trying it without a box
 
 - On the simulator, with the **Reclaim (Sample data)** scheme:
-  `xcrun simctl openurl booted reclaim://d/<anything>/2` is a phone going into
-  slot 2, and `reclaim://d/<anything>` is the box's code.
+  `xcrun simctl openurl booted reclaim://box/in/2` is a phone going into
+  slot 2, through the same code as the radio's from there, and
+  `reclaim://box/out` takes it out. Debug builds only.
 - On a desk: the radio's serial monitor takes `1`–`4` to fill or empty a slot
   (and `i` to say which box it is)
   with no sensor wired.
@@ -82,15 +89,16 @@ now claims every path except the home page. Old `/d/` tags still read.
 ## Known gaps
 
 - **More than one WLED in the house.** The first controller found gets used.
-- **A force-quit app** can't be woken over Bluetooth until it's opened again.
-  The tag still opens it.
+- **A swiped-away app** can't be woken over Bluetooth until it's opened again,
+  and with the tags gone nothing else brings it back: put in the box, it
+  starts nothing. Settings says so under "How it works". iOS sets this.
 
 ## The radio
 
 A sensor under each slot and a small Bluetooth radio (`firmware/box/box.ino`).
-The phone pairs with a box when it reads the box's card or a tag: the dock
-it's closest to at that moment, leaving out its other boxes, is this box
-(`Box.closest`, -75 or stronger). It listens again on every read, so a board
+The phone pairs with a box when it reads the box's card: the dock the card
+names, or for one that names none, the dock it's closest to at that moment,
+leaving out its other boxes (`Box.closest`, -75 or stronger). It listens again on every read, so a board
 swapped under the same card is found. A phone can belong to several boxes —
 the kitchen's and the bedroom's — and stays connected to each whenever it's
 in range; iOS wakes the app when any of them reports a change, and the
@@ -107,8 +115,8 @@ evening is at whichever one it was.
 4. A slot empties. Every phone in the box wakes, waits five seconds
    (`Box.outGrace`), and the one that still isn't charging ends its evening.
 
-A swiped-away app can't be woken over Bluetooth, so the tag stays as the way
-in.
+A swiped-away app can't be woken over Bluetooth, and nothing else opens it
+now (known gaps, above).
 
 ### The protocol
 
@@ -181,7 +189,7 @@ current sensor is only asked whether the phone is drawing.
    **5** on an ESP32-C3. Not more: the C3's radio holds 6 things at once and
    advertising is one of them, and asking for more crashes the board on every
    boot. The sketch refuses to compile if it's set too high.
-3. Run `scripts/dock-tags.sh` and write the four links onto the tags.
+3. Run `scripts/dock-tags.sh` to make the box's code, for its card.
 4. Set `SLOT_PINS` and `SLOT_INA219` for your wiring, then flash. The one on
    the desk now is an ESP32-S3 dev board (FQBN
    `esp32:esp32:esp32s3:CDCOnBoot=cdc`, so the serial monitor works over its
@@ -194,8 +202,8 @@ current sensor is only asked whether the phone is drawing.
 ### Testing it
 
 1. Build the app to the phone, and open it once.
-2. Scan the box's code with the camera, or hold the phone to a slot's tag and
-   tap its banner. That pairs the phone with the box, and asks about Bluetooth.
+2. Scan the box's code, from the app or the camera. That pairs the phone
+   with the box, and asks about Bluetooth.
 3. Take the phone out. The lock screen counts down five seconds, then the
    evening ends, and its Live Activity with it. Put it back before zero and
    nothing changes.
@@ -210,8 +218,8 @@ current sensor is only asked whether the phone is drawing.
   Function, which starts it with a push (iOS 17.2+; migration 0015). Without
   the network, or on iOS 17.0–17.1, it appears the next time the app is opened.
 - **Five phones per box.** The C3's radio holds five connections plus its
-  advertisement. A sixth phone in the house can't stay connected, and uses
-  the tag. An ESP32-S3 doesn't lift this; a different radio would.
+  advertisement. A sixth phone in the house can't stay connected, and its
+  evenings don't start. An ESP32-S3 doesn't lift this; a different radio would.
 - **Two boxes side by side** can still pair a phone with the wrong one when
   its card names no box — the first cards, and any made without an id. Cards
   made at the factory name their box, and pair with nothing else.

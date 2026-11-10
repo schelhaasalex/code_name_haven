@@ -53,7 +53,7 @@ Reclaim/
   AppState+Evening.swift    start, adopt, reconcile, end
   AppState+Box.swift        the radio: a slot filled, a slot emptied
   AppState+Boxes.swift      this phone's boxes: meeting, naming, forgetting
-  AppState+Dock.swift       the tag and the code; the foreground check
+  AppState+Dock.swift       the box's code read; the foreground check
   Screens/                  one file per screen
   Components/               take data, never AppState
   Entry/                    URLRouter, ChargingWatch, LiveActivityController
@@ -86,7 +86,7 @@ own.
 
 | Call | For |
 |---|---|
-| `dockPlace(secret:handle:)` | The box's place, found or made by whoever reads its tag or code first, and the reader one of its people (0013, 0017) |
+| `dockPlace(secret:handle:)` | The box's place, found or made by whoever reads its code first, and the reader one of its people (0013, 0017); a phone's code that ran out is refused, never a new box (0025) |
 | `startOrJoin(place:source:)` | The phone went in: join the box's open evening, or open it |
 | `endSession(_:)` | The phone came out. Returns the minutes credited, capped |
 | `memberCount(of:)` | How many are in the evening — a number from `gathering_count` (0023), never who |
@@ -146,7 +146,7 @@ days, deleting the account, a card that couldn't be read from a link — sets
 
 There is no button that starts an evening, no tab bar, and no End: the box is
 the only switch. `scripts/shape.sh` fails any call that starts one from
-anywhere but the box's radio and its tags.
+anywhere but the box's radio.
 
 **Words.** The code says *evening*; a person never reads it. What's counted is
 a day with fifteen minutes in the box, at any hour, so the copy says *days*
@@ -206,8 +206,8 @@ for a box that doesn't exist.
 
 **Meeting it.** The box's code (`/p/<secret>`, printed on the card that comes
 with it) is read by the app's own scanner (screen 2b, "Scan the card" on
-Home), or by the Camera app, which opens the app through Associated Domains —
-as does any slot's tag (`/p/<secret>/<slot>`). With the app not installed the
+Home), or by the Camera app, which opens the app through Associated Domains.
+With the app not installed the
 same link is a page saying to get it and scan the card from inside (`links/`). Either,
 read first, finds or makes the box's place and makes this phone one of its
 people; the app then listens for the box the card names (`?b=`, the box's
@@ -216,8 +216,9 @@ for a card that names none, listens three seconds and keeps the closest
 (`Box.closest`) — on every read, so a box whose board was swapped under the
 same card is found again. The scanner shows those seconds:
 *Listening for your box.*, *There it is.* — or *Not hearing it yet*
-and a retry. A tag also starts the evening: it's read with
-the phone going into the slot. The code starts nothing.
+and a retry. The code starts nothing. The slots had NFC tags until
+2026-11-10 that started an evening; no box has them, and their links
+(`/p/<secret>/<slot>`, `/d/…`) open nothing.
 
 **Another phone, without the card.** Anyone in a box can show its code on
 their screen (16a, "Show its code"), and a second phone scans it there

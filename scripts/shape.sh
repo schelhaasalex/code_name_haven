@@ -136,7 +136,7 @@ else
   fi
 fi
 
-# 12. One domain, set once. Links are written onto tags and printed as codes,
+# 12. One domain, set once. Links are printed as codes on the box's card,
 #     and there's no real domain yet — a host written into Swift is one the
 #     rename will miss. They go through `Links.domain` (LINK_DOMAIN in
 #     project.yml), and so does the entitlement that lets them open the app.
@@ -273,15 +273,27 @@ sql_days=$(grep -o 'p_evenings >= [0-9]*' "$stage_sql" | grep -o '[0-9]*$' | sor
 #     a button, a face-down phone, a guess from motion, a nearby phone, Siri —
 #     was built once and taken out, and each was one call to `setItDown` from
 #     somewhere new. So the evening starts in AppState+Evening, and is asked
-#     to only from the box's two doors: its radio and its tags.
+#     to only from the box's one door: its radio (AppState+Box). The slots'
+#     NFC tags were a second door until 2026-11-10; no box has them now.
 note "Only the box starts an evening"
 for f in $(grep -l 'startOrJoin(' $(find Reclaim ReclaimWidgets -name '*.swift') 2>/dev/null); do
   [ "$f" = "Reclaim/AppState+Evening.swift" ] || bad "$f starts an evening — only the box does (AppState+Evening)"
 done
 for f in $(grep -l 'setItDown(' $(find Reclaim ReclaimWidgets -name '*.swift') 2>/dev/null); do
   case "$f" in
-    Reclaim/AppState+Evening.swift|Reclaim/AppState+Box.swift|Reclaim/AppState+Dock.swift) ;;
-    *) bad "$f sets an evening going — only the box's radio and tags do" ;;
+    Reclaim/AppState+Evening.swift|Reclaim/AppState+Box.swift) ;;
+    *) bad "$f sets an evening going — only the box's radio does (AppState+Box)" ;;
+  esac
+done
+# `cameIn` is the radio's "this phone went in", past its question; the only
+# other caller is the simulator's stand-in for a slot, in a DEBUG block.
+for f in $(grep -l 'cameIn(' $(find Reclaim ReclaimWidgets -name '*.swift') 2>/dev/null); do
+  case "$f" in
+    Reclaim/AppState+Box.swift) ;;
+    Reclaim/Entry/URLRouter.swift)
+      awk '/#if DEBUG/{d=1} /#endif/{d=0} /cameIn\(/ && !d {exit 1}' "$f" \
+        || bad "$f calls cameIn outside #if DEBUG — in a release build only the box's radio does" ;;
+    *) bad "$f calls cameIn — only the box's radio does (AppState+Box)" ;;
   esac
 done
 

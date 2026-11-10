@@ -37,7 +37,7 @@ extension AppState {
         return name(of: place)
     }
 
-    /// Its card or a tag was read: on this phone's list, and the box Home
+    /// Its card was read: on this phone's list, and the box Home
     /// leads with.
     func meet(_ id: UUID) {
         if !boxPlaces.contains(id) { boxPlaces.append(id) }
@@ -86,7 +86,7 @@ extension AppState {
     }
 
     /// This phone stops being the box's. The box, and everything it kept,
-    /// stays; reading its card or a tag again brings this phone back.
+    /// stays; reading its card again brings this phone back.
     public func forget(_ id: UUID) {
         if let radio = BoxPairing.all.first(where: { $0.place == id })?.peripheral {
             boxLink.letGo(of: radio)

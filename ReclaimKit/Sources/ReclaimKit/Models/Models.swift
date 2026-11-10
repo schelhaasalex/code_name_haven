@@ -7,6 +7,10 @@ import Foundation
 /// How an evening started. Only the box starts one now; the rest are kept
 /// because evenings from before still say them.
 public enum SessionSource: String, Codable, Sendable {
+    /// `tag` is the box: evenings its radio starts are saved with it, though
+    /// the slots' tags are gone. Renaming it needs a migration — the
+    /// database checks the value — and old rows carry it. The rest are ways
+    /// in that have gone too (rule 4), kept so old rows still decode.
     case app, tag, control, siri, shortcut, retroactive, nearby
 }
 
