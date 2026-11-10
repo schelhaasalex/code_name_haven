@@ -26,12 +26,10 @@ public enum DockSlot {
         UserDefaults.standard.set(date, forKey: sinceKey)
     }
 
-    /// Out, and its light with it. Safe to call when nothing is docked.
-    public static func undock() async {
-        guard let slot = current else { return }
+    /// Out. Safe to call when nothing is docked.
+    public static func undock() {
         UserDefaults.standard.removeObject(forKey: slotKey)
         UserDefaults.standard.removeObject(forKey: sinceKey)
-        await DockLight.shared.settle(slot: slot, on: false)
     }
 
     /// Whether a phone that isn't charging has been out long enough to say so.

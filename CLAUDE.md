@@ -234,7 +234,6 @@ scripts/shape.sh      # about a second, no toolchain, no network
 | A phone in the box keeps listening | Without `bluetooth-central` the box's news never reaches a phone that's locked — and nothing says so |
 | Every sheet has something that opens it | Screen 17's "Name them" was a word printed on a card: the sheet was wired, nothing set the flag, and it built and previewed fine |
 | The build number is not written into the project | A setting in `project.yml` beats the xcconfig it comes from, so every upload after the first would carry the same number — refused at the end of an archive, not the start |
-| The box's lights can be found | iOS won't browse for a Bonjour service missing from `NSBonjourServices`, and says nothing — the box just never lights |
 | A Live Activity can be started by push | Without `aps-environment`, iOS never hands out a push-to-start token, and an evening the box started shows nothing on the lock screen |
 | The ring charges the same on the phone and the server | The phone steps the ring while it's awake and the server after; two lists of steps that differ make it jump back a segment |
 | An evening is closed at the same cap everywhere | The lock screen goes quiet at the cap by itself, in case the push that ends it never comes; a cap in the push that differs from the server's says "closed" over an evening still going |
@@ -250,10 +249,9 @@ suggestion.** Write the check, and make it fail before you make it pass.
 
 ## Scope
 
-**In:** the box — a drawer with four charging slots and a light on the outside
-for each, and a card with its code (in scope since 2026-10-22; no NFC tags
-since 2026-11-10). It ships with the app, so
-putting a phone in it has to be enough. `docs/DOCK.md` has how it works.
+**In:** the box — a drawer with four charging slots, and a card with its code
+(in scope since 2026-10-22; no NFC tags and no lights since 2026-11-10). It
+ships with the app, so putting a phone in it has to be enough. `docs/DOCK.md` has how it works.
 
 **Out** (since 2026-11-06): every way of starting an
 evening but the box — face-down, retroactive credit, phone-to-phone proximity,

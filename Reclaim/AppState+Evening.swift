@@ -76,8 +76,8 @@ extension AppState {
     func teardown() async {
         await LiveActivityController.end()
         session = nil; gathering = nil; memberCount = 0; startedAt = nil
-        // However it ended, the box goes dark for this phone — never waited on.
-        Task { await DockSlot.undock() }
+        // However it ended, this phone is no longer in the box.
+        DockSlot.undock()
     }
 
     /// Who's in the box with you. The count only goes up (rule 3).

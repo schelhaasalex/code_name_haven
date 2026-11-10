@@ -9,8 +9,8 @@
 //
 // Board: any ESP32 with Bluetooth LE — an ESP32-C3 or ESP32-S3 dev board, a
 // Seeed XIAO ESP32-C3/S3. Not an ESP32-S2: it has no Bluetooth.
-// Library: NimBLE-Arduino 2.x (checked against 2.5.1). Optional: Adafruit
-// NeoPixel, for lights the box runs itself.
+// Library: NimBLE-Arduino 2.x (checked against 2.5.1). No lights: the box
+// has none since 0.7.
 //
 // docs/DOCK.md has the wiring, and how to flash it.
 
@@ -59,11 +59,6 @@ const float MA_PER_STEP = 0.1;
 const float IN_MA = 100, OUT_MA = 30;
 const int AVERAGE_OVER = 10;      // samples, one per 100 ms
 
-// The lights, if this board runs them: a strip with two LEDs per slot, slot 1
-// first. -1 leaves the lights to something else (the WLED controller).
-#define LIGHT_PIN -1
-const int LEDS_PER_SLOT = 2;
-
 // ---------------------------------------------------------------- the protocol, as in Box.swift
 // scripts/shape.sh checks these match Box.swift. A box and an app on
 // different ids never hear each other, with no error.
@@ -73,7 +68,7 @@ const int LEDS_PER_SLOT = 2;
 #define COMMAND_UUID   "6e400020-b5a3-f393-e0a9-0000706f7274"
 const int PROTOCOL = 1;
 // Said in every hello, so the pilot can tell which boxes are on which build.
-const char *FIRMWARE = "0.6";
+const char *FIRMWARE = "0.7";
 
 // Slot state bytes. A presence sensor can only say "something is there", and
 // a phone drawing current is charging, so every phone in reads as charging.
@@ -82,11 +77,6 @@ const uint8_t EMPTY = 0, CHARGING = 1;
 // A phone being slid in rocks a sensor on and off; a slot has to say the same
 // thing for this long before it counts.
 const unsigned long SETTLE_MS = 400;
-
-#if LIGHT_PIN >= 0
-#include <Adafruit_NeoPixel.h>
-Adafruit_NeoPixel strip(SLOTS * LEDS_PER_SLOT, LIGHT_PIN, NEO_GRB + NEO_KHZ800);
-#endif
 
 NimBLECharacteristic *slotStateChar;
 NimBLECharacteristic *eventChar;
@@ -106,9 +96,6 @@ uint32_t boots = 0;
 // listening: a hello sent in the same breath as the connect can arrive before
 // the phone has subscribed, and be lost.
 unsigned long helloDue = 0;
-
-// A colour per slot chosen by the app, or -1: the box's own warm light.
-long lightOverride[SLOTS] = {-1, -1, -1, -1};
 
 // Every phone in the house stays connected, so as each one connects the box
 // has to go straight back to advertising for the next.
@@ -134,20 +121,6 @@ void send(const char *json) {
   eventChar->setValue((const uint8_t *)json, strlen(json));
   eventChar->notify();
   Serial.println(json);
-}
-
-// ---------------------------------------------------------------- the lights
-
-void light() {
-#if LIGHT_PIN >= 0
-  for (int i = 0; i < SLOTS; i++) {
-    // Warm, and low: it sits in a room in the evening.
-    uint32_t colour = lightOverride[i] >= 0 ? (uint32_t)lightOverride[i]
-                    : (reported & (1 << i)) ? strip.Color(90, 45, 12) : 0;
-    for (int j = 0; j < LEDS_PER_SLOT; j++) strip.setPixelColor(i * LEDS_PER_SLOT + j, colour);
-  }
-  strip.show();
-#endif
 }
 
 // ---------------------------------------------------------------- commands
@@ -180,12 +153,6 @@ void command(const std::string &json) {
     char out[48];
     snprintf(out, sizeof out, "{\"v\":%d,\"event\":\"pong\"}", PROTOCOL);
     send(out);
-  } else if (cmd == "light") {
-    long slot = numberField(json, "slot");
-    if (slot < 1 || slot > SLOTS) return;
-    std::string rgb = stringField(json, "rgb");
-    lightOverride[slot - 1] = rgb == "auto" || rgb.size() != 6 ? -1 : strtol(rgb.c_str(), nullptr, 16);
-    light();
   }
 }
 
@@ -275,9 +242,6 @@ void setup() {
   flash.end();
   for (int i = 0; i < SLOTS; i++) if (SLOT_PINS[i] >= 0) pinMode(SLOT_PINS[i], INPUT_PULLUP);
   Wire.begin(I2C_SDA, I2C_SCL);
-#if LIGHT_PIN >= 0
-  strip.begin();
-#endif
 
   NimBLEDevice::init("");
   // Portside-XXXXXXXX, the last four bytes of the radio's address. That is
@@ -301,7 +265,6 @@ void setup() {
   reported = seen = readSlots();
   seenSince = millis();
   publishState();
-  light();
   // In NimBLE 2.x the server starts its services; advertising would start it
   // anyway, but saying so here keeps the order readable.
   server->start();
@@ -332,7 +295,6 @@ void loop() {
   if (seen != reported && millis() - seenSince >= SETTLE_MS) {
     uint8_t changed = seen ^ reported;
     reported = seen;
-    light();
     publishState();
     slotStateChar->notify();
     // One event per slot that changed, after the state they add up to.

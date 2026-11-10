@@ -95,8 +95,8 @@ extension AppState {
         let fresh = Box.justStarted(chargingSince: ChargingWatch.shared.since, at: at)
         guard Box.isThisPhone(charging: charging, wasCharging: !fresh,
                               unbroken: ChargingWatch.shared.unbroken, rssi: rssi) else { return }
-        // Two slots filling at once leaves which one was this phone a guess;
-        // the box lights its own slots, so the guess only matters to this phone.
+        // Two slots filling at once leaves which one was this phone a guess,
+        // and only this phone's note of its slot can be wrong.
         await cameIn(slot: filled.min() ?? 1, at: place)
     }
 
@@ -130,12 +130,12 @@ extension AppState {
         try? await repo.startActivityRemotely(body: body)
     }
 
-    /// Out of the box and not back: the evening ends, and the slot goes dark.
+    /// Out of the box and not back: the evening ends.
     /// The Live Activity goes with it, from here, and the server's next
     /// minute ends it on any phone this one couldn't reach.
     func leftBox() async {
         if phase != .ready { await load() }
         if isLive { await end() }
-        await DockSlot.undock()
+        DockSlot.undock()
     }
 }

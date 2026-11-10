@@ -41,7 +41,7 @@ ReclaimKit/Sources/ReclaimKit/
   Models/        Session, Gathering, Place, Profile, PlaceSummary, EveningTotal
   Data/          Repository (protocol), SupabaseRepository, PreviewRepository
   Dock/          Box (the Portside protocol, "was it me"), BoxLink (the radio),
-                 BoxPairing, Dock (links), DockSlot, DockLight + WLED (the lights)
+                 BoxPairing, Dock (links), DockSlot, DockError, QRCode
   Activity/      ReclaimActivityAttributes, EveningCharge, RemoteActivity
   Support/       AutoClosed, BoxStage, Reconciliation, EveningCalendar,
                  EveningLanding, EveningMarkLayout, Handle, Links, Splash

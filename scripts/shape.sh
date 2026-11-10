@@ -193,20 +193,6 @@ grep -qE '^[[:space:]]*CURRENT_PROJECT_VERSION:' project.yml \
 grep -q "CURRENT_PROJECT_VERSION" Config/Base.xcconfig \
   || bad "Config/Base.xcconfig should carry CURRENT_PROJECT_VERSION"
 
-# 17. The box's lights are found over Bonjour, and iOS refuses to browse for a
-#     service the app didn't list in NSBonjourServices — no error, no prompt,
-#     just a box that never lights. The usage string is what the Local Network
-#     prompt says; without it there is no prompt either.
-note "The box's lights can be found"
-if grep -q 'NWBrowser' $ALL_SWIFT 2>/dev/null; then
-  svc=$(sed -n 's/.*service = "\(_[a-z0-9-]*\._tcp\)".*/\1/p' ReclaimKit/Sources/ReclaimKit/Dock/WLED.swift)
-  [ -n "$svc" ] || bad "couldn't read the service WLED.swift browses for"
-  grep -qE "NSBonjourServices:.*$svc" project.yml \
-    || bad "Something browses for $svc, and NSBonjourServices in project.yml doesn't list it"
-  grep -q 'NSLocalNetworkUsageDescription' project.yml \
-    || bad "Something browses the local network with no NSLocalNetworkUsageDescription"
-fi
-
 # 18. A link the app makes is one the site has to open. The site's
 #     apple-app-site-association claims EVERY path but the home page, not a
 #     list of them: phones cache that file for days, apart from the app, and

@@ -1,8 +1,8 @@
 # The box
 
-Four slots in a drawer. Each slot has a MagSafe-style charging pad, a sensor,
-and a light on the outside. The box has a small Bluetooth radio, and comes
-with a card carrying its code. No NFC: the slots' tags went on 2026-11-10.
+Four slots in a drawer. Each slot has a MagSafe-style charging pad and a
+sensor. The box has a small Bluetooth radio, and comes with a card carrying
+its code. No NFC and no lights: both went on 2026-11-10.
 
 Putting your phone in the box **is** the evening starting, and taking it out
 is the evening ending — five seconds later (`Box.outGrace`), unless it's
@@ -16,16 +16,12 @@ back by then. Nothing else starts or ends one.
    box's place, makes you one of its people, asks about Bluetooth, and keeps
    the box the card names (or, for a card that names none, the dock it's
    closest to). The code starts nothing.
-2. **In.** A phone lands on a pad. The box lights the slot and tells every
-   connected phone. The one that just started charging, with the box right
+2. **In.** A phone lands on a pad. The box tells every connected phone. The one that just started charging, with the box right
    beside it, starts its evening — locked, in the background, nobody touching
    anything. The Live Activity arrives by push.
 3. **Out.** A slot empties. The phone's lock screen counts down five seconds;
    if it still isn't charging at zero it ends its evening, and its Live
    Activity goes. Back within the five and nothing changed.
-
-A box with no lights, a declined Local Network prompt, or a controller on
-another Wi-Fi: the light stays off and the evening counts all the same.
 
 ## The box's place
 
@@ -61,12 +57,6 @@ A card that names its box pairs a phone with that box and no other; one that
 doesn't (the first boxes, and the script run with no arguments) pairs with the
 closest, as before.
 
-**Lights.** Either the box's own strip, on the radio's `LIGHT_PIN`, or a WLED
-controller on the home Wi-Fi with four segments of two LEDs each — slot 1 is
-segment 0, through to slot 4 as segment 3. The app only ever switched a WLED
-segment on when a slot's tag was read, so with the tags gone it lights
-nothing; the lights go next (docs/FACTORY.md, step 6).
-
 **Links live under `/p/`.** The box's code is `/p/<secret>`, the shape the
 first printed cards had, so every phone that ever opened one already opens it.
 The slots' links (`/p/<secret>/<slot>`, and `/d/` before that) are no box's
@@ -88,7 +78,6 @@ the `/d/` links went to Safari on phones installed before they existed.
 
 ## Known gaps
 
-- **More than one WLED in the house.** The first controller found gets used.
 - **A swiped-away app** can't be woken over Bluetooth until it's opened again,
   and with the tags gone nothing else brings it back: put in the box, it
   starts nothing. Settings says so under "How it works". iOS sets this.
@@ -104,9 +93,8 @@ the kitchen's and the bedroom's — and stays connected to each whenever it's
 in range; iOS wakes the app when any of them reports a change, and the
 evening is at whichever one it was.
 
-1. A phone lands. The slot's sensor changes, and the box lights that slot
-   itself and tells every connected phone — its slot state and a `docked`
-   event, below.
+1. A phone lands. The slot's sensor changes, and the box tells every
+   connected phone — its slot state and a `docked` event, below.
 2. Every phone in range wakes for a few seconds and asks itself whether that
    was it (`Box.isThisPhone`). It was if this phone has just started charging
    and the box's signal is strong (`Box.nearby`, -60). A phone already on the
@@ -129,7 +117,7 @@ on each pad speaks too. The ids are placeholders until production, and live in
 | Service | `6e400001-b5a3-f393-e0a9-0000706f7274` | advertised; phones scan for this |
 | Slot state | `6e400010-…` | read, notify. A byte per slot: 0 empty, 1 charging, 2 full |
 | Event | `6e400011-…` | notify. `{"v":1,"slot":1,"event":"docked","t":…}`; also `undocked`, `full`, `pong`, and `hello` — `{"v":1,"event":"hello","boots":7,"up":120,"reset":1,"fw":"0.5"}`, 1.5 s after a phone sends the time: restarts (kept in flash), seconds up, ESP-IDF reset reason, firmware |
-| Command | `6e400020-…` | write. `{"cmd":"time","epoch":…}` (sent on every connect), `light`, `ping` |
+| Command | `6e400020-…` | write. `{"cmd":"time","epoch":…}` (sent on every connect), `ping`. Firmware before 0.7 also took `light` |
 
 The phone subscribes to slot state and events, reads the slot state once, and
 sends the time. A slot state change and its event say the same thing, and the
@@ -173,14 +161,11 @@ current sensor is only asked whether the phone is drawing.
     iPhone 800–900; the sketch averages one second and needs 100 mA to count
     a phone in. A phone that stops drawing — full, or paused at 80% — may read
     as out; not yet seen, and worth watching.
-- **Lights (optional):** a WS2812 strip, two LEDs per slot, on `LIGHT_PIN`.
-  Leave it at -1 to keep using the WLED controller.
 
 ### Flashing it
 
 1. Install the Arduino IDE, the ESP32 board package, and **NimBLE-Arduino
-   2.x** (checked with 2.5.1; 1.4.x has a different API). Add Adafruit
-   NeoPixel if the board runs the lights. On an Apple-silicon Mac, install
+   2.x** (checked with 2.5.1; 1.4.x has a different API). On an Apple-silicon Mac, install
    Rosetta first (`softwareupdate --install-rosetta`): one of the Arduino
    build tools is Intel-only and fails with "bad CPU type" without it.
 2. NimBLE-Arduino allows three connections by default, and every phone in the
@@ -224,8 +209,8 @@ current sensor is only asked whether the phone is drawing.
   its card names no box — the first cards, and any made without an id. Cards
   made at the factory name their box, and pair with nothing else.
 - **Two phones in the same second** both start correctly, but each may record
-  the other's slot number. The box lights its own slots, so only the phone's
-  note of which slot it's in can be wrong.
+  the other's slot number. Only the phone's note of which slot it's in can
+  be wrong, and nothing shows it.
 - **A phone put on a charger elsewhere** at the moment a slot fills, close
   enough to the box, would count. The signal threshold is what stops it, and
   it may need tuning on a real box.
