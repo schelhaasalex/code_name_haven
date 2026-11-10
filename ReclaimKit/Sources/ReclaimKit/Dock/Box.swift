@@ -123,7 +123,7 @@ public enum Box {
     }
 
     /// While pairing, the dock the phone is closest to is the one it's at:
-    /// the tag was just read in its slot, or its code scanned from a hand's
+    /// its code was just scanned from a hand's
     /// length away. Weaker than this is a dock across the room, or next door.
     public static let pairable = -75
 

@@ -7,8 +7,8 @@
        the same mark. Nobody is asked to sign in to use the app. -->
   <key>com.apple.developer.applesignin</key>
   <array><string>Default</string></array>
-  <!-- The box's tags and its code carry an https link, so the system can
-       open the app with it closed. LINK_DOMAIN is set in project.yml; that
+  <!-- The box's code carries an https link, so the Camera can open the
+       app with it closed. LINK_DOMAIN is set in project.yml; that
        site serves the apple-app-site-association (links/). -->
   <key>com.apple.developer.associated-domains</key>
   <array><string>applinks:$(LINK_DOMAIN)</string></array>

@@ -2,10 +2,11 @@ import Foundation
 
 /// A box this phone belongs to: which place it is, and which radio.
 ///
-/// The place is learned the moment the box's card or a tag is read; the radio
+/// The place is learned the moment the box's card is read; the radio
 /// a few seconds later — the closest dock the phone doesn't already know —
 /// and only if Bluetooth is there to find it. Without one the box is still
-/// this phone's, and its tags still work.
+/// this phone's, but nothing starts an evening there until its radio is
+/// heard: its page in Settings offers to scan the card again.
 ///
 /// A phone can belong to several boxes — the kitchen's and the bedroom's —
 /// and holds a connection to each, so whichever one it's put in starts the

@@ -12,7 +12,8 @@ import ReclaimKit
 /// by then (rule 4).
 ///
 /// All of this happens with the app woken in the background for a few
-/// seconds. The slot's tag still works whatever happens here.
+/// seconds. An app swiped away isn't woken at all — iOS won't, for Bluetooth —
+/// until it's opened again (docs/DOCK.md, known gaps).
 @MainActor
 extension AppState {
 
@@ -37,14 +38,14 @@ extension AppState {
         }
     }
 
-    /// The first read of a box's tag or code teaches this phone which box is
+    /// The first read of a box's code teaches this phone which box is
     /// its own — the place at once, and the radio as soon as it's heard: the
     /// box the card names, or for a card that names none, the closest dock a
     /// few seconds in that isn't one of its other boxes. Asks about Bluetooth,
     /// the first time — at the box, where the question makes sense.
     ///
     /// Every read listens again, even for the box this phone already knows:
-    /// its radio can change under the same tags and code — a new board, a
+    /// its radio can change under the same code — a new board, a
     /// reflash — and a phone that kept the old one would wait for it forever.
     /// Until a radio is heard, the one it knew stays.
     func pairBox(place: UUID, box: String? = nil) {
@@ -94,10 +95,16 @@ extension AppState {
         let fresh = Box.justStarted(chargingSince: ChargingWatch.shared.since, at: at)
         guard Box.isThisPhone(charging: charging, wasCharging: !fresh,
                               unbroken: ChargingWatch.shared.unbroken, rssi: rssi) else { return }
-
         // Two slots filling at once leaves which one was this phone a guess;
         // the box lights its own slots, so the guess only matters to this phone.
-        DockSlot.docked(in: filled.min() ?? 1)
+        await cameIn(slot: filled.min() ?? 1, at: place)
+    }
+
+    /// This phone went into the box: the evening starts at its place. Past
+    /// the question of whether it was this phone — so the only other caller
+    /// is the simulator's stand-in for a slot (`URLRouter`, DEBUG only).
+    func cameIn(slot: Int, at place: UUID) async {
+        DockSlot.docked(in: slot)
         // Woken in the background, the app may not have looked at anything yet.
         if phase != .ready { await load() }
         guard phase == .ready, !isLive else { return }

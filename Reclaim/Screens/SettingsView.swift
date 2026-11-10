@@ -36,7 +36,14 @@ struct SettingsView: View {
                 }
                 if !state.boxPlaces.isEmpty { boxes }
                 if state.kept != nil { keep }
-                LabelledSection(label: t("settings.how.label")) { StepLine(steps: steps) }
+                LabelledSection(label: t("settings.how.label")) {
+                    StepLine(steps: steps)
+                    // iOS won't wake a swiped-away app for Bluetooth, and since
+                    // the tags went nothing else can: better heard here than
+                    // found out as a day that didn't count.
+                    Text(t("settings.how.background")).font(Type.note).foregroundStyle(Palette.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 NavigationLink(value: PrivacyRoute()) {
                     NavRow(icon: "hand.raised", title: t("settings.privacy"))
                 }

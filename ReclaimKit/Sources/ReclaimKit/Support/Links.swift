@@ -1,6 +1,6 @@
 import Foundation
 
-/// Where the app's links point: the box's tags and its code (`Dock`). The site
+/// Where the app's links point: the box's code (`Dock`). The site
 /// at that domain serves the apple-app-site-association that lets those links
 /// open the app (`links/`).
 public enum Links {

@@ -15,8 +15,8 @@ public enum DockSlot {
         return Dock.slots.contains(slot) ? slot : nil
     }
 
-    /// When it went in. The charger takes a moment to start after the tag is
-    /// read, so "not charging" means nothing for the first little while.
+    /// When it went in. The charger takes a moment to start after the box
+    /// hears the phone land, so "not charging" means nothing for the first little while.
     public static var since: Date? {
         UserDefaults.standard.object(forKey: sinceKey) as? Date
     }

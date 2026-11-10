@@ -5,7 +5,7 @@ import Foundation
 /// `handle` is a generated word pair — "amber-otter" — that the database
 /// requires of every place. DISPLAY ONLY.
 ///
-/// The box's `secret` is a long random value on its tags and in its code, and
+/// The box's `secret` is a long random value in its code, and
 /// is the actual join credential. If the sayable identifier were also
 /// sufficient to join, a small dictionary would be brute-forceable and "being
 /// at the box" would quietly stop being the access control.

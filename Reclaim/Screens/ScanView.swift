@@ -11,9 +11,9 @@ import ReclaimKit
 /// the mark as the card is read and the camera fades to paper; it reaches out
 /// while the phone listens, and closes when the box is heard.
 ///
-/// The card is the box's code (`Dock.Link` with no slot). Any other QR code is
-/// ignored, and a slot's tag link read here only pairs: a phone in a hand
-/// isn't in the box.
+/// The card is the box's code (`Dock.Link`), as is the code a phone already in
+/// the box shows. Any other QR code is ignored. It pairs, and starts nothing:
+/// a phone in a hand isn't in the box.
 struct ScanView: View {
     @Environment(AppState.self) private var state
     @Environment(\.dismiss) private var dismiss
@@ -164,8 +164,8 @@ struct ScanView: View {
         stage = .found
         Task {
             // The box it names, kept: a card or a phone's code read here pairs
-            // with that box, as it does read by the Camera. Never a slot.
-            if await !state.dock(Dock.Link(secret: link.secret, slot: nil, box: link.box)) { stage = .failed }
+            // with that box, as it does read by the Camera.
+            if await !state.dock(link) { stage = .failed }
         }
     }
 

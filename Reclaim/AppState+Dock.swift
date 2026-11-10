@@ -2,32 +2,17 @@ import Foundation
 import UIKit
 import ReclaimKit
 
-/// The box's links: a slot's tag, read with the phone going in, and the box's
-/// code, read with the phone in a hand — off its card, or off the screen of a
-/// phone already in the box (`boxCode(for:)`).
-///
-/// The tag is the phone going into the box, so it starts the evening the way
-/// the box's radio does, and lights its slot — the way in when the app was
-/// swiped away and Bluetooth can't wake it. The code only pairs. Either one,
-/// read first, makes the box this phone's. Taking the phone out ends the
-/// evening (`leftBox`).
+/// The box's code, read with the phone in a hand — off its card, or off the
+/// screen of a phone already in the box (`boxCode(for:)`). It pairs, and
+/// starts nothing: only the box's radio starts an evening (`AppState+Box`).
+/// Read first, it makes the box this phone's.
 @MainActor
 extension AppState {
 
-    /// A tag or the code was read. The light first, because it is the instant
-    /// answer to "did it take?" — and it is never waited on (rule 7). False
-    /// when the box couldn't be found, which only the scanner asks.
+    /// A box's code was read. False when the box couldn't be found, which
+    /// only the scanner asks.
     @discardableResult
     public func dock(_ link: Dock.Link) async -> Bool {
-        if let slot = link.slot {
-            // Moved from one slot to another: the one it left goes dark.
-            if let left = DockSlot.current, left != slot {
-                DockLight.shared.set(slot: left, on: false)
-            }
-            DockSlot.docked(in: slot)
-            DockLight.shared.set(slot: slot, on: true)
-        }
-
         if phase != .ready { await load() }
         codeRanOut = false
         guard let place = await boxPlace(secret: link.secret) else {
@@ -40,9 +25,6 @@ extension AppState {
         places = (try? await repo.myPlaces()) ?? places
         await nameIfUnnamed(place)
         boxSummaries[place] = (try? await repo.summary(of: place)) ?? boxSummaries[place]
-        if link.slot != nil, !isLive {
-            await setItDown(place: place, source: .tag)
-        }
         return true
     }
 

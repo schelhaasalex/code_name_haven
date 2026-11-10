@@ -19,10 +19,10 @@ settings:
     # `app.name` in copy/strings.json. Target and module names stay: nobody
     # sees them.
     APP_DISPLAY_NAME: Reclaim
-    # Where the box's tag and code links point, and the site whose
+    # Where the box's code links point, and the site whose
     # apple-app-site-association lets them open the app (links/). A testing
-    # address until there is a real domain; tags written and codes printed
-    # against it stop working when it changes.
+    # address until there is a real domain; cards printed against it stop
+    # working when it changes.
     LINK_DOMAIN: haven-links-lime.vercel.app
     # The version people see. The BUILD number is deliberately not here: a
     # setting in this file wins over an xcconfig, so it would override the

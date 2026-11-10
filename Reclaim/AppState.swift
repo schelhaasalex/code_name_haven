@@ -29,7 +29,7 @@ public final class AppState {
     public var skySeed: UInt64 { EveningMarkLayout.seed(profile?.id) }
     public var places: [Place] = []
     /// This phone's boxes, in the order they were met — each from the moment
-    /// its card or a tag was read, whether or not Bluetooth found its radio.
+    /// its card was read, whether or not Bluetooth found its radio.
     /// Empty until then, and Home asks for one.
     public var boxPlaces: [UUID]
     /// The box this phone was last at, which Home leads with. This phone's
@@ -38,7 +38,7 @@ public final class AppState {
         didSet { UserDefaults.standard.set(lastBox?.uuidString, forKey: AppState.lastBoxKey) }
     }
     static let lastBoxKey = "reclaim.box.last"
-    /// Listening for the box's radio after its code or a tag was read, and
+    /// Listening for the box's radio after its code was read, and
     /// what came of it. Only the scanner shows it; nil until a first read.
     public var pairing: Pairing?
     /// The box each card named (`Dock.Link.box`), so "Try again" listens for

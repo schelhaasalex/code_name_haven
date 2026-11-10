@@ -176,6 +176,7 @@
   "settings.how.3.unit": "seconds",
   "settings.how.4.when": "3",
   "settings.how.4.unit": "hours",
+  "settings.how.background": "Leave the app in the background. Swiped away, it can't hear the box until you open it again.",
   "settings.see.label": "What we can see",
   "settings.see.body": "When your phone goes into a box and comes out, and which box, and when setting up or the box goes wrong, so it can be put right. Nothing about your screen, your apps, or where you are.",
   "settings.see.others": "Everyone at a box sees how many of you are in it, and what it has kept, added up. Never who wasn't there.",

@@ -48,7 +48,7 @@ guesses is how a product tells someone they weren't there when they were.
 
 **5. Zero required setup.** Never design a feature as "the user must configure
 this first". Default it. The only setup in the product is pairing with the
-box, once — a tap on its tag or a scan of its code.
+box, once — a scan of its code.
 
 **6. Apply the knowledge test to every string you write.** *What does the app
 actually know, and when did it learn it?* This caught three real bugs during
@@ -89,7 +89,7 @@ copy/          strings.json — every user-facing string
 supabase/      migrations/ (applied, tested), functions/ (Edge Functions) and tests/
 scripts/       shape.sh — the style rules, as a check rather than a hope
                generate.sh — the project, with a build number nobody has to remember
-               dock-tags.sh — a box's four slot links and printed code; at the factory, boxes.csv
+               dock-tags.sh — a box's code for its card; at the factory, boxes.csv
 prototype/     splash.html — the three splash screens, side by side
 firmware/      box/box.ino — the box's Bluetooth radio and slot sensors (ESP32)
 ReclaimKit/    shared Swift package: models, data, the box, copy, design
@@ -155,8 +155,8 @@ would override the generated one silently. `scripts/shape.sh` checks that.
 Two schemes: **Reclaim** is the real app against Supabase. **Reclaim (Sample
 data)** runs the whole app against the canvas household (`PreviewRepository`),
 in memory, with its box, no network — debug builds only. It's how to see the
-app without a box; `xcrun simctl openurl booted reclaim://d/any/1` puts a phone
-in it.
+app without a box; `xcrun simctl openurl booted reclaim://box/in` puts a phone
+in it, and `reclaim://box/out` takes it out.
 Adding a target, capability or dependency means editing `project.yml` and
 regenerating.
 
@@ -238,7 +238,7 @@ scripts/shape.sh      # about a second, no toolchain, no network
 | A Live Activity can be started by push | Without `aps-environment`, iOS never hands out a push-to-start token, and an evening the box started shows nothing on the lock screen |
 | The ring charges the same on the phone and the server | The phone steps the ring while it's awake and the server after; two lists of steps that differ make it jump back a segment |
 | An evening is closed at the same cap everywhere | The lock screen goes quiet at the cap by itself, in case the push that ends it never comes; a cap in the push that differs from the server's says "closed" over an evening still going |
-| Only the box starts an evening | Rule 4. A button, face-down, a motion guess, a nearby phone and Siri were each one call to `setItDown` from somewhere new |
+| Only the box starts an evening | Rule 4. A button, face-down, a motion guess, a nearby phone, Siri and the slots' tags were each one call to `setItDown` from somewhere new. Only the radio's file may make it, and the simulator's stand-in for a slot only under `#if DEBUG` |
 | The box and the phone use the same Bluetooth ids | They live in `Box.swift` and `box.ino`; a box on one set is never heard by an app on the other, and nothing says why |
 | Every link the app makes opens it | The site claims every path but the home page. Phones cache `apple-app-site-association` for days, apart from the app, and a path added later (`/d/`, the slot links' first home) opened Safari until that cache refreshed |
 
@@ -250,8 +250,9 @@ suggestion.** Write the check, and make it fail before you make it pass.
 
 ## Scope
 
-**In:** the box — a drawer with four charging slots, an NFC tag and a light on
-the outside for each (in scope since 2026-10-22). It ships with the app, so
+**In:** the box — a drawer with four charging slots and a light on the outside
+for each, and a card with its code (in scope since 2026-10-22; no NFC tags
+since 2026-11-10). It ships with the app, so
 putting a phone in it has to be enough. `docs/DOCK.md` has how it works.
 
 **Out** (since 2026-11-06): every way of starting an

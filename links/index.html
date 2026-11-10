@@ -29,21 +29,21 @@
     <a id="get" class="button" hidden>Get the app</a>
     <p class="note">Already have it? Open it and scan the card from there.</p>
   </div>
-  <div id="tag">
-    <h1>This opens in the app.</h1>
-    <p>It belongs to a box. On an iPhone with the app installed, it opens there on its own.</p>
-    <p class="note">Just installed it? Go back and tap the link again.</p>
+  <div id="other">
+    <h1>Nothing here.</h1>
+    <p>A box&rsquo;s card is how in: scan it with your phone beside the box.</p>
   </div>
 </main>
 <script>
   // Where "Get the app" goes. Empty until the app is on the App Store or has a
   // public TestFlight link; the button stays hidden until then.
   var STORE_URL = "";
-  // /p/<secret> is the box's card; /p/<secret>/<slot>, a slot's tag.
+  // /p/<secret> is the box's card, or a code a phone showed. Nothing else is
+  // a box's: the slots' tags (/p/<secret>/<slot>, /d/…) are gone.
   var parts = location.pathname.split("/").filter(Boolean);
   if (parts[0] === "p" && parts.length === 2) {
     document.getElementById("card").hidden = false;
-    document.getElementById("tag").hidden = true;
+    document.getElementById("other").hidden = true;
     if (STORE_URL) {
       var get = document.getElementById("get");
       get.href = STORE_URL;

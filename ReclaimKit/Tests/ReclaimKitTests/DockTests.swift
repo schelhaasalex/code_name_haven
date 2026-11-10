@@ -5,73 +5,51 @@ final class DockTests: XCTestCase {
 
     private let domain = "links.example"
 
-    func testASlotsLinkRoundTrips() {
-        for slot in Dock.slots {
-            let url = Dock.url(secret: "box-SECRET_1", slot: slot, domain: domain)
-            XCTAssertEqual(url.absoluteString, "https://links.example/p/box-SECRET_1/\(slot)")
-            XCTAssertEqual(Dock.link(from: url, domain: domain), Dock.Link(secret: "box-SECRET_1", slot: slot))
-        }
-    }
-
-    /// The factory's cards and tags say which box they belong to.
+    /// The factory's cards say which box they belong to.
     func testACardNamesItsBox() {
         let code = Dock.url(secret: "box", box: "0a1b2c3d", domain: domain)
         XCTAssertEqual(code.absoluteString, "https://links.example/p/box?b=0A1B2C3D")
-        XCTAssertEqual(Dock.link(from: code, domain: domain), Dock.Link(secret: "box", slot: nil, box: "0A1B2C3D"))
-        let tag = Dock.url(secret: "box", slot: 3, box: "0A1B2C3D", domain: domain)
-        XCTAssertEqual(tag.absoluteString, "https://links.example/p/box/3?b=0A1B2C3D")
-        XCTAssertEqual(Dock.link(from: tag, domain: domain), Dock.Link(secret: "box", slot: 3, box: "0A1B2C3D"))
+        XCTAssertEqual(Dock.link(from: code, domain: domain), Dock.Link(secret: "box", box: "0A1B2C3D"))
     }
 
     /// A `b` that isn't a box's name still opens the box; it just pairs with
     /// the closest, as the first cards do.
     func testANonsenseBoxIsIgnoredNotFatal() {
-        let url = URL(string: "https://links.example/p/box/2?b=not-a-box")!
-        XCTAssertEqual(Dock.link(from: url, domain: domain), Dock.Link(secret: "box", slot: 2, box: nil))
+        let url = URL(string: "https://links.example/p/box?b=not-a-box")!
+        XCTAssertEqual(Dock.link(from: url, domain: domain), Dock.Link(secret: "box", box: nil))
     }
 
-    /// Tags written before slot links moved under `/p/` keep working.
-    func testTheFirstSlotLinksStillRead() {
-        let url = URL(string: "https://links.example/d/box/2")!
-        XCTAssertEqual(Dock.link(from: url, domain: domain), Dock.Link(secret: "box", slot: 2))
-    }
-
-    /// The box's code is the box with no slot: it pairs, and starts nothing.
-    /// A trailing slash is still the code.
-    func testTheCodeIsTheBoxWithNoSlot() {
+    /// The box's code pairs, and starts nothing. A trailing slash is still it.
+    func testTheCodeIsTheBox() {
         XCTAssertEqual(Dock.link(from: URL(string: "https://links.example/p/box/")!, domain: domain),
-                       Dock.Link(secret: "box", slot: nil))
+                       Dock.Link(secret: "box"))
         let code = Dock.url(secret: "box", domain: domain)
         XCTAssertEqual(code.absoluteString, "https://links.example/p/box")
-        XCTAssertEqual(Dock.link(from: code, domain: domain), Dock.Link(secret: "box", slot: nil))
-        XCTAssertEqual(Dock.link(from: URL(string: "reclaim://d/box")!, domain: domain),
-                       Dock.Link(secret: "box", slot: nil))
+        XCTAssertEqual(Dock.link(from: code, domain: domain), Dock.Link(secret: "box"))
     }
 
-    /// The simulator can't read a tag, so the app's own scheme stands in.
-    func testTheAppsOwnSchemeOpensASlotToo() {
-        let url = URL(string: "reclaim://d/box/3")!
-        XCTAssertEqual(Dock.link(from: url, domain: domain), Dock.Link(secret: "box", slot: 3))
-    }
-
-    /// A box has four slots. A tag saying anything else is not one of ours,
-    /// and lighting segment 4 or -1 would light somebody's shelf.
-    func testOnlyTheFourSlotsAreSlots() {
-        for bad in ["0", "5", "-1", "two"] {
-            for path in ["p", "d"] {
-                XCTAssertNil(Dock.link(from: URL(string: "https://links.example/\(path)/box/\(bad)")!, domain: domain), bad)
-            }
+    /// The slots' tags are gone (rule 4: only the box's radio starts an
+    /// evening). A link of their shape — under `/p/` or the first `/d/` — is
+    /// no box's, and does nothing; so is the app's own scheme, which the
+    /// simulator once used to stand in for a tag.
+    func testASlotsOldLinkIsNoBoxs() {
+        for text in ["https://links.example/p/box/1",
+                     "https://links.example/p/box/4?b=0A1B2C3D",
+                     "https://links.example/d/box/2",
+                     "https://links.example/d/box",
+                     "reclaim://d/box/3",
+                     "reclaim://d/box"] {
+            XCTAssertNil(Dock.link(from: URL(string: text)!, domain: domain), text)
         }
     }
 
-    /// An invite was `/i/`; nothing but `/p/` and `/d/` is a box — and a box
-    /// on someone else's domain is not a box.
+    /// An invite was `/i/`; nothing but `/p/` is a box — and a box on
+    /// someone else's domain is not a box.
     func testNothingElseIsADock() {
         for text in ["https://links.example/i/token",
-                     "https://links.example/i/box/1",
                      "https://links.example/p",
-                     "https://elsewhere.example/p/box/1",
-                     "http://links.example/p/box/1",
+                     "https://elsewhere.example/p/box",
+                     "http://links.example/p/box",
                      "https://links.example/p/box/1/extra"] {
             XCTAssertNil(Dock.link(from: URL(string: text)!, domain: domain), text)
         }
