@@ -65,14 +65,12 @@ const int AVERAGE_OVER = 10;      // samples, one per 100 ms
 const int LEDS_PER_SLOT = 2;
 
 // ---------------------------------------------------------------- the protocol, as in Box.swift
-// Generated for this product on 2026-11-10, replacing the Nordic-style
-// placeholders the first boards used. A box flashed before then can't be
-// heard by an app built after it, and the other way round: flash both.
-// scripts/shape.sh checks these match Box.swift.
-#define SERVICE_UUID   "19720001-5143-4e2b-ac61-8a8714025c60"
-#define SLOT_STATE_UUID "19720010-5143-4e2b-ac61-8a8714025c60"
-#define EVENT_UUID     "19720011-5143-4e2b-ac61-8a8714025c60"
-#define COMMAND_UUID   "19720020-5143-4e2b-ac61-8a8714025c60"
+// scripts/shape.sh checks these match Box.swift. A box and an app on
+// different ids never hear each other, with no error.
+#define SERVICE_UUID   "6e400001-b5a3-f393-e0a9-0000706f7274"
+#define SLOT_STATE_UUID "6e400010-b5a3-f393-e0a9-0000706f7274"
+#define EVENT_UUID     "6e400011-b5a3-f393-e0a9-0000706f7274"
+#define COMMAND_UUID   "6e400020-b5a3-f393-e0a9-0000706f7274"
 const int PROTOCOL = 1;
 // Said in every hello, so the pilot can tell which boxes are on which build.
 const char *FIRMWARE = "0.6";

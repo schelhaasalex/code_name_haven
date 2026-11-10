@@ -9,20 +9,20 @@ import Foundation
 /// the app's JSON. The dock lights its own slots from its own sensors — the
 /// phone only has to work out whether it is the one that just went in.
 ///
-/// The ids were made for this product on 2026-11-10, replacing the first
-/// boards' placeholders. They live here and in `firmware/box/box.ino`, nowhere
-/// else, and `scripts/shape.sh` checks the two agree.
+/// The ids are the dock's own (the last group spells "port"). They live here
+/// and in `firmware/box/box.ino`, nowhere else, and `scripts/shape.sh` checks
+/// the two agree: change them and every box in the field needs reflashing.
 ///
 /// Plain values, so every decision here is tested without a radio.
 public enum Box {
 
-    public static let service = "19720001-5143-4E2B-AC61-8A8714025C60"
+    public static let service = "6E400001-B5A3-F393-E0A9-0000706F7274"
     /// A byte per slot, slot 1 first: 0 empty, 1 charging, 2 full.
-    public static let slotStateCharacteristic = "19720010-5143-4E2B-AC61-8A8714025C60"
+    public static let slotStateCharacteristic = "6E400010-B5A3-F393-E0A9-0000706F7274"
     /// One JSON object per change: `{"v":1,"slot":1,"event":"docked",…}`.
-    public static let eventCharacteristic = "19720011-5143-4E2B-AC61-8A8714025C60"
+    public static let eventCharacteristic = "6E400011-B5A3-F393-E0A9-0000706F7274"
     /// JSON from the app: the time, a light, a ping.
-    public static let commandCharacteristic = "19720020-5143-4E2B-AC61-8A8714025C60"
+    public static let commandCharacteristic = "6E400020-B5A3-F393-E0A9-0000706F7274"
 
     /// What a box calls itself over the air: `Portside-` and the last four
     /// bytes of its radio's address, in hex. That is the box's identity, and

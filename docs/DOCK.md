@@ -118,10 +118,10 @@ on each pad speaks too. The ids are placeholders until production, and live in
 
 | | UUID | |
 |---|---|---|
-| Service | `19720001-5143-4e2b-ac61-8a8714025c60` | advertised; phones scan for this |
-| Slot state | `19720010-…` | read, notify. A byte per slot: 0 empty, 1 charging, 2 full |
-| Event | `19720011-…` | notify. `{"v":1,"slot":1,"event":"docked","t":…}`; also `undocked`, `full`, `pong`, and `hello` — `{"v":1,"event":"hello","boots":7,"up":120,"reset":1,"fw":"0.5"}`, 1.5 s after a phone sends the time: restarts (kept in flash), seconds up, ESP-IDF reset reason, firmware |
-| Command | `19720020-…` | write. `{"cmd":"time","epoch":…}` (sent on every connect), `light`, `ping` |
+| Service | `6e400001-b5a3-f393-e0a9-0000706f7274` | advertised; phones scan for this |
+| Slot state | `6e400010-…` | read, notify. A byte per slot: 0 empty, 1 charging, 2 full |
+| Event | `6e400011-…` | notify. `{"v":1,"slot":1,"event":"docked","t":…}`; also `undocked`, `full`, `pong`, and `hello` — `{"v":1,"event":"hello","boots":7,"up":120,"reset":1,"fw":"0.5"}`, 1.5 s after a phone sends the time: restarts (kept in flash), seconds up, ESP-IDF reset reason, firmware |
+| Command | `6e400020-…` | write. `{"cmd":"time","epoch":…}` (sent on every connect), `light`, `ping` |
 
 The phone subscribes to slot state and events, reads the slot state once, and
 sends the time. A slot state change and its event say the same thing, and the
@@ -133,10 +133,9 @@ in its scan response. That name is the box's identity: a card that carries it
 card that doesn't pairs with the closest. Firmware before 0.6 used two bytes
 (`Portside-XXXX`).
 
-The ids were made for this product on 2026-11-10 (firmware 0.6), replacing the
-Nordic-style placeholders the first boards used. A box and an app on different
-sets never hear each other, with no error: reflash every box when the app
-moves to new ids. `scripts/shape.sh` checks `Box.swift` and `box.ino` agree.
+The ids live in `Box.swift` and `box.ino` and nowhere else;
+`scripts/shape.sh` checks the two agree. A box and an app on different ids
+never hear each other, with no error.
 
 This box reports every phone in a slot as charging, and leaves `mA` and `V`
 out of its events: a presence sensor can only say something is there, and the
