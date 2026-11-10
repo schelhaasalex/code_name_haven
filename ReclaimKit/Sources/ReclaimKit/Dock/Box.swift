@@ -140,7 +140,7 @@ public enum Box {
                                named id: String? = nil, names: [UUID: String] = [:]) -> UUID? {
         let mine = heard.filter { !known.contains($0.key) }
         if let id {
-            let wanted = name(of: id)
+            let wanted = name(of: id).uppercased()
             return mine.filter { names[$0.key]?.uppercased() == wanted }.max { $0.value < $1.value }?.key
         }
         return mine.filter { $0.value >= pairable }.max { $0.value < $1.value }?.key

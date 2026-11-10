@@ -148,7 +148,7 @@ public final class BoxLink: NSObject {
     }
 
     func measured(_ rssi: Int?, of peripheral: CBPeripheral) {
-        if let rssi { discoveredCandidate(peripheral, rssi: rssi) }
+        if let rssi { discoveredCandidate(peripheral, rssi: rssi, name: peripheral.name) }
         let id = peripheral.identifier
         guard let now = pending.removeValue(forKey: id) else { return }
         let before = slots[id] ?? Box.Slots(bits: 0)
