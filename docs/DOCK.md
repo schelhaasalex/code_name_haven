@@ -40,22 +40,64 @@ again.
 
 ## Building one
 
-**The card.** `scripts/dock-tags.sh` makes the box's code under a fresh
-secret, and draws it to print on the card. Use one secret per box. Its slot
-links are no longer written anywhere, and do nothing (the station drops them
-next). The domain is a testing address until there is a real one.
+**The card.** Every box comes with one: an A6 postcard, the box's code on the
+front and how it works on the back (`scripts/card/postcard.html`). It is the
+box's key. `scripts/dock-tags.sh` makes it, under a fresh secret per box. The
+domain is a testing address until there is a real one; prototype cards are
+fine, production cards wait for it.
 
-**At the factory**, each card names its box. Plug the finished box in over USB
-and run `scripts/dock-tags.sh /dev/cu.usbmodem…`: the box says who it is
-(`Portside-XXXXXXXX`, the end of its radio's address), and the script makes
-that box's secret, its links with `?b=XXXXXXXX` on the end, its code as
-`box-XXXXXXXX.png`, and a row in `boxes.csv` — the file a card printer takes.
-Box ids typed as arguments work the same.
-Pack the card with the box it was printed for. **`boxes.csv` holds every box's
-join secret**: keep it out of git (`.gitignore` does) and anywhere public.
+### At the factory
+
+One command per finished box, on a Mac with the box plugged in over USB:
+
+```sh
+scripts/dock-tags.sh --flash /dev/cu.usbmodem101 --print <printer>
+```
+
+It builds the firmware (once per run), flashes the box, asks it who it is
+(`Portside-XXXXXXXX`, the end of its radio's address), makes its secret and
+its code with `?b=XXXXXXXX` on the end, adds a row to `boxes.csv`, draws the
+code as `box-XXXXXXXX.png`, prints the card to `card-XXXXXXXX.pdf`, and sends
+it to the printer, two-sided. Then: put that card in that box. A card made
+from the box that's plugged in can only belong to that box. Anything that
+fails — the build, the upload, the box not answering, the card — stops the
+run and makes no card.
+
+- Without `--flash`, a box already flashed: ask it, make its card.
+- Box ids instead of a port (`scripts/dock-tags.sh 0A1B2C3D`): cards with no
+  box needed.
+- `--reprint 0A1B2C3D`: that box's card again, the same key, from
+  `boxes.csv`. For a card lost when nobody is in the box any more.
+- No arguments: one prototype card that names no box.
+- A box already in `boxes.csv` is skipped, so a box never gets two keys.
+
+**`boxes.csv` holds every box's key**: keep it, keep it private, and keep it
+out of git (`.gitignore` does). Losing it means a lost card can't be printed
+again.
+
+**Set up the station once:**
+
+1. The Xcode command-line tools (`xcode-select --install`): Core Image draws
+   the code, and python3 fills in the card.
+2. Google Chrome, which prints the card (or set `CHROME` to another Chromium).
+3. `arduino-cli` (or the Arduino IDE, whose copy the script finds), the ESP32
+   board package, and NimBLE-Arduino 2.x with
+   `CONFIG_BT_NIMBLE_MAX_CONNECTIONS` set as in "Flashing it", below.
+4. `BOX_FQBN` set to the production board. It defaults to the desk's ESP32-S3
+   dev board (`esp32:esp32:esp32s3:CDCOnBoot=cdc`); a wrong board fails the
+   upload before anything is written ("This chip is …").
+5. Before a run, `SLOT_PINS`, `SLOT_INA219` and `I2C_SDA`/`I2C_SCL` at the top
+   of `firmware/box/box.ino` must match the production wiring. The script
+   can't tell.
+
+The card's fonts, Fraunces and Work Sans, are in `scripts/card/fonts/` (both
+OFL), so it prints the same with no network; the script refuses a PDF that
+came out in a fallback font. Its "No app yet?" line appears only once
+`STORE_URL` in `links/index.html` is set: until then the page a scan opens has
+no way to the app. Change the card's words in the template, not the script.
+
 A card that names its box pairs a phone with that box and no other; one that
-doesn't (the first boxes, and the script run with no arguments) pairs with the
-closest, as before.
+doesn't (the first boxes, and the prototype card) pairs with the closest.
 
 **Links live under `/p/`.** The box's code is `/p/<secret>`, the shape the
 first printed cards had, so every phone that ever opened one already opens it.
@@ -174,7 +216,8 @@ current sensor is only asked whether the phone is drawing.
    **5** on an ESP32-C3. Not more: the C3's radio holds 6 things at once and
    advertising is one of them, and asking for more crashes the board on every
    boot. The sketch refuses to compile if it's set too high.
-3. Run `scripts/dock-tags.sh` to make the box's code, for its card.
+3. Run `scripts/dock-tags.sh` (no arguments) for a prototype card, or see
+   "At the factory" for one that names the box.
 4. Set `SLOT_PINS` and `SLOT_INA219` for your wiring, then flash. The one on
    the desk now is an ESP32-S3 dev board (FQBN
    `esp32:esp32:esp32s3:CDCOnBoot=cdc`, so the serial monitor works over its
