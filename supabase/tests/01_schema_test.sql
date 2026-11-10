@@ -301,7 +301,7 @@ begin
     select name from unnest(array[
       'start_or_join', 'end_session', 'gathering_count', 'place_summary',
       'my_evenings', 'dock_place', 'save_activity_token', 'save_live_activity',
-      'delete_my_account', 'note']) as name
+      'delete_my_account', 'note', 'box_code']) as name
     where not exists (
       select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'public' and p.proname = name)
@@ -313,7 +313,7 @@ begin
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public'
      and has_function_privilege('authenticated', p.oid, 'execute');
-  assert v_wrapped = 10, format('expected 10 callable wrappers, found %s', v_wrapped);
+  assert v_wrapped = 11, format('expected 11 callable wrappers, found %s', v_wrapped);
 
   -- Every way into an evening but the box is gone, not merely unused (0024):
   -- each was still callable, and retroactive credit could add evenings
@@ -984,5 +984,94 @@ begin
   assert not has_function_privilege('anon', 'public.note(text, uuid, jsonb)', 'execute'), 'anon has no door';
   perform auth.logout();
   raise notice 'PASS 31  what goes wrong is noted, and only the pilot reads it';
+end $$;
+-- ============================================================ 32
+-- A lost card (0025). Anyone in a box can make a code a second phone scans
+-- as it would the card. A code lasts an hour — and one that has run out must
+-- never fall through to dock_place's first-scan path and make a new box.
+do $$
+declare
+  v_in      uuid := 'c0dec0de-c0de-c0de-c0de-c0dec0de0001';
+  v_new     uuid := 'c0dec0de-c0de-c0de-c0de-c0dec0de0002';
+  v_out     uuid := 'c0dec0de-c0de-c0de-c0de-c0dec0de0003';
+  v_late    uuid := 'c0dec0de-c0de-c0de-c0de-c0dec0de0004';
+  v_box     uuid;
+  v_code    text;
+  v_old     text;
+  v_places  int;
+  v_failed  boolean;
+  v_state   text;
+begin
+  insert into auth.users (id, email) values
+    (v_in, 'in@example.test'), (v_new, 'new@example.test'),
+    (v_out, 'out@example.test'), (v_late, 'late@example.test');
+  insert into profiles (id) values (v_in), (v_new), (v_out), (v_late);
+
+  perform auth.login(v_in);
+  v_box := app.dock_place('a-card-that-gets-lost', 'lost-heron');
+
+  -- Someone who was never in it gets no code.
+  perform auth.login(v_out);
+  v_failed := false;
+  begin
+    perform app.box_code(v_box);
+  exception when insufficient_privilege then v_failed := true; end;
+  assert v_failed, 'a stranger gets no code for a box';
+
+  -- A member's code pairs a second phone to the same box, and starts nothing.
+  perform auth.login(v_in);
+  v_code := app.box_code(v_box);
+  assert length(v_code) = 43 and v_code ~ '^[A-Za-z0-9_-]+$',
+    format('a code is a card-shaped secret, got %s', v_code);
+  assert app.box_code(v_box) <> v_code, 'a fresh code each time';
+  assert not exists (select 1 from app.place_codes where code_hash = v_code),
+    'only the hash is kept';
+
+  perform auth.login(v_new);
+  assert app.dock_place(v_code, 'other-wren') = v_box, 'the code pairs to the same box';
+  assert exists (select 1 from place_people
+                  where place_id = v_box and profile_id = v_new and left_at is null),
+    'and makes them one of its people';
+  assert not exists (select 1 from sessions where profile_id = v_new), 'and starts nothing';
+
+  -- Someone who has left gets no code.
+  update place_people set left_at = now() where place_id = v_box and profile_id = v_new;
+  v_failed := false;
+  begin
+    perform app.box_code(v_box);
+  exception when insufficient_privilege then v_failed := true; end;
+  assert v_failed, 'someone who left gets no code';
+
+  -- An hour on, the code pairs no one, and — the trap — makes no box.
+  perform auth.login(v_in);
+  v_old := app.box_code(v_box);
+  update app.place_codes set expires_at = now() - interval '1 second'
+   where code_hash = encode(extensions.digest(v_old, 'sha256'), 'hex');
+  select count(*) into v_places from places;
+
+  perform auth.login(v_late);
+  v_failed := false;
+  begin
+    perform app.dock_place(v_old, 'stray-wren');
+  exception when others then v_failed := true; v_state := sqlstate; end;
+  assert v_failed and v_state = 'RC410', format('a code that ran out is refused as RC410, got %s', v_state);
+  assert (select count(*) from places) = v_places, 'and no new box is made from it';
+  assert not exists (select 1 from place_people where profile_id = v_late), 'nor is anyone added';
+
+  -- The card itself still works after codes have been made.
+  assert app.dock_place('a-card-that-gets-lost', 'again-wren') = v_box, 'the card is still the key';
+
+  -- No phone reads the codes, and anon can't make one.
+  set local role authenticated;
+  v_failed := false;
+  begin
+    perform 1 from app.place_codes limit 1;
+  exception when insufficient_privilege then v_failed := true; end;
+  assert v_failed, 'no phone reads the codes';
+  reset role;
+  assert not has_function_privilege('anon', 'public.box_code(uuid)', 'execute'), 'anon has no door';
+
+  perform auth.logout();
+  raise notice 'PASS 32  a lost card: a member''s code pairs for an hour, and never makes a box';
 end $$;
 do $$ begin raise notice '--- all assertions held ---'; end $$;

@@ -3,7 +3,8 @@ import UIKit
 import ReclaimKit
 
 /// The box's links: a slot's tag, read with the phone going in, and the box's
-/// code, read with the phone in a hand.
+/// code, read with the phone in a hand — off its card, or off the screen of a
+/// phone already in the box (`boxCode(for:)`).
 ///
 /// The tag is the phone going into the box, so it starts the evening the way
 /// the box's radio does, and lights its slot — the way in when the app was
@@ -28,9 +29,10 @@ extension AppState {
         }
 
         if phase != .ready { await load() }
+        codeRanOut = false
         guard let place = await boxPlace(secret: link.secret) else {
-            banner = t("error.retry")
-            note(.dockFailed)
+            banner = t(codeRanOut ? "scan.ranout.body" : "error.retry")
+            if !codeRanOut { note(.dockFailed) }
             return false
         }
         meet(place)
@@ -82,6 +84,9 @@ extension AppState {
                 if let id = try await repo.dockPlace(secret: secret, handle: Handle.generate()) {
                     return id
                 }
+            } catch DockError.codeRanOut {
+                codeRanOut = true
+                return nil
             } catch {
                 return nil
             }

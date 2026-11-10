@@ -67,6 +67,11 @@ extension PreviewRepository {
         places.first?.id
     }
 
+    /// Card-shaped, and the same every time: there is no server to keep it.
+    public func boxCode(place: UUID) async throws -> String {
+        "sample-code-for-the-kitchen-table-0000000000"
+    }
+
     // MARK: - Seeding
 
     /// A believable few weeks at the kitchen table, some days missed. Never

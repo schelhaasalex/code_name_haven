@@ -138,7 +138,8 @@ days, deleting the account, a card that couldn't be read from a link — sets
 | 8 | The receipt | `SessionEndView` | root, once, after an evening |
 | 13 | We closed this one for you | `AutoClosedView` | sheet over Home |
 | 16 | Settings — anything to fix first, your boxes, keeping your evenings, how it works, privacy, deleting the account | `SettingsView` | push |
-| 16a | One box — what it has become, its radio, its name, Forget | `BoxView` | push from 16 |
+| 16a | One box — what it has become, its radio, its name, another phone, Forget | `BoxView` | push from 16 |
+| 16b | The box's code, for another phone to scan | `BoxCodeSheet` | sheet from 16a, "Show its code" |
 | 16b | Privacy — what we can see | `PrivacyView` | push from 16 |
 | — | No network on the first launch | `UnreachableView` | root |
 | 7 | Lock screen, Dynamic Island, Watch | Live Activity | `ReclaimWidgets` |
@@ -217,6 +218,17 @@ same card is found again. The scanner shows those seconds:
 *Listening for your box.*, *There it is.* — or *Not hearing it yet*
 and a retry. A tag also starts the evening: it's read with
 the phone going into the slot. The code starts nothing.
+
+**Another phone, without the card.** Anyone in a box can show its code on
+their screen (16a, "Show its code"), and a second phone scans it there
+exactly as it would the card: the same link, its secret made fresh by the
+server each time the sheet opens (`box_code`, migration 0025) and good for an
+hour. It names the box (`?b=`) when this launch read a card that did; without
+that, the other phone, standing beside it, pairs with the closest. A code that
+has run out pairs no one — the scanner says *That code has run out.* — and,
+the point of 0025, never makes a new box: `dock_place` makes one from any
+secret it doesn't know, which is how a card works on its first scan, so every
+code's hash is kept after it expires. The card stays the box's standing key.
 
 **In.** The box notifies every connected phone that a slot filled. Each asks
 itself whether that was it (`Box.isThisPhone`: it has just started charging,

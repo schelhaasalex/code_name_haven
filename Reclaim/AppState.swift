@@ -47,6 +47,9 @@ public final class AppState {
     /// `bluetoothOff` is its own answer: "bring it closer" is the wrong advice
     /// to a phone that can't hear anything at all.
     public enum Pairing: Equatable { case listening, paired, notHeard, bluetoothOff }
+    /// The last read was a code another phone showed, and it had run out:
+    /// the scanner says so in its own words, not "check you're online".
+    public var codeRanOut = false
     /// What each box has become: every evening anyone has had at it. Missing
     /// until the database has said, and nothing claims a number before then.
     public var boxSummaries: [UUID: PlaceSummary] = [:]

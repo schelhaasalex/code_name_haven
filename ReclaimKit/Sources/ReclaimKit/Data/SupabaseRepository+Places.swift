@@ -3,7 +3,8 @@ import Supabase
 
 /// The box's place, split from `SupabaseRepository` so neither file is a long
 /// one: reading places by named columns — never every column, see
-/// `Place.readableColumns` — naming one, and finding or making a box's.
+/// `Place.readableColumns` — naming one, finding or making a box's, and a
+/// box's code for another phone.
 extension SupabaseRepository {
 
     public func myPlaces() async throws -> [Place] {
@@ -22,9 +23,20 @@ extension SupabaseRepository {
             .eq("id", value: id).execute()
     }
 
+    /// A phone's code that has run out comes back as `RC410` (0025), never
+    /// as a new box: it is `DockError.codeRanOut` here.
     public func dockPlace(secret: String, handle: String) async throws -> UUID? {
         struct P: Encodable { let p_secret: String; let p_handle: String }
-        return try await client.rpc("dock_place", params: P(p_secret: secret, p_handle: handle))
-            .execute().value
+        do {
+            return try await client.rpc("dock_place", params: P(p_secret: secret, p_handle: handle))
+                .execute().value
+        } catch let error as PostgrestError where error.code == DockError.ranOutCode {
+            throw DockError.codeRanOut
+        }
+    }
+
+    public func boxCode(place: UUID) async throws -> String {
+        struct P: Encodable { let p_place: UUID }
+        return try await client.rpc("box_code", params: P(p_place: place)).execute().value
     }
 }
