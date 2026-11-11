@@ -22,3 +22,7 @@ earn one quiet note a day. Pick a reason and every screen follows. It keeps the
 reason on the phone, so nobody else at the box ever sees it.
 Home in it taps through: the settings icon opens Settings, whose "What it's
 for" row opens the page, and so does tapping the headline.
+
+`box-figures.html` puts Settings' box card and the box's page side by side,
+now and proposed: the hours in Settings, the days beside the stage on the box's
+page, and "Add another phone" as one line. It has three options for the card.
