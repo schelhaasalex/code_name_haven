@@ -15,3 +15,8 @@ lock-screen ring off, a box out of range). Copy it would add is underlined.
 `box.html` is the same for screen 16a, the page tapping a box in Settings
 opens, leading with the box's stage. Both are built now (`SettingsView`,
 `BoxView`); the prototypes stay for the reasoning beside them.
+
+`reasons.html` is a proposal, not built: "What it's for", one reason per
+person, asked once under the first receipt, that changes a few lines and can
+earn one quiet note a day. Pick a reason and every screen follows. It keeps the
+reason on the phone, so nobody else at the box ever sees it.
