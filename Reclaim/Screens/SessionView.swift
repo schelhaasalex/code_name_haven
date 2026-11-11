@@ -16,7 +16,9 @@ import ReclaimKit
 /// the one screen you're meant to put down reward checking, and framed the
 /// evening as a performance. Time is a receipt, not an instrument: this says
 /// when you started, a fact that doesn't change, and screen 8 says how long.
-/// The only thing that moves is tonight's dot, once, at fifteen minutes.
+/// Nothing here changes more than once a minute — the headline at the ring's
+/// steps, tonight's dot at fifteen minutes — but the countdown once the phone
+/// is out.
 struct SessionView: View {
     @Environment(AppState.self) private var state
 

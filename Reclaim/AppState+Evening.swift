@@ -2,8 +2,9 @@ import Foundation
 import ReclaimKit
 
 /// The evening: how it starts, what the phone keeps while it runs, and how it
-/// ends. Only the box starts one (`AppState+Box`, `AppState+Dock`) and only
-/// the box ends one — or the server, at its cap.
+/// ends. Only the box's radio starts one (`AppState+Box`). It ends when the
+/// phone comes out — by the box's word, or the app finding itself in a hand
+/// that isn't charging (`AppState+Dock`) — or at the server's cap.
 @MainActor
 extension AppState {
 

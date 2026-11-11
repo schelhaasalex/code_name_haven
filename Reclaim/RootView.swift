@@ -52,8 +52,7 @@ struct RootView: View {
                 SplashView { splashDone = true }
             }
         }
-        // Screen 13, the one thing that waits over Home: an evening the server
-        // closed for you.
+        // Screen 13, over Home: an evening the server closed for you.
         .sheet(item: Binding(get: { state.isLive ? nil : state.closedForYou },
                              set: { _ in state.dismissClosedForYou() })) {
             AutoClosedView(session: $0)

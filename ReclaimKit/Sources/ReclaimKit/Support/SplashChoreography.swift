@@ -63,10 +63,10 @@ public struct SplashChoreography: Equatable, Sendable {
 
     /// What screen 0 runs on, or the motionless version of it.
     ///
-    /// Reduce Motion is not a degraded path here. Rule 4 says a sensor may only
-    /// offer; the same courtesy applies to a preference someone has already
-    /// stated — if they have asked for less movement, the answer is a splash
-    /// that doesn't move, not this one played faster.
+    /// Reduce Motion is not a degraded path here. A preference someone has
+    /// already stated is answered, not approximated: if they have asked for
+    /// less movement, the answer is a splash that doesn't move, not this one
+    /// played faster.
     public static func launch(reduceMotion: Bool) -> SplashChoreography {
         reduceMotion ? .still : .settle
     }

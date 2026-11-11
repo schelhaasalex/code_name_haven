@@ -1,8 +1,8 @@
 import SwiftUI
 import ReclaimKit
 
-/// The bordered off-white block. Four screens draw this; before it existed they
-/// each drew it slightly differently.
+/// The bordered off-white block, drawn in one place; before it existed, each
+/// screen drew it slightly differently.
 struct PaperCard<Content: View>: View {
     var padding: CGFloat = 18
     var radius: CGFloat = 16

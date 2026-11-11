@@ -2,7 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <!-- Sign in with Apple, for one optional thing: "Keep your evenings" in
+  <!-- Sign in with Apple, for one optional thing: "Your days" in
        Settings ties the silent account to an Apple ID, so a new phone keeps
        the same mark. Nobody is asked to sign in to use the app. -->
   <key>com.apple.developer.applesignin</key>

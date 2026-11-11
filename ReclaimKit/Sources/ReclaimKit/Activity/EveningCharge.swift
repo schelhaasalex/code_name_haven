@@ -13,7 +13,7 @@ import Foundation
 public enum EveningCharge {
 
     /// The first is the fifteen minutes an evening needs to count, so
-    /// "Tonight counts." is true the moment it appears.
+    /// "Today counts." is true the moment it appears.
     public static let minutes = [15, 30, 60, 90]
 
     /// The last stage: full, glowing, held until the evening ends.

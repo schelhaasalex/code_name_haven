@@ -44,8 +44,9 @@ public struct ReclaimActivityAttributes: ActivityAttributes {
 }
 
 /// Ending every Live Activity there is — not only the one this launch
-/// started. The box often starts an evening by push while the app is asleep,
-/// so the launch that ends it may never have known the activity existed.
+/// started. The box often starts an evening with the app in the background,
+/// and the server starts its Live Activity by push, so the launch that ends
+/// it may never have known the activity existed.
 public enum ReclaimActivity {
     public static func endAll() async {
         for activity in Activity<ReclaimActivityAttributes>.activities {

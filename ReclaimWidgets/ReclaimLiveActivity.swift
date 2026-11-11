@@ -59,9 +59,9 @@ struct ReclaimLiveActivity: Widget {
         }
     }
 
-    /// No ticking digits. A face-down phone gets picked up and read here, so
-    /// a timer on the lock screen undid everything the session screen stopped
-    /// doing. It says what you're doing, where, and since when — except for
+    /// No ticking digits. The lock screen is what a phone taken out of the box
+    /// shows first, so a timer here undid everything the session screen
+    /// stopped doing. It says what you're doing, where, and since when — except for
     /// the five seconds after the phone comes out, when the one thing worth
     /// knowing is when it ends, and that putting it back carries on.
     ///

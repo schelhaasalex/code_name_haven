@@ -18,8 +18,8 @@ jobs:
   database:
     name: Schema
     runs-on: ubuntu-latest
-    # 17, matching the hosted project. Two of the fourteen findings in the
-    # schema review were invisible until the SQL actually ran.
+    # 17, matching the hosted project. Three of the schema review's findings
+    # were invisible until the SQL ran on a Postgres like this one.
     services:
       postgres:
         image: postgres:17

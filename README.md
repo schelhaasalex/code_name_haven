@@ -21,7 +21,7 @@ The app is free. The box is the business.
 | [docs/APP-SPEC.md](docs/APP-SPEC.md) | What the app is and how it's built, screen by screen; shipping a build |
 | [docs/DOCK.md](docs/DOCK.md) | The box: its slots, its radio, the protocol, the factory station |
 | [docs/STYLE.md](docs/STYLE.md) | How the code is shaped, and what's worth testing |
-| [docs/SCHEMA-REVIEW.md](docs/SCHEMA-REVIEW.md) | Fourteen bugs found before any of it shipped — read before touching the database |
+| [docs/SCHEMA-REVIEW.md](docs/SCHEMA-REVIEW.md) | Fifteen bugs found before any of it shipped — read before touching the database |
 | [BRIEF.md](BRIEF.md) | The first brief. Historical: where it and the spec differ, the spec is current |
 
 ## Running it

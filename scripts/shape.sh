@@ -79,9 +79,8 @@ hits=$(grep -rn 'Color(hex:\|Color(red:\|Color(\.sRGB' $ALL_SWIFT | grep -v '/De
 done <<< "$hits"
 
 # 6. Every screen builds in a preview against PreviewRepository with no network.
-#    The interruption screens are the ones that matter: 13, 14 and 20 are
-#    unreachable at runtime without an auto-close, a broken rhythm or five
-#    evenings.
+#    The interruption screens are the ones that matter: 13 is unreachable at
+#    runtime without an evening the server closed.
 note "Every view has a preview"
 for f in $VIEW_FILES; do
   grep -qE ': View \{|: View$' "$f" || continue          # not ViewModifier
@@ -189,7 +188,7 @@ done
 note "The build number is not written into the project"
 # The key itself, not the $(CURRENT_PROJECT_VERSION) the Info.plist reads.
 grep -qE '^[[:space:]]*CURRENT_PROJECT_VERSION:' project.yml \
-  && bad "project.yml sets CURRENT_PROJECT_VERSION — it belongs in Config/Base.xcconfig, from scripts/generate.sh"
+  && bad "project.yml sets CURRENT_PROJECT_VERSION — it belongs in Config/Build.xcconfig, which scripts/generate.sh writes"
 grep -q "CURRENT_PROJECT_VERSION" Config/Base.xcconfig \
   || bad "Config/Base.xcconfig should carry CURRENT_PROJECT_VERSION"
 
@@ -285,8 +284,8 @@ done
 
 # 22. The box and the phone speak with the same ids. They live in Box.swift
 #     and firmware/box/box.ino and nowhere else; a box flashed with one set is
-#     simply never heard by an app built with the other — no error, no light,
-#     just a phone that never pairs.
+#     simply never heard by an app built with the other — no error, just a
+#     phone that never pairs.
 note "The box and the phone use the same Bluetooth ids"
 swift_ids=$(grep -oE '"[0-9A-Fa-f]{8}-[0-9A-Fa-f-]{27}"' ReclaimKit/Sources/ReclaimKit/Dock/Box.swift | tr -d '"' | tr 'a-f' 'A-F' | sort | paste -sd, -)
 ino_ids=$(grep -E '^#define [A-Z_]+_UUID' firmware/box/box.ino | grep -oE '"[0-9A-Fa-f-]{36}"' | tr -d '"' | tr 'a-f' 'A-F' | sort | paste -sd, -)

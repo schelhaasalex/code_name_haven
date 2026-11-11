@@ -4,8 +4,8 @@ import SwiftUI
 ///
 /// Reclaim commits to one visual world rather than tracking the system theme:
 /// the waiting screens are warm paper, the session screens are near-black. The
-/// switch between them IS the evening — it's the thing you see across a table
-/// out of the corner of your eye — so it can't be at the mercy of a setting.
+/// switch between them IS the evening — the one look the app has while a
+/// phone is in the box — so it can't be at the mercy of a setting.
 public enum Palette {
     // paper
     public static let bone   = Color(hex: 0xF7F4EE)

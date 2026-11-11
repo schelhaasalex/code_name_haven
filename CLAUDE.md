@@ -13,7 +13,7 @@ Read `VISION.md` for why, `docs/APP-SPEC.md` for what is built and how, and
 `docs/DOCK.md` for the box. `BRIEF.md` is the brief for the first, 21-screen
 app; since 2026-11-06 the app is the box's, and where they differ the spec is
 current.
-`docs/SCHEMA-REVIEW.md` records fourteen bugs found before any of this shipped
+`docs/SCHEMA-REVIEW.md` records fifteen bugs found before any of this shipped
 and is worth skimming before touching the database.
 
 ---
@@ -185,7 +185,7 @@ when adding one:
 - A function clients call needs a thin wrapper in `public` (see `0005`), because
   PostgREST only serves exposed schemas and `app` is not one.
 
-**Test SQL by running it.** Five of the fourteen findings in the schema review
+**Test SQL by running it.** Five of the fifteen findings in the schema review
 were invisible on reading and obvious on executing — three locally, two only
 against hosted Supabase.
 
@@ -236,6 +236,8 @@ scripts/shape.sh      # about a second, no toolchain, no network
 | A Live Activity can be started by push | Without `aps-environment`, iOS never hands out a push-to-start token, and an evening the box started shows nothing on the lock screen |
 | The ring charges the same on the phone and the server | The phone steps the ring while it's awake and the server after; two lists of steps that differ make it jump back a segment |
 | An evening is closed at the same cap everywhere | The lock screen goes quiet at the cap by itself, in case the push that ends it never comes; a cap in the push that differs from the server's says "closed" over an evening still going |
+| Places are read by named columns | `join_secret_hash` is granted to no client, so a read of every column is refused outright — and the app took the refusal for "no places": a box was made, then couldn't be found |
+| The box's stages are the same on the phone and the server | The phone draws the track and the server names the stage; if they differ, the mark sits past a stage the words haven't reached |
 | Only the box starts an evening | Rule 4. A button, face-down, a motion guess, a nearby phone, Siri and the slots' tags were each one call to `setItDown` from somewhere new. Only the radio's file may make it, and the simulator's stand-in for a slot only under `#if DEBUG` |
 | The box and the phone use the same Bluetooth ids | They live in `Box.swift` and `box.ino`; a box on one set is never heard by an app on the other, and nothing says why |
 | Only the daily nudge sends a notification, and silently | One file schedules them, asking iOS for alerts alone. A buzz that makes someone pick up their phone is the app becoming the problem |

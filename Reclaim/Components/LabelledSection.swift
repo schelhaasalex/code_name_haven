@@ -1,7 +1,7 @@
 import SwiftUI
 import ReclaimKit
 
-/// Eyebrow caps over a stack. Used through settings, places and the place view.
+/// Eyebrow caps over a stack. Used through Settings and its pages.
 struct LabelledSection<Content: View>: View {
     let label: String
     var spacing: CGFloat = 10

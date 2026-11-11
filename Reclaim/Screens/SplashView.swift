@@ -21,8 +21,8 @@ import ReclaimKit
 ///    colour as `Palette.bone`, so the static launch image and this view's
 ///    first frame are the same flat paper. Nothing pops, in either system
 ///    appearance. `scripts/shape.sh` keeps the two colours equal.
-/// 3. **Reduce Motion is a different splash, not a faster one.** Rule 4's
-///    courtesy, applied to a preference someone has already stated.
+/// 3. **Reduce Motion is a different splash, not a faster one.** A
+///    preference someone has already stated is answered, not approximated.
 struct SplashView: View {
     let onFinished: () -> Void
 
