@@ -35,6 +35,12 @@ struct SettingsView: View {
                                action: openSettings)
                 }
                 if !state.boxPlaces.isEmpty { boxes }
+                LabelledSection(label: t("settings.reason.label")) {
+                    NavigationLink(value: ReasonView.Route()) {
+                        NavRow(icon: "leaf", title: state.reason?.label ?? t("settings.reason.none"))
+                    }
+                    .buttonStyle(.plain)
+                }
                 if state.kept != nil { keep }
                 LabelledSection(label: t("settings.how.label")) {
                     StepLine(steps: steps)

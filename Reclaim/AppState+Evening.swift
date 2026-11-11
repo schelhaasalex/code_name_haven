@@ -44,6 +44,8 @@ extension AppState {
 
     /// Everything on this phone first, then what the database knows.
     func adopt(session s: Session, at: Date? = nil) async {
+        // In the box: today's nudge has nothing left to ask.
+        Nudges.withdrawToday()
         session = s
         startedAt = at ?? s.startedAt
         gathering = try? await repo.gathering(s.gatheringId)

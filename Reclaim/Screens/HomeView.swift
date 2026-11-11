@@ -19,6 +19,9 @@ struct HomeView: View {
     @Environment(AppState.self) private var state
     @State private var scanning = false
     @State private var aboutStar = false
+    /// VoiceOver's way to what it's for, where the headline's tap is folded
+    /// into the one combined element.
+    @State private var reasonPage = false
 
     var body: some View {
         NavigationStack {
@@ -34,8 +37,11 @@ struct HomeView: View {
             }
             .ground()
             .navigationDestination(for: Settings.self) { _ in SettingsView() }
+            // From the headline here, and from Settings, which this stack holds.
+            .navigationDestination(for: ReasonView.Route.self) { _ in ReasonView() }
             .fullScreenCover(isPresented: $scanning) { ScanView() }
             .sheet(isPresented: $aboutStar) { StarSheet(place: placeName, counted: countedToday) }
+            .navigationDestination(isPresented: $reasonPage) { ReasonView() }
         }
     }
 
@@ -84,8 +90,16 @@ struct HomeView: View {
                     TimelineView(.everyMinute) { context in
                         Text(Say.partOfDay(context.date)).eyebrow(Palette.clay)
                     }
-                    Text(countedToday ? t("home.counted") : t("home.headline", "place", placeName))
-                        .font(Type.display(26)).foregroundStyle(Palette.ink)
+                    // What the time is for, not an order: the box is named
+                    // above, and the line under says how it starts. Tapping
+                    // it opens what it's for.
+                    NavigationLink(value: ReasonView.Route()) {
+                        Text(headline).font(Type.display(26)).foregroundStyle(Palette.ink)
+                    }
+                    .buttonStyle(.plain)
+                    if !countedToday {
+                        Text(t("home.starts")).font(Type.body(15)).foregroundStyle(Palette.ink2)
+                    }
                     // Nothing at all before the first day: the headline has
                     // already said the one thing there is to do.
                     let days = Say.days(total: total.count, thisWeek: thisWeek,
@@ -99,12 +113,23 @@ struct HomeView: View {
             .frame(maxWidth: .infinity)
             .accessibilityElement(children: .combine)
             .accessibilityAction(named: t("home.a11y.star")) { aboutStar = true }
+            .accessibilityAction(named: t("home.a11y.reason")) { reasonPage = true }
         }
     }
 
     /// The box this phone was last at, by the name every phone calls it.
     private var placeName: String {
         state.boxPlace.map(state.name(of:)) ?? t("box.unnamed")
+    }
+
+    /// "Some time for the kids." while today waits, "Today counts, for the
+    /// kids." once it has; without a reason, "Some time back." and "Today
+    /// counts."
+    private var headline: String {
+        if countedToday {
+            return state.reason.map { t("home.counted.reason", "for", $0.purpose) } ?? t("home.counted")
+        }
+        return state.reason?.headline ?? t("home.headline")
     }
 
     private var countedToday: Bool { state.evenings.contains(PlainDate.local(.now)) }

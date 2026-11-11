@@ -26,7 +26,8 @@ struct SessionEndView: View {
             Spacer(minLength: 24)
             VStack(spacing: 22) {
                 evenings
-                PrimaryButton(title: t("end.done")) { state.justEnded = nil }
+                // Done, and under a day that counted, once, the question.
+                PrimaryButton(title: t("end.done")) { state.doneWithReceipt() }
             }
         }
         .ground()
@@ -45,6 +46,12 @@ struct SessionEndView: View {
             if let place = ended.place {
                 Text(t("end.where", "place", place))
                     .font(Type.body(17)).foregroundStyle(Palette.ink2)
+            }
+            // Together, the line above is everyone's; what it was for is
+            // only yours, said as what you said.
+            if ended.people > 1, let reason = state.reason {
+                Text(t("end.reason", "why", reason.label))
+                    .font(Type.body(15)).foregroundStyle(Palette.muted)
             }
         }
     }
@@ -76,12 +83,15 @@ struct SessionEndView: View {
         .paperCard()
     }
 
-    /// "An hour and a half, all yours." — or "…, the three of you."
+    /// "An hour and a half, all yours.", "An hour and a half back, for the
+    /// kids." — or "…, the three of you."
     private var receiptLine: String {
         let duration = Say.spokenDuration(minutes: ended.minutes)
-        return ended.people <= 1
-            ? t("end.receipt.solo", "duration", duration)
-            : t("end.receipt", "duration", duration, "count", Say.number(ended.people))
+        if ended.people > 1 {
+            return t("end.receipt", "duration", duration, "count", Say.number(ended.people))
+        }
+        return state.reason.map { t("end.receipt.reason", "duration", duration, "for", $0.purpose) }
+            ?? t("end.receipt.solo", "duration", duration)
     }
 
     private var countLine: String {
