@@ -223,7 +223,7 @@
           </div>
         </div>
       </div>
-      <p class="phone-note">The headline still names the box, because the box is the switch. The reason is a quiet line under it.</p>
+      <p class="phone-note">The headline is what the time is for, not an instruction. The box is named once, at the top, and the line under it says how it starts.</p>
     </div>
 
     <div class="phone-col">
@@ -338,6 +338,9 @@ const REASONS = [
   { id: 'own',    label: 'Your own words',   own: true },
   { id: 'none',   label: 'Not now', none: true },
 ];
+// Home leads with what the time is for. The box is named once, at the top.
+const HEAD = { kids: 'Some time for the kids.', each: 'Some time for each other.', book: 'Some time with a book.', out: 'Some time outside.', sleep: 'Some time to wind down.', make: 'Some time to make something.', quiet: 'Some quiet.', none: 'Some time back.' };
+const headOf = (id, r) => HEAD[id] || ('Some time for ' + lower(r.label) + '.');
 let reason = 'kids', state = 'waiting', together = 1, step = 1;
 
 const lower = s => s ? s.charAt(0).toLowerCase() + s.slice(1) : s;
@@ -405,11 +408,10 @@ function render() {
 
   // 2 · home
   el('homeSky').replaceChildren(sky(41, true, counted));
-  el('homeHead').textContent = counted ? 'Today counts.' : 'Put your phone in ' + PLACE + '.';
-  el('homeSub').innerHTML = none
-    ? (counted ? '' : 'Two this week, 39 since September.')
-    : counted ? '<span class="why new">' + r.home + '.</span>'
-              : '<span class="why new">' + r.home + '</span> · two this week, 39 since September.';
+  el('homeHead').textContent = counted ? (none ? 'Today counts.' : 'Today counts, ' + r.for + '.') : headOf(reason, r);
+  el('homeHead').classList.toggle('new', !(counted && none));
+  el('homeSub').innerHTML = counted ? (none ? '' : 'Two this week, 39 since September.')
+    : '<span class="why new">It starts when your phone goes in.</span><br>Two this week, 39 since September.';
 
   // 3 · receipt
   el('receiptSky').replaceChildren(sky(41, false, true));
@@ -428,7 +430,7 @@ function render() {
   // table
   el('copyTable').innerHTML = REASONS.filter(x => !x.none).map(x => {
     const y = resolve(x);
-    return '<tr class="' + (x.id === reason ? 'current' : '') + '"><td>' + esc(y.label) + '</td><td>' + esc(y.home) + ' · two this week…</td><td>' + esc(y.home) + '.</td><td>1h 20m, ' + esc(y.for) + '.</td><td>' + y.notes.map(n => esc(fill(n))).join('<br>') + '</td></tr>';
+    return '<tr class="' + (x.id === reason ? 'current' : '') + '"><td>' + esc(y.label) + '</td><td>' + esc(headOf(x.id, y)) + '</td><td>Today counts, ' + esc(y.for) + '.</td><td>1h 20m, ' + esc(y.for) + '.</td><td>' + y.notes.map(n => esc(fill(n))).join('<br>') + '</td></tr>';
   }).join('');
 }
 const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
