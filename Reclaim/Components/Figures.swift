@@ -39,8 +39,7 @@ struct Figures: View {
 #Preview {
     Figures(items: [
         Figures.Item(value: "112h", label: t("box.kept.hours")),
-        Figures.Item(value: "34", label: t("box.kept.evenings")),
-        Figures.Item(value: "September", label: t("box.kept.since")),
+        Figures.Item(value: "63h", label: t("box.kept.together", "month", "September")),
     ])
     .paperCard(padding: 0)
     .padding()

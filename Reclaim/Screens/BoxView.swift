@@ -33,17 +33,11 @@ struct BoxView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(state.name(of: id)).font(Type.title).foregroundStyle(Palette.ink)
-                    if let month = Say.month(from: state.boxSummaries[id]?.since) {
-                        Text(t("place.stage.since", "month", month))
-                            .font(Type.display(17)).foregroundStyle(Palette.muted)
-                    }
-                }
+                Text(state.name(of: id)).font(Type.title).foregroundStyle(Palette.ink)
                 if let summary = state.boxSummaries[id] { become(summary) }
                 LabelledSection(label: t("box.radio.label")) { radio }
                 LabelledSection(label: t("box.name.label")) { nameField }
-                LabelledSection(label: t("box.add.label")) { addPhone }
+                addPhone
                 Spacer(minLength: 8)
                 forget
             }
@@ -84,15 +78,10 @@ struct BoxView: View {
     }
 
     /// Anyone in the box can let another phone in: a fresh code each time,
-    /// an hour long, scanned off this screen as the card would be.
+    /// an hour long, scanned off this screen as the card would be. One line,
+    /// as "Add another box" is in Settings; the sheet it opens says the rest.
     private var addPhone: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(t("box.add.body")).font(Type.body(15)).foregroundStyle(Palette.ink2).lineSpacing(3)
-                .fixedSize(horizontal: false, vertical: true)
-            TextAction(title: t("box.add.action"), tint: Palette.clay) { showingCode = true }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .paperCard()
+        TextAction(title: t("box.add.action"), tint: Palette.ink2, icon: "qrcode") { showingCode = true }
     }
 
     private func makeCode() async {
@@ -114,31 +103,28 @@ struct BoxView: View {
         }
     }
 
-    /// What it has become: the stage in the display face, the track through
-    /// all of them, and what it has kept beneath. Before its first day, only
-    /// "Nothing here yet."
+    /// What it has become: the stage in the display face, its days and since
+    /// when beneath, and the track through every stage — the days are what
+    /// the track is drawn in, so they belong here. The hours are Settings'.
+    /// Before its first day, only "Nothing here yet."
     private func become(_ summary: PlaceSummary) -> some View {
         let days = summary.evenings
-        return VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(t("box.become.label")).eyebrow(Palette.muted)
-                Text(days == 0 ? t("box.become.none") : t(BoxStage.key(summary.stage)))
-                    .font(Type.display(26)).foregroundStyle(Palette.ink)
-                StageTrack(marks: [t("box.become.start")] + BoxStage.days.map { "\($0)" },
-                           position: BoxStage.position(evenings: days),
-                           reached: BoxStage.reached(evenings: days) + 1)
-                    .padding(.top, 12)
+        return VStack(alignment: .leading, spacing: 8) {
+            Text(t("box.become.label")).eyebrow(Palette.muted)
+            Text(days == 0 ? t("box.become.none") : t(BoxStage.key(summary.stage)))
+                .font(Type.display(26)).foregroundStyle(Palette.ink)
+            if days > 0, let month = Say.month(from: summary.since) {
+                Text(days == 1 ? t("box.become.days.one", "month", month)
+                               : t("box.become.days", "count", "\(days)", "month", month))
+                    .font(Type.note).foregroundStyle(Palette.muted)
             }
-            .padding(18)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            if days > 0 {
-                Figures(items: [
-                    Figures.Item(value: Say.duration(minutes: summary.wallClockMinutes), label: t("box.kept.hours")),
-                    Figures.Item(value: "\(days)", label: t("box.kept.evenings")),
-                ], size: 30)
-            }
+            StageTrack(marks: [t("box.become.start")] + BoxStage.days.map { "\($0)" },
+                       position: BoxStage.position(evenings: days),
+                       reached: BoxStage.reached(evenings: days) + 1)
+                .padding(.top, 12)
         }
-        .paperCard(padding: 0)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .paperCard()
     }
 
     /// A dot and a sentence, with its fix beneath when there is one.

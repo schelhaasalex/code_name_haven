@@ -39,9 +39,7 @@ struct BoxCard: View {
 #Preview {
     VStack(spacing: 10) {
         BoxCard(name: t("box.default.1"), status: .on, statusText: t("settings.row.connected"),
-                figures: [Figures.Item(value: "112h", label: t("box.kept.hours")),
-                          Figures.Item(value: "34", label: t("box.kept.evenings")),
-                          Figures.Item(value: "September", label: t("box.kept.since"))])
+                figures: [Figures.Item(value: "63h", label: t("box.kept.together", "month", "September"))])
         BoxCard(name: t("box.default.2"), status: .quiet, statusText: t("settings.row.unpaired"))
     }
     .padding()

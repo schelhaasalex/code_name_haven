@@ -104,20 +104,15 @@ struct SettingsView: View {
         }
     }
 
-    /// What it has kept, added up — only once it has kept something. Whole
-    /// hours: three figures share the card's width.
+    /// What it has kept, added up — only once it has kept something. One
+    /// figure, whole hours, with since when as its label: a count of days
+    /// beside it said "38" without saying since when, and the month made a
+    /// third box. The days are the box's page's, with its stage.
     private func figures(_ id: UUID) -> [Figures.Item] {
         guard let summary = state.boxSummaries[id], summary.evenings > 0 else { return [] }
         let minutes = summary.wallClockMinutes
-        var items = [
-            Figures.Item(value: Say.duration(minutes: minutes >= 60 ? minutes / 60 * 60 : minutes),
-                         label: t("box.kept.hours")),
-            Figures.Item(value: "\(summary.evenings)", label: t("box.kept.evenings")),
-        ]
-        if let month = Say.month(from: summary.since) {
-            items.append(Figures.Item(value: month, label: t("box.kept.since")))
-        }
-        return items
+        let label = Say.month(from: summary.since).map { t("box.kept.together", "month", $0) } ?? t("box.kept.hours")
+        return [Figures.Item(value: Say.duration(minutes: minutes >= 60 ? minutes / 60 * 60 : minutes), label: label)]
     }
 
     // MARK: Your days, and how it works

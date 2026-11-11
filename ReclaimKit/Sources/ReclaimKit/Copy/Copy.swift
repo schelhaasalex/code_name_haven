@@ -37,8 +37,8 @@ public enum Copy {
     public static func apply(overrides new: [String: String]) { overrides = new }
 }
 
-/// `t("home.headline")`, or `t("place.stage.since", "month", "March")` →
-/// "Since March." Short enough to use everywhere without friction, and the one
+/// `t("home.headline")`, or `t("box.kept.together", "month", "March")` →
+/// "Together, since March." Short enough to use everywhere without friction, and the one
 /// substitution path — a token nothing replaces reaches a person verbatim.
 ///
 /// A template that OPENS with `{count}` or `{duration}` starts a sentence with
