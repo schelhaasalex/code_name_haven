@@ -20,3 +20,5 @@ opens, leading with the box's stage. Both are built now (`SettingsView`,
 person, asked once under the first receipt, that changes a few lines and can
 earn one quiet note a day. Pick a reason and every screen follows. It keeps the
 reason on the phone, so nobody else at the box ever sees it.
+Home in it taps through: the settings icon opens Settings, whose "What it's
+for" row opens the page, and so does tapping the headline.

@@ -128,8 +128,16 @@
   .toggle { margin-left: auto; width: 44px; height: 26px; border-radius: 13px; background: var(--ink); position: relative; flex: none; }
   .toggle::after { content: ""; position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--bone); }
   .g-chips { display: flex; flex-wrap: wrap; gap: 5px; }
-  .g-chips span { font: 500 12px var(--sans); padding: 5px 9px; border-radius: 14px; border: 1px solid var(--line); color: var(--ink-2); }
-  .g-chips span.on { background: var(--ink); color: var(--bone); border-color: var(--ink); }
+  .g-chips button { font: 500 12px var(--sans); padding: 5px 9px; border-radius: 14px; border: 1px solid var(--line); color: var(--ink-2); background: var(--paper); cursor: pointer; }
+  .g-chips button.on { background: var(--ink); color: var(--bone); border-color: var(--ink); }
+  .tap { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: inherit; }
+  .device button:focus-visible { outline: 2px solid var(--clay); outline-offset: 3px; }
+  .top .gear-btn { margin-left: auto; color: var(--ink-2); display: grid; place-items: center; width: 36px; height: 36px; margin-right: -7px; }
+  button.back { cursor: pointer; padding: 0; }
+  button.g-card { width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+  .g-row .row2 b { font-weight: 500; }
+  .g-row .chev { margin-left: auto; color: var(--hair); }
+  .tap-hint { color: var(--accent); }
   .g-clear { margin-top: auto; text-align: center; font: 500 13px var(--sans); color: var(--muted); padding: 10px; }
 
   .new { text-decoration: underline wavy rgba(180,81,44,.5); text-underline-offset: 3px; text-decoration-thickness: 1px; }
@@ -226,20 +234,50 @@
     </div>
 
     <div class="phone-col">
-      <div class="cap">2 · Home</div>
+      <div class="cap">2 · Home, <b>tap through it</b></div>
       <div class="device"><div class="status"><span>7:14</span><span>●●● ▮</span></div>
-        <div class="screen">
+        <div class="screen" id="vHome">
           <div class="top"><span class="mark"></span><span class="name">The Schelhaas Box</span>
-            <svg class="gear" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="15" cy="6" r="2" fill="#FFFDF8"/><circle cx="9" cy="12" r="2" fill="#FFFDF8"/><circle cx="14" cy="18" r="2" fill="#FFFDF8"/></svg></div>
+            <button class="tap gear-btn" id="toSettings" aria-label="Settings"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="15" cy="6" r="2" fill="#FFFDF8"/><circle cx="9" cy="12" r="2" fill="#FFFDF8"/><circle cx="14" cy="18" r="2" fill="#FFFDF8"/></svg></button></div>
           <div class="sky" id="homeSky"></div>
           <div class="home-foot">
             <div class="eyebrow">Wednesday evening</div>
-            <h3 class="headline" id="homeHead">Put your phone in The Schelhaas Box.</h3>
+            <h3 class="headline"><button class="tap" id="homeHead">Put your phone in The Schelhaas Box.</button></h3>
             <p class="subline" id="homeSub"></p>
           </div>
         </div>
+        <div class="screen" id="vSettings" hidden>
+          <button class="back" id="settingsBack" aria-label="Back to Home"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <div class="g-head">
+            <h3 class="g-title">Settings</h3>
+            <p class="g-since">Your box, your days, and the rules it keeps.</p>
+          </div>
+          <div class="g-card"><div class="k">Your box</div>
+            <div class="row2"><div><b>The Schelhaas Box</b><small>Connected</small></div></div></div>
+          <button class="g-card g-row" id="toFor"><div class="k new">What it's for</div>
+            <div class="row2"><div><b id="sForValue">The kids</b><small class="new" id="sForNote">A note around 6:40</small></div><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></div></button>
+          <div class="g-card"><div class="k">Your days</div>
+            <div class="row2"><div><b>Keep them with your Apple ID</b></div></div></div>
+        </div>
+        <div class="screen" id="vFor" hidden>
+          <button class="back" id="forBack" aria-label="Back"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <div class="g-head">
+            <div class="eyebrow new">What it's for</div>
+            <h3 class="g-title new" id="gTitle">The kids</h3>
+            <p class="g-since new" id="gSince">You chose this on 2 October. Your phone has been in the box on 23 days since.</p>
+          </div>
+          <div class="g-card">
+            <div class="k new">Change it</div>
+            <div class="g-chips" id="gChips"></div>
+          </div>
+          <div class="g-card" id="gNote">
+            <div class="row2"><div><span class="new">A note around 6:40</span><small class="new">Once a day, never on a day that counts.</small></div><span class="toggle" aria-hidden="true"></span></div>
+          </div>
+          <div class="g-clear new">Just for you. Nobody at the box sees it.</div>
+        </div>
+        </div>
       </div>
-      <p class="phone-note">The headline is what the time is for, not an instruction. The box is named once, at the top, and the line under it says how it starts.</p>
+      <p class="phone-note"><span class="tap-hint">Two ways in:</span> the settings icon, then "What it's for", or tap the headline. The headline is what the time is for, not an instruction. The box is named once, at the top, and the line under it says how it starts.</p>
     </div>
 
     <div class="phone-col">
@@ -275,29 +313,6 @@
         <div class="bar"></div>
       </div>
       <p class="phone-note">Delivered without a sound. If the phone goes in first, or today already counts, it is taken back before it arrives.</p>
-    </div>
-
-    <div class="phone-col">
-      <div class="cap">5 · What it's for, <b>any time</b></div>
-      <div class="device"><div class="status"><span>7:15</span><span>●●● ▮</span></div>
-        <div class="screen">
-          <div class="back" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></div>
-          <div class="g-head">
-            <div class="eyebrow new">What it's for</div>
-            <h3 class="g-title new" id="gTitle">The kids</h3>
-            <p class="g-since new" id="gSince">You chose this on 2 October. Your phone has been in the box on 23 days since.</p>
-          </div>
-          <div class="g-card">
-            <div class="k new">Change it</div>
-            <div class="g-chips" id="gChips"></div>
-          </div>
-          <div class="g-card" id="gNote">
-            <div class="row2"><div><span class="new">A note around 6:40</span><small class="new">Once a day, never on a day that counts.</small></div><span class="toggle" aria-hidden="true"></span></div>
-          </div>
-          <div class="g-clear new">Just for you. Nobody at the box sees it.</div>
-        </div>
-      </div>
-      <p class="phone-note">Reached from a "What it's for" row in Settings, and by tapping the reason line on Home. Changing it rewrites nothing that already counted.</p>
     </div>
   </div>
 
@@ -380,7 +395,7 @@ const REASONS = [
 // Home leads with what the time is for. The box is named once, at the top.
 const HEAD = { kids: 'Some time for the kids.', each: 'Some time for each other.', book: 'Some time with a book.', out: 'Some time outside.', sleep: 'Some time to wind down.', make: 'Some time to make something.', quiet: 'Some quiet.', none: 'Some time back.' };
 const headOf = (id, r) => HEAD[id] || ('Some time for ' + lower(r.label) + '.');
-let reason = 'kids', state = 'waiting', together = 1, step = 1;
+let reason = 'kids', state = 'waiting', together = 1, step = 1, view = 'home', cameFrom = 'home';
 
 const lower = s => s ? s.charAt(0).toLowerCase() + s.slice(1) : s;
 function resolve(r) {
@@ -470,7 +485,10 @@ function render() {
   el('gTitle').textContent = none ? 'Nothing yet' : r.label;
   el('gSince').textContent = none ? 'Pick one whenever you like. Until then, every line reads as it does today.' : 'You chose this on 2 October. Your phone has been in the box on 23 days since.';
   el('gNote').hidden = none;
-  el('gChips').innerHTML = REASONS.filter(x => !x.none).map(x => '<span class="' + (x.id === reason ? 'on' : '') + '">' + esc(x.own ? (reason === 'own' ? resolve(x).label : 'Own words') : x.label) + '</span>').join('');
+  el('gChips').innerHTML = REASONS.filter(x => !x.none).map(x => '<button data-r="' + x.id + '" class="' + (x.id === reason ? 'on' : '') + '" aria-pressed="' + (x.id === reason) + '">' + esc(x.own ? (reason === 'own' ? resolve(x).label : 'Own words') : x.label) + '</button>').join('');
+  el('sForValue').textContent = none ? 'Not chosen yet' : r.label;
+  el('sForNote').textContent = none ? 'Pick one whenever you like' : 'A note around 6:40';
+  ['home', 'settings', 'for'].forEach(v => { el('v' + v.charAt(0).toUpperCase() + v.slice(1)).hidden = view !== v; });
 
   // table
   el('copyTable').innerHTML = REASONS.filter(x => !x.none).map(x => {
@@ -485,6 +503,13 @@ REASONS.forEach(r => { const b = document.createElement('button'); b.dataset.r =
 document.querySelectorAll('#stateRow button').forEach(b => b.addEventListener('click', () => { state = b.dataset.state; render(); }));
 document.querySelectorAll('#withRow button').forEach(b => b.addEventListener('click', () => { together = +b.dataset.with; render(); }));
 el('s1').addEventListener('click', () => { step = 1; render(); });
+const go = v => { view = v; render(); };
+el('toSettings').addEventListener('click', () => go('settings'));
+el('homeHead').addEventListener('click', () => { cameFrom = 'home'; go('for'); });
+el('toFor').addEventListener('click', () => { cameFrom = 'settings'; go('for'); });
+el('settingsBack').addEventListener('click', () => go('home'));
+el('forBack').addEventListener('click', () => go(cameFrom));
+el('gChips').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { reason = b.dataset.r; render(); } });
 el('s2').addEventListener('click', () => { step = 2; render(); });
 el('own').addEventListener('input', () => { reason = 'own'; render(); });
 render();
