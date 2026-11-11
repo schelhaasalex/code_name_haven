@@ -64,7 +64,8 @@ final class CopyTests: XCTestCase {
     }
 
     func testKeysAreScreenDotElement() throws {
-        for key in try json(at: source).keys where key != "_" {
+        // "_", "_reason": notes to whoever writes the copy, never shown.
+        for key in try json(at: source).keys where !key.hasPrefix("_") {
             XCTAssertTrue(key.contains("."), "\(key) is not keyed screen.element")
             XCTAssertEqual(key, key.lowercased(), "\(key) is not lowercase")
         }

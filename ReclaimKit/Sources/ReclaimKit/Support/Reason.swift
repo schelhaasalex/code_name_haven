@@ -8,19 +8,19 @@ import Foundation
 /// every line built from it says "for the kids", never "with the kids".
 ///
 /// It belongs to this phone. Nothing sends it anywhere, nobody at the box
-/// sees it (rule 1), and it never reaches the lock screen, which the room can
-/// (`scripts/shape.sh`).
+/// sees it (rule 1), and it never reaches a lock screen — not the Live
+/// Activity's, which the room can see, nor the daily nudge's, which anyone
+/// near the phone can (`scripts/shape.sh`).
 public enum Reason: Hashable, Sendable {
     case kids, eachOther, book, outside, sleep, making, quiet
-    /// In their own words, exactly as typed: the app doesn't correct how
-    /// someone writes a name.
+    /// In their own words, as typed. The app doesn't correct how someone
+    /// writes a name; it only moves a capital (`sentence`, `midSentence`).
     case own(String)
 
     /// The ones offered, in the order they're offered.
     public static let offered: [Reason] = [.kids, .eachOther, .book, .outside, .sleep, .making, .quiet]
 
-    /// The stem of its copy keys: `reason.<stem>.label`, `.for`, `.headline`,
-    /// `.nudge`.
+    /// The stem of its copy keys: `reason.<stem>.label`, `.for`, `.headline`.
     public var stem: String {
         switch self {
         case .kids:      "kids"
@@ -34,8 +34,9 @@ public enum Reason: Hashable, Sendable {
         }
     }
 
-    /// "The kids", or their words.
-    public var label: String { words ?? t("reason.\(stem).label") }
+    /// "The kids", or their words. It starts a line wherever it's shown — a
+    /// title, an eyebrow, "The garden, you said." — so it opens with a capital.
+    public var label: String { words.map(Self.sentence) ?? t("reason.\(stem).label") }
 
     /// "for the kids" — the receipt's "An hour back, for the kids."
     public var purpose: String { phrase("for") }
@@ -43,20 +44,34 @@ public enum Reason: Hashable, Sendable {
     /// Home's headline while today waits: "Some time for the kids."
     public var headline: String { phrase("headline") }
 
-    /// The nudge's lines, one a day in turn, with the box named.
-    public func nudges(place: String) -> [String] {
-        Copy.list("reason.\(stem).nudge").map {
-            $0.replacingOccurrences(of: "{words}", with: words ?? "")
-              .replacingOccurrences(of: "{place}", with: place)
-        }
-    }
-
     private var words: String? {
         if case .own(let w) = self { w } else { nil }
     }
 
     private func phrase(_ part: String) -> String {
-        t("reason.\(stem).\(part)", "words", words ?? "")
+        t("reason.\(stem).\(part)", "words", words.map(Self.midSentence) ?? "")
+    }
+
+    // MARK: Their words in a sentence
+
+    /// Words that open a phrase and aren't a name: "The garden" reads "for the
+    /// garden" mid-sentence. Anything else — "Ellie's recital", "Sunday
+    /// lunch" — may be a name, and keeps its capital.
+    static let lowered: Set<String> = ["the", "a", "an", "my", "our", "your", "some", "more", "less"]
+
+    /// Mid-sentence: "The garden" → "the garden"; "Ellie's recital" as typed.
+    static func midSentence(_ words: String) -> String {
+        guard let first = words.split(separator: " ").first,
+              lowered.contains(first.lowercased()) else { return words }
+        return words.prefix(1).lowercased() + words.dropFirst()
+    }
+
+    /// Opening a line: "the garden" → "The garden". Not "iPad-free" → "IPad".
+    static func sentence(_ words: String) -> String {
+        let chars = Array(words)
+        guard let first = chars.first, first.isLowercase,
+              !(chars.count > 1 && chars[1].isUppercase) else { return words }
+        return first.uppercased() + words.dropFirst()
     }
 
     // MARK: Kept on this phone

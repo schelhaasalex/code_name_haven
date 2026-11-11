@@ -11,7 +11,6 @@ final class ReasonTests: XCTestCase {
             for part in ["for", "headline"] {
                 XCTAssertFalse(Copy["reason.\(reason.stem).\(part)"].isEmpty, "reason.\(reason.stem).\(part)")
             }
-            XCTAssertFalse(reason.nudges(place: "The Harbor").isEmpty, reason.stem)
             XCTAssertFalse(reason.label.isEmpty)
         }
         for reason in Reason.offered {
@@ -26,25 +25,30 @@ final class ReasonTests: XCTestCase {
         }
     }
 
-    /// The nudge names the box, and never counts days, gaps or anyone else.
-    func testNudgesInviteAndNeverCount() {
-        for reason in Reason.offered + [.own("Piano practice")] {
-            for line in reason.nudges(place: "The Harbor") {
-                XCTAssertTrue(line.contains("The Harbor"), line)
-                XCTAssertFalse(line.contains("{"), line)
-                for word in ["haven't", "missed", "streak", "days", "waiting", "!"] {
-                    XCTAssertFalse(line.lowercased().contains(word), "\(line) says \(word)")
-                }
-            }
-        }
-    }
-
     /// Their own words, as typed: a name is how someone writes it.
     func testOwnWordsAreKeptAsTyped() {
         let r = Reason.own("Ellie's recital")
         XCTAssertEqual(r.label, "Ellie's recital")
         XCTAssertEqual(r.purpose, "for Ellie's recital")
-        XCTAssertTrue(r.headline.contains("Ellie's recital"))
+        XCTAssertEqual(r.headline, "Some time for Ellie's recital.")
+    }
+
+    /// "The garden", as the placeholder suggests, reads "for the garden" in a
+    /// sentence — and "the garden" typed small opens a line with a capital.
+    func testOwnWordsTakeTheirCapitalFromWhereTheyStand() {
+        let typedBig = Reason.own("The garden")
+        XCTAssertEqual(typedBig.headline, "Some time for the garden.")
+        XCTAssertEqual(typedBig.purpose, "for the garden")
+        XCTAssertEqual(typedBig.label, "The garden")
+
+        let typedSmall = Reason.own("the garden")
+        XCTAssertEqual(typedSmall.label, "The garden")
+        XCTAssertEqual(t("end.reason", "why", typedSmall.label), "The garden, you said.")
+        XCTAssertEqual(typedSmall.purpose, "for the garden")
+
+        // A name keeps its capital; a word spelled with one inside keeps its shape.
+        XCTAssertEqual(Reason.own("Sunday lunch").purpose, "for Sunday lunch")
+        XCTAssertEqual(Reason.own("iPad-free dinners").label, "iPad-free dinners")
     }
 
     func testItKeepsAcrossALaunch() {

@@ -77,6 +77,24 @@ final class NudgeScheduleTests: XCTestCase {
         }
     }
 
+    /// The nudge names the box and nothing else: it lands on a lock screen
+    /// anyone near the phone can read. It invites, and never counts days, gaps
+    /// or anyone else.
+    func testNudgesInviteNameTheBoxAndNothingMore() {
+        let lines = NudgeSchedule.lines(place: "The Harbor")
+        XCTAssertGreaterThan(lines.count, 1, "two, so days running never read alike")
+        for line in lines {
+            XCTAssertTrue(line.contains("The Harbor"), line)
+            XCTAssertFalse(line.contains("{"), line)
+            for word in ["haven't", "missed", "streak", "days", "waiting", "!"] {
+                XCTAssertFalse(line.lowercased().contains(word), "\(line) says \(word)")
+            }
+            for reason in Reason.offered {
+                XCTAssertFalse(line.contains(reason.purpose), "\(line) says \(reason.purpose)")
+            }
+        }
+    }
+
     /// Two lines take turns, day by day.
     func testLinesTakeTurns() {
         let lines = ["one", "two"]

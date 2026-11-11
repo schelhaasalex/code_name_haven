@@ -317,12 +317,23 @@ fi
 # 24. Someone's reason is theirs. The lock screen is the one screen the whole
 #     room can see — the phone is face up in the box — so nothing the Live
 #     Activity draws or is sent may carry it: not the widget, not the
-#     attributes, not the controller that fills them.
+#     attributes, not the controller that fills them. Nor the daily nudge: it
+#     lands on the lock screen of a phone lying wherever it was left, so its
+#     lines are the same for everyone, and nothing handed to it is a reason.
 note "Nobody's reason reaches the lock screen"
 for f in $(find ReclaimWidgets ReclaimKit/Sources/ReclaimKit/Activity -name '*.swift' 2>/dev/null) Reclaim/Entry/LiveActivityController.swift; do
   [ -f "$f" ] || continue
   grep -qiwE 'reason|nudge' "$f" && bad "$f mentions a reason — what someone's time is for never reaches the lock screen"
 done
+if [ -f Reclaim/Entry/Nudges.swift ]; then
+  grep -qiw 'reason' Reclaim/Entry/Nudges.swift \
+    && bad "Reclaim/Entry/Nudges.swift mentions a reason — the nudge is on the lock screen, so it never says what the time is for"
+fi
+for hit in $(grep -rnE 'Nudges\.plan\(.*[Rr]eason' Reclaim 2>/dev/null | cut -d: -f1,2); do
+  bad "$hit hands a reason to the nudge — the nudge is on the lock screen, so it never says what the time is for"
+done
+grep -nE '"reason\.[a-z]+\.nudge": *\[' copy/strings.json >/dev/null \
+  && bad "copy/strings.json has a nudge line per reason — the nudge's lines are nudge.lines, the same for everyone"
 
 echo
 if [ "$FAIL" -eq 0 ]; then

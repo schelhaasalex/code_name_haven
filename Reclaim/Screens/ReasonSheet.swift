@@ -90,8 +90,8 @@ struct ReasonSheet: View {
     }
 
     private var sample: String? {
-        guard let reason = state.reason, let box = state.boxPlace else { return nil }
-        return reason.nudges(place: state.name(of: box)).first
+        guard let box = state.boxPlace else { return nil }
+        return NudgeSchedule.lines(place: state.name(of: box)).first
     }
 
     private func quiet(_ title: String, action: @escaping () -> Void) -> some View {

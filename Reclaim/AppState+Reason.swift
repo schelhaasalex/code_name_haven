@@ -59,10 +59,10 @@ extension AppState {
     func planNudges(_ recent: [Session] = []) async {
         let starts = recent.filter(\.qualifying).map(\.startedAt)
         if let minute = NudgeSchedule.minute(of: starts) { nudgeMinute = minute }
-        guard nudging, let reason, let box = boxPlace else { await Nudges.clear(); return }
+        guard nudging, reason != nil, let box = boxPlace else { await Nudges.clear(); return }
         guard let minute = nudgeMinute else { return }
         let dates = NudgeSchedule.dates(at: minute, from: .now, todayCounts: evenings.contains(PlainDate.local(.now)))
-        await Nudges.plan(dates, title: name(of: box), lines: reason.nudges(place: name(of: box)))
+        await Nudges.plan(dates, place: name(of: box))
     }
 
     /// `nudgeMinute` as a time on the clock — "6:40 PM" — for the offer and

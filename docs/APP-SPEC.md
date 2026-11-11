@@ -219,9 +219,13 @@ in.* under it; *Today counts, for the kids.*; the receipt's *An hour and
 twenty minutes back, for the kids.*, or together, the count as before and
 *The kids, you said.* under it; and on its page, *23 days for the kids, since
 October, and 41 hours back in all* — from your own sessions since it was
-chosen. It lives in this phone's defaults and nowhere else: never sent, never
-shown to anyone at the box, and never on the lock screen, which the room can
-see (`scripts/shape.sh`). A new phone doesn't carry it.
+chosen. Their own words are kept as typed, but for where a capital stands:
+*The garden* reads *for the garden* mid-sentence, and *the garden* opens a
+line as *The garden*; a name keeps its capital. It lives in this phone's
+defaults and nowhere else: never sent, never shown to anyone at the box, and
+never on a lock screen — not the Live Activity's, which the room can see, nor
+the note's, which anyone near the phone can (`scripts/shape.sh`). A new phone
+doesn't carry it.
 
 **The note.** Offered once a reason is kept, with a sample of what it would
 say, and asked of iOS only on *Yes, once a day* (alerts: no sound, no badge).
@@ -230,7 +234,9 @@ median time your phone went in over the last fourteen days that counted,
 kept between seven and a quarter to ten — and plans a week ahead each time
 the evenings are read. Never on a day that already counts; today's is taken
 back the moment a phone goes in (`adopt`). Someone who stops opening the app
-gets a week of them and then nothing. Only `Reclaim/Entry/Nudges.swift`
+gets a week of them and then nothing. It names the box and nothing else —
+*A while, if you like. Your phone can wait in The Harbor.* — the same two
+lines, day about, for everyone (`nudge.lines`). Only `Reclaim/Entry/Nudges.swift`
 touches notifications. In code it's a *nudge*: `Note` is the diagnostics log.
 
 ## The box
