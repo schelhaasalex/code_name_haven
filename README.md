@@ -22,7 +22,6 @@ shows you a shame chart. See [VISION.md](VISION.md) for why that matters.
 | **iOS app** | All 21 screens written. **Builds and launches in the simulator**; nothing behind sign-in exercised yet. [docs/BUILD-NOTES.md](docs/BUILD-NOTES.md) lists what compiles but is known to be wrong. |
 | **Tests** | `supabase/tests/` runs green. The Swift suite in `ReclaimKit/Tests/` runs green on the simulator — 61 tests. |
 | **Design** | 21 screens plus an IA map, on a canvas. Every string extracted to `copy/strings.json`. |
-| **Ceremony** | A working web rehearsal in `prototype/` — the one thing no mockup can test. |
 
 Every screen on the canvas now exists, including the ones that were missing a
 week ago: 4 (someone started), 9 (a place and its arc), 15 (the card), 21
@@ -112,7 +111,6 @@ docs/
 copy/strings.json    every user-facing string — the primary brand asset
 supabase/            migrations (applied, tested) and the test harness
 scripts/shape.sh     the style rules, mechanically checked; CI runs it
-prototype/           the web rehearsal of the five-phone moment
 ReclaimKit/          shared package: models, data, ceremony, copy, design
 Reclaim/             the app
 ReclaimWidgets/      the Live Activity and its End button

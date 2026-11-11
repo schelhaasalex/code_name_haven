@@ -26,3 +26,10 @@ boxes.csv
 box-*.png
 box-code.png
 card-*.pdf
+
+# What the Arduino IDE compiles. The factory station builds its own, from
+# box.ino, into a scratch folder; a binary in git is one for a board nobody has.
+firmware/box/build/
+
+# Working notes and PR drafts from sessions here — never part of the product.
+scratchpad/

@@ -90,7 +90,6 @@ supabase/      migrations/ (applied, tested), functions/ (Edge Functions) and te
 scripts/       shape.sh — the style rules, as a check rather than a hope
                generate.sh — the project, with a build number nobody has to remember
                dock-tags.sh — the factory station: flash a box, print its card (card/); boxes.csv
-prototype/     splash.html — the three splash screens, side by side
 firmware/      box/box.ino — the box's Bluetooth radio and slot sensors (ESP32)
 ReclaimKit/    shared Swift package: models, data, the box, copy, design
                — and Tests/, which is where anything testable belongs
