@@ -116,6 +116,22 @@
   .lock .silent { text-align: center; color: var(--dust); font-size: 13px; line-height: 1.5; margin: auto 10px 70px; }
   .lock .bar { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 110px; height: 4px; border-radius: 2px; background: var(--cream); opacity: .7; }
 
+  /* what it's for: the page */
+  .back { width: 38px; height: 38px; border-radius: 19px; border: 1px solid var(--line); background: var(--paper); display: grid; place-items: center; margin-top: 8px; color: var(--ink-2); }
+  .g-head { margin-top: 18px; display: grid; gap: 6px; }
+  .g-title { font: 400 34px/1.05 var(--serif); margin: 0; text-wrap: balance; }
+  .g-since { font-size: 13.5px; line-height: 1.5; color: var(--ink-2); margin: 0; }
+  .g-card { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: grid; gap: 8px; margin-top: 14px; }
+  .g-card .k { font: 600 10px var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .g-card .row2 { display: flex; align-items: center; gap: 10px; font: 500 14px var(--sans); }
+  .g-card .row2 small { display: block; font: 400 12.5px var(--sans); color: var(--muted); margin-top: 2px; }
+  .toggle { margin-left: auto; width: 44px; height: 26px; border-radius: 13px; background: var(--ink); position: relative; flex: none; }
+  .toggle::after { content: ""; position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--bone); }
+  .g-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .g-chips span { font: 500 12px var(--sans); padding: 5px 9px; border-radius: 14px; border: 1px solid var(--line); color: var(--ink-2); }
+  .g-chips span.on { background: var(--ink); color: var(--bone); border-color: var(--ink); }
+  .g-clear { margin-top: auto; text-align: center; font: 500 13px var(--sans); color: var(--muted); padding: 10px; }
+
   .new { text-decoration: underline wavy rgba(180,81,44,.5); text-underline-offset: 3px; text-decoration-thickness: 1px; }
 
   /* prose sections */
@@ -259,6 +275,29 @@
         <div class="bar"></div>
       </div>
       <p class="phone-note">Delivered without a sound. If the phone goes in first, or today already counts, it is taken back before it arrives.</p>
+    </div>
+
+    <div class="phone-col">
+      <div class="cap">5 · What it's for, <b>any time</b></div>
+      <div class="device"><div class="status"><span>7:15</span><span>●●● ▮</span></div>
+        <div class="screen">
+          <div class="back" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></div>
+          <div class="g-head">
+            <div class="eyebrow new">What it's for</div>
+            <h3 class="g-title new" id="gTitle">The kids</h3>
+            <p class="g-since new" id="gSince">You chose this on 2 October. Your phone has been in the box on 23 days since.</p>
+          </div>
+          <div class="g-card">
+            <div class="k new">Change it</div>
+            <div class="g-chips" id="gChips"></div>
+          </div>
+          <div class="g-card" id="gNote">
+            <div class="row2"><div><span class="new">A note around 6:40</span><small class="new">Once a day, never on a day that counts.</small></div><span class="toggle" aria-hidden="true"></span></div>
+          </div>
+          <div class="g-clear new">Just for you. Nobody at the box sees it.</div>
+        </div>
+      </div>
+      <p class="phone-note">Reached from a "What it's for" row in Settings, and by tapping the reason line on Home. Changing it rewrites nothing that already counted.</p>
     </div>
   </div>
 
@@ -426,6 +465,12 @@ function render() {
   el('silent').hidden = showNote;
   el('silent').textContent = none ? 'No reason, no note. Nothing was offered, so nothing comes.' : 'No note today. It already counts, so there is nothing to ask for.';
   if (showNote) el('bBody').textContent = fill(r.notes[new Date().getDate() % r.notes.length]);
+
+  // 5 · what it's for
+  el('gTitle').textContent = none ? 'Nothing yet' : r.label;
+  el('gSince').textContent = none ? 'Pick one whenever you like. Until then, every line reads as it does today.' : 'You chose this on 2 October. Your phone has been in the box on 23 days since.';
+  el('gNote').hidden = none;
+  el('gChips').innerHTML = REASONS.filter(x => !x.none).map(x => '<span class="' + (x.id === reason ? 'on' : '') + '">' + esc(x.own ? (reason === 'own' ? resolve(x).label : 'Own words') : x.label) + '</span>').join('');
 
   // table
   el('copyTable').innerHTML = REASONS.filter(x => !x.none).map(x => {
