@@ -6,7 +6,7 @@
   them follows CLAUDE.md's voice and knowledge test: the card is printed, and
   can't be corrected after it ships.
 
-  {{FRAUNCES}} {{WORKSANS}}  the fonts, as data: URIs (fonts/, both OFL)
+  {{FRAUNCES}} {{WORKSANS}}  the fonts, as data: URIs (the app's own, in ReclaimKit/Sources/ReclaimKit/Resources/Fonts; both OFL)
   {{QR}}                      the box's code, a PNG data: URI
   {{BOX}}                     "Box 0A1B2C3D", or empty for a prototype card
   {{STORE}}                   "No app yet? …" once links/index.html has a
@@ -18,8 +18,8 @@
 <meta charset="utf-8">
 <title>Card</title>
 <style>
-  @font-face { font-family: "Fraunces"; src: url({{FRAUNCES}}) format("truetype"), url("fonts/Fraunces.ttf"); }
-  @font-face { font-family: "Work Sans"; src: url({{WORKSANS}}) format("truetype"), url("fonts/WorkSans.ttf"); }
+  @font-face { font-family: "Fraunces"; src: url({{FRAUNCES}}) format("truetype"), url("../../ReclaimKit/Sources/ReclaimKit/Resources/Fonts/Fraunces.ttf"); }
+  @font-face { font-family: "Work Sans"; src: url({{WORKSANS}}) format("truetype"), url("../../ReclaimKit/Sources/ReclaimKit/Resources/Fonts/WorkSans.ttf"); }
   @page { size: 105mm 148mm; margin: 0; }
 
   /* The app's Palette. */

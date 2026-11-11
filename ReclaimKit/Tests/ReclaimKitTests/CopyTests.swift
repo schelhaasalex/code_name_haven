@@ -113,8 +113,8 @@ final class CopyTests: XCTestCase {
 
     // MARK: - Overrides
 
-    /// The Supabase copy table wins over the bundle, so the voice can change
-    /// without an App Store release.
+    /// An applied override wins over the bundle, so once a table feeds it the
+    /// voice can change without an App Store release.
     func testOverridesWinAndOnlyForKeysTheyName() {
         defer { Copy.apply(overrides: [:]) }
         let bundledBody = Copy["welcome.body"]

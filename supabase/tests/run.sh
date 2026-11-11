@@ -19,8 +19,8 @@ psql -q -d "$DB" -c "do \$\$ begin
   if not exists (select 1 from pg_roles where rolname='service_role')
   then create role service_role nologin; end if; end \$\$;"
 
-# Every migration, in order. Leaving the last two out would mean the public
-# wrappers the client actually calls are the least-tested thing in the project.
+# Every migration, in order. Leaving out 0005 would mean the public wrappers
+# the client actually calls are the least-tested thing in the project.
 psql -v ON_ERROR_STOP=1 -q -d "$DB" \
   -f "$ROOT/supabase/tests/00_local_auth_stub.sql" \
   -f "$ROOT/supabase/tests/00_local_realtime_stub.sql" \

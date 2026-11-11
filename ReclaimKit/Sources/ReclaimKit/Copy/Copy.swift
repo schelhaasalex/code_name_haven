@@ -3,8 +3,9 @@ import Foundation
 /// Every user-facing string, keyed `screen.element`.
 ///
 /// The voice is the product's primary asset, so it must be changeable without
-/// an App Store release: `strings.json` ships in the bundle as the fallback and
-/// a table fetched from Supabase overrides it at launch.
+/// an App Store release: `strings.json` ships in the bundle as the fallback,
+/// and `apply(overrides:)` lets a fetched table win over it. Nothing fetches
+/// one yet — every string today is the bundle's.
 ///
 /// NEVER hardcode a user-facing string in a view.
 public enum Copy {
@@ -42,7 +43,7 @@ public enum Copy {
 /// substitution path — a token nothing replaces reaches a person verbatim.
 ///
 /// A template that OPENS with `{count}` or `{duration}` starts a sentence with
-/// the app's own lowercase words — "three evenings this week", "an hour and a
+/// the app's own lowercase words — "three days, since March", "an hour and a
 /// half, all yours" — so its first letter is capitalised. Only those: a name
 /// or a place is what a person typed, and the app doesn't correct how someone
 /// writes their own kitchen.

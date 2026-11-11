@@ -73,7 +73,7 @@ final class BoxTests: XCTestCase {
         XCTAssertEqual(Box.closest([here: -41, there: -66]), here)
     }
 
-    /// A dock across the room, or next door, is not the one whose tag was read.
+    /// A dock across the room, or next door, is not the one whose card was read.
     func testPairingTakesNothingFarAway() {
         XCTAssertNil(Box.closest([UUID(): -82]))
         XCTAssertNil(Box.closest([:]))

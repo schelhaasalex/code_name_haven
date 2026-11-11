@@ -27,7 +27,8 @@ settings:
     # The version people see. The BUILD number is deliberately not here: a
     # setting in this file wins over an xcconfig, so it would override the
     # generated one and every upload would carry the same stale number. It
-    # comes from Config/Base.xcconfig, written by scripts/generate.sh.
+    # comes from Config/Build.xcconfig, which scripts/generate.sh writes and
+    # Config/Base.xcconfig includes.
     MARKETING_VERSION: "0.1"
     # iPhone only. It's a phone you set down; a portrait-only app that also
     # runs on iPad is refused at upload unless it demands full screen.
@@ -93,8 +94,8 @@ targets:
         # empty dictionary, which means the system background — white in light
         # mode, BLACK in dark — and the app then cut to bone. LaunchBone has a
         # single universal colour on purpose: the launch screen is paper in both
-        # appearances, because the app is. `scripts/shape.sh` keeps the hex here
-        # equal to the one on the Palette; UIKit reads this plist before any
+        # appearances, because the app is. `scripts/shape.sh` keeps LaunchBone's
+        # colour set equal to `Palette.bone`; UIKit reads this plist before any
         # Swift runs, so the value genuinely has to live in two places.
         UILaunchScreen:
           UIColorName: LaunchBone
@@ -105,7 +106,8 @@ targets:
         NSBluetoothAlwaysUsageDescription: >-
           $(APP_DISPLAY_NAME) listens to your box, so it hears when your phone goes in
           and comes out. It is never used to work out where you are.
-        # Asked when someone taps "Scan the card" on Home, never before. Declining
+        # Asked the first time someone opens the scanner (Home, Settings or a
+        # box's page), never before. Declining
         # leaves the Camera app, which reads the same card (rule 7).
         NSCameraUsageDescription: >-
           $(APP_DISPLAY_NAME) uses the camera to read the card that came with your box.

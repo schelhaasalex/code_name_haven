@@ -168,27 +168,24 @@ it, in increasing order of how annoying it is to reach:
 3. **In CI.** `.github/workflows/checks.yml`, on every pull request, alongside
    the schema tests.
 
-## Sensors and radios
+## The box's radio
 
-A sensor proposes; a person decides (rule 4). Nothing a sensor hears may start,
-end or credit an evening on its own — the most it can do is put a question on
-screen, and the most a refused permission may cost is that question.
+The box is the only switch (rule 4). Nothing else the phone can sense — being
+face down, motion, another phone nearby, a charger on its own — may start an
+evening, and none of those is read at all. What the phone senses about itself
+is used only to agree with the box: an app that finds itself in a hand, not
+charging, counts down as the box would (`AppState+Dock`).
 
-Anything that talks to another phone follows the same shape as `Nearby`:
-
-- **What travels is a key, not an address.** A place id works forever; a key
-  minted for one evening is worthless the moment it ends. If a value picked up
-  off a radio would still let someone in tomorrow, it is the wrong value.
-- **Believe the shape before the content.** Any device can advertise our ids
-  and answer with anything. Bytes off the air are checked against what one of
-  ours looks like (`Nearby.key`) before they ever reach a request.
-- **Ask when the question makes sense.** The Bluetooth prompt happens at the
-  dock, because "so the phones around you can find this table" only means
-  something a second after somebody set a phone down. The scanner stays silent
-  until then rather than prompting someone who has just signed in.
-- **Listen in the foreground, talk in the background.** The phone in a hand is
-  the one about to be put down; the phone already down is the one that has to
-  keep saying so.
+- **Believe the shape before the content.** Anything can advertise our ids.
+  A box is believed once it is the one its card named (`?b=`), or the closest
+  one when the card named none, and its bytes are checked against the
+  protocol (`Box`) before they reach a decision.
+- **Ask when the question makes sense.** The camera is asked for when someone
+  opens the scanner; Bluetooth only once there is a box to talk to (`BoxLink`
+  makes no manager before). Nobody without a box is asked about either.
+- **A refused permission costs only what it was for, and says so.** Bluetooth
+  off is said, with the way to Settings, where pairing would have happened —
+  never a silent box.
 
 The rule for the rules: **adding one here means adding a check there.** If it
 can't be checked, say so in the same breath, so the next person knows it rests

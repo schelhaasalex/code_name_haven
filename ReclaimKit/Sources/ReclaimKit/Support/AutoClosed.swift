@@ -2,7 +2,8 @@ import Foundation
 
 /// Screen 13: an evening the server closed at its cap — a phone left in the
 /// box overnight, or one whose leaving was never heard — said once, over Home,
-/// the next time the person looks. It is the only screen that interrupts.
+/// the next time the person looks. It is the only screen that appears without
+/// the person having just done something.
 ///
 /// Pure so it can be tested without a phone or a network.
 public enum AutoClosed {

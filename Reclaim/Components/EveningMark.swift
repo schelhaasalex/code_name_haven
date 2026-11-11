@@ -1,9 +1,9 @@
 import SwiftUI
 import ReclaimKit
 
-/// One dot for every evening you've had, tonight's among them. Behind the
-/// session screen, where it replaced the ticking timer, and on screen 8, where
-/// tonight's dot fills in.
+/// One dot for every evening you've had, tonight's among them: Home's sky
+/// (screen 2), above the words on the session screen (6), where it replaced
+/// the ticking timer, and on screen 8, where tonight's dot fills in.
 ///
 /// Tonight's is the outline until it counts. The sky — your first evening at
 /// the centre, each one after landing further out, in places your account

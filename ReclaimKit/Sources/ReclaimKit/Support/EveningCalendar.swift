@@ -39,7 +39,8 @@ public enum EveningCalendar {
         }
     }
 
-    /// `weeks` whole weeks ending with this one, Monday-first, oldest first.
+    /// What one day is: still to come, one that counted, or before or after
+    /// the first evening.
     ///
     /// `first` is the earliest evening in the set — the earliest the app knows
     /// of. `local_date` strings sort as dates, so `min()` is the first one.

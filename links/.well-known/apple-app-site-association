@@ -5,7 +5,7 @@
         "appIDs": ["73TQJ9R77A.com.alexschelhaas.reclaim"],
         "components": [
           { "/": "/", "exclude": true, "comment": "The home page stays a web page" },
-          { "/": "/*", "comment": "Everything else opens the app: a card (/p/<secret>), a slot in the box (/p/<secret>/<n>), an invitation (/i/<token>), and whatever comes next. Claimed whole, because phones cache this file for days and a path added later waits on every one of them" }
+          { "/": "/*", "comment": "Everything else opens the app: a box's card or code (/p/<secret>), and whatever comes next. Claimed whole, because phones cache this file for days and a path added later waits on every one of them" }
         ]
       }
     ]
