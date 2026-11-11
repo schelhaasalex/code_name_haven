@@ -2,16 +2,14 @@ import Foundation
 
 /// Every user-facing string, keyed `screen.element`.
 ///
-/// The voice is the product's primary asset, so it must be changeable without
-/// an App Store release: `strings.json` ships in the bundle as the fallback,
-/// and `apply(overrides:)` lets a fetched table win over it. Nothing fetches
-/// one yet — every string today is the bundle's.
+/// The voice is the product's primary asset, so it lives in one file,
+/// `strings.json`, bundled with the app (`copy/strings.json` is the same file,
+/// where it's edited).
 ///
 /// NEVER hardcode a user-facing string in a view.
 public enum Copy {
 
-    nonisolated(unsafe) private static var bundled: [String: Any] = load()
-    nonisolated(unsafe) private static var overrides: [String: String] = [:]
+    nonisolated(unsafe) private static let bundled: [String: Any] = load()
 
     private static func load() -> [String: Any] {
         guard let url = Bundle.module.url(forResource: "strings", withExtension: "json"),
@@ -22,7 +20,6 @@ public enum Copy {
     }
 
     public static subscript(_ key: String) -> String {
-        if let o = overrides[key] { return o }
         if let s = bundled[key] as? String { return s }
         #if DEBUG
         return "⟨\(key)⟩"   // visible in development, so a missing key is obvious
@@ -34,8 +31,6 @@ public enum Copy {
     public static func list(_ key: String) -> [String] {
         bundled[key] as? [String] ?? []
     }
-
-    public static func apply(overrides new: [String: String]) { overrides = new }
 }
 
 /// `t("home.headline")`, or `t("home.evenings.one", "month", "March")` →

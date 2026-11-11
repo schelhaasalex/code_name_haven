@@ -31,9 +31,9 @@ up, and the promise is that nobody sees how often anyone else wasn't there.
 RLS cannot express "aggregate but not enumerable", so this rule is the promise.
 
 **2. No user-facing string is hardcoded.** Everything lives in
-`copy/strings.json`, keyed `screen.element`, read through `Copy["home.headline"]`.
-The voice is the product's primary asset; it ships as a bundled fallback and is
-overridden from Supabase so it can change without an App Store release.
+`copy/strings.json`, keyed `screen.element`, read through `t("home.headline")`.
+The voice is the product's primary asset, and it has to be readable and
+changeable in one place — not scattered through views where a sweep misses one.
 
 **3. The count goes up, never down.** The app has no roster of who is present —
 only a list of who joined. Show presence, never absence. Never name someone who
@@ -223,7 +223,7 @@ scripts/shape.sh      # about a second, no toolchain, no network
 | No Swift file over 220 lines | A file nobody re-reads before adding to it is how it got long |
 | One view per file, named for the file | "Unless they're variants of one idea" is not a rule anyone holds |
 | `Reclaim/Components/` never mentions `AppState` | It's what keeps a component previewable and behaviour-free |
-| No `Text("…")` outside a `#Preview` | Rule 2 — a baked string can't be changed without a release |
+| No `Text("…")` outside a `#Preview` | Rule 2 — a string baked into a view is one the next sweep of the voice misses |
 | No literal colours outside `Design/` | A hex in a view drifts from the one beside it |
 | Every view has a `#Preview` | Screen 13 is unreachable at runtime without an evening the server closed |
 | Every `t("key")` is in `strings.json` | A missing key is `⟨key⟩` in dev and empty to a person |
