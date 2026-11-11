@@ -110,16 +110,4 @@ final class CopyTests: XCTestCase {
         XCTAssertEqual(t("home.suggestion.title", "nonsense", "x"),
                        Copy["home.suggestion.title"])
     }
-
-    // MARK: - Overrides
-
-    /// An applied override wins over the bundle, so once a table feeds it the
-    /// voice can change without an App Store release.
-    func testOverridesWinAndOnlyForKeysTheyName() {
-        defer { Copy.apply(overrides: [:]) }
-        let bundledBody = Copy["welcome.body"]
-        Copy.apply(overrides: ["welcome.headline": "Put it down."])
-        XCTAssertEqual(Copy["welcome.headline"], "Put it down.")
-        XCTAssertEqual(Copy["welcome.body"], bundledBody)
-    }
 }

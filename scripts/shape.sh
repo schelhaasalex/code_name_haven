@@ -52,9 +52,9 @@ for f in $(find Reclaim/Components -name '*.swift' | sort); do
   grep -q 'AppState' "$f" && bad "$f reads AppState — pass it what it needs instead"
 done
 
-# 4. CLAUDE.md rule 2. The voice ships as a bundled fallback and is overridden
-#    from Supabase; a string baked into a view can never be changed without an
-#    App Store release. Previews are exempt — nobody ships a preview.
+# 4. CLAUDE.md rule 2. The voice lives in copy/strings.json, in one place; a
+#    string baked into a view is one the next sweep of it misses. Previews are
+#    exempt — nobody ships a preview.
 note "No hardcoded user-facing strings"
 # Not just Text("…"): a string handed to Eyebrow, to a button's title, or to
 # VoiceOver is read by a person too, and each of these got past an earlier
