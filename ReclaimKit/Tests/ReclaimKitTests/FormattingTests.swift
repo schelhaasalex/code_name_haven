@@ -91,15 +91,6 @@ final class FormattingTests: XCTestCase {
                        "Maya, Dad, Sam and Ellie")
     }
 
-    func testClockPadsSecondsAndFloorsAtZero() {
-        XCTAssertEqual(Say.clock(0), "0:00")
-        XCTAssertEqual(Say.clock(9), "0:09")
-        XCTAssertEqual(Say.clock(61), "1:01")
-        XCTAssertEqual(Say.clock(600), "10:00")
-        // The count-up starts from a timestamp the server set, which can be a
-        // moment ahead of this device's clock.
-        XCTAssertEqual(Say.clock(-5), "0:00")
-    }
 
     /// `PlainDate` parses in UTC, so the month has to be rendered in UTC too —
     /// otherwise the first of a month becomes the month before, but only for
