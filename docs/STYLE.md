@@ -142,10 +142,6 @@ Live Activity imports ActivityKit. Splitting a pure `ReclaimCore` out would buy
 `swift test` and a CI job that needs no Mac. Worth doing the day there's CI,
 not before.
 
-The suite was authored without a Swift toolchain and **has not been run yet**.
-Expect the first pass to surface signature and inference errors rather than
-failures of logic; `docs/BUILD-NOTES.md` says where.
-
 ## Files and size
 
 Rough shapes, not rules:

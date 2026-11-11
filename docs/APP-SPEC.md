@@ -342,3 +342,44 @@ the receipt's landing, reconciliation, formatting and copy. The database owns
 the invariants — one live session per person, one open gathering per place,
 crediting at the cap — and `supabase/tests/` executes them. Don't re-implement
 those client-side; let the call fail.
+
+The simulator has no camera and no Bluetooth. The **Reclaim (Sample data)**
+scheme stands in for the box (`reclaim://box/in`, `reclaim://box/out`);
+scanning a card, the radio and the Live Activity's pushes need a real iPhone.
+
+---
+
+## Shipping
+
+**A TestFlight build.** `scripts/generate.sh`, then archive the **Reclaim**
+scheme for Any iOS Device — Product → Archive, or
+
+```sh
+xcodebuild archive -scheme Reclaim -destination 'generic/platform=iOS' \
+  -archivePath Reclaim.xcarchive -allowProvisioningUpdates
+```
+
+— and in the Organizer, Distribute App → App Store Connect. The build number
+is the number of commits behind `HEAD`, so a second upload needs a new commit;
+nobody bumps it by hand (`scripts/generate.sh`, CLAUDE.md). Signing is
+automatic in both targets (`project.yml` says why no identity is set). The
+upload needs nothing else: an opaque 1024 icon (a placeholder until there's a
+designed one, `scripts/placeholder-icon.swift`), a privacy manifest in the app
+and the widget, `ITSAppUsesNonExemptEncryption: false`, iPhone only, portrait.
+
+**The link site.** `links/` is the website a box's code opens: the
+`apple-app-site-association` that lets `/p/*` and `/i/*` open the app, and a
+page for a phone without it. It is the Vercel project **haven-links**, with
+`links` as its Root Directory so nothing else in the repository is served. A
+push builds a preview; the testing address, **haven-links-lime.vercel.app**, is
+production, so a change to `links/` is live only once its deployment is
+promoted. (`haven-links.vercel.app` is someone else's.) Phones cache the
+association for days, apart from the app, which is why the site claims every
+path up front. To see what Apple sees:
+
+```sh
+curl -sS https://app-site-association.cdn-apple.com/a/v1/haven-links-lime.vercel.app
+```
+
+Printed cards carry the domain for good: a card printed now opens the testing
+address for as long as it exists.
