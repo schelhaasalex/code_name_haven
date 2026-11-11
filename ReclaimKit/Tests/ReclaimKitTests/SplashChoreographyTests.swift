@@ -78,14 +78,4 @@ final class SplashChoreographyTests: XCTestCase {
         XCTAssertLessThanOrEqual(SplashChoreography.still.figure.duration, 0.02)
         XCTAssertLessThanOrEqual(SplashChoreography.still.core.duration, 0.02)
     }
-
-    // MARK: - Review mode
-
-    func testScalingStretchesDelayAndDurationTogether() {
-        let beat = SplashChoreography.Beat(delay: 0.5, duration: 0.25)
-        let half = beat.scaled(by: 2)
-        XCTAssertEqual(half.delay, 1.0, accuracy: 0.0001)
-        XCTAssertEqual(half.duration, 0.5, accuracy: 0.0001)
-        XCTAssertEqual(half.end, 1.5, accuracy: 0.0001)
-    }
 }

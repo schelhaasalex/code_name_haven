@@ -5,13 +5,11 @@ import Foundation
 /// The numbers live here rather than in the view for the reason every other
 /// piece of reasoning in this package does: a delay is a decision, and a
 /// decision inside a `View` cannot be tested, compared or changed in one place.
-/// `prototype/splash.html` runs the same four beats at the same durations, so
-/// what you review in a browser is what the phone does.
 ///
 /// Two other options were built against this one — a phone turning over, and a
-/// light coming up over the mark — and not chosen. They live on in the
-/// prototype, which is where a comparison belongs, rather than in a `switch`
-/// the app carries forever for a decision already made.
+/// light coming up over the mark — and not chosen. They are in git history,
+/// rather than in a `switch` the app carries forever for a decision already
+/// made.
 ///
 /// The four beats:
 ///
@@ -38,12 +36,6 @@ public struct SplashChoreography: Equatable, Sendable {
         }
 
         public var end: Double { delay + duration }
-
-        /// Used by the prototype's half-speed review mode and by nothing that
-        /// ships.
-        public func scaled(by factor: Double) -> Beat {
-            Beat(delay: delay * factor, duration: duration * factor)
-        }
     }
 
     public let figure: Beat

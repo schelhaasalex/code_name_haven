@@ -66,7 +66,7 @@ cli() {
   else "/Applications/Arduino IDE.app/Contents/Resources/app/lib/backend/resources/arduino-cli" "$@"; fi
 }
 
-# Once per run. Into a scratch folder: firmware/box/build/ is the IDE's, and a
+# Once per run. Into a scratch folder: firmware/box/build/ is the IDE's (and gitignored), and a
 # station run mustn't change anything in the repo.
 built=false
 build() {
