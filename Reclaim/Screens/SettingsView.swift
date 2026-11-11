@@ -83,8 +83,7 @@ struct SettingsView: View {
             ForEach(state.boxPlaces, id: \.self) { id in
                 let radio = status(id)
                 NavigationLink(value: BoxRoute(id: id)) {
-                    BoxCard(name: state.name(of: id), status: radio?.0, statusText: radio?.1,
-                            figures: figures(id))
+                    BoxCard(name: state.name(of: id), status: radio?.0, statusText: radio?.1)
                 }
                 .buttonStyle(.plain)
             }
@@ -102,17 +101,6 @@ struct SettingsView: View {
             guard !state.hasRadio(id) else { return nil }
             return (StatusDot.Style.quiet, t("settings.row.unpaired"))
         }
-    }
-
-    /// What it has kept, added up — only once it has kept something. One
-    /// figure, whole hours, with since when as its label: a count of days
-    /// beside it said "38" without saying since when, and the month made a
-    /// third box. The days are the box's page's, with its stage.
-    private func figures(_ id: UUID) -> [Figures.Item] {
-        guard let summary = state.boxSummaries[id], summary.evenings > 0 else { return [] }
-        let minutes = summary.wallClockMinutes
-        let label = Say.month(from: summary.since).map { t("box.kept.together", "month", $0) } ?? t("box.kept.hours")
-        return [Figures.Item(value: Say.duration(minutes: minutes >= 60 ? minutes / 60 * 60 : minutes), label: label)]
     }
 
     // MARK: Your days, and how it works

@@ -173,7 +173,7 @@
             <div class="back">‹</div>
             <h3 class="title">The Schelhaas Box</h3>
             <div class="card pad"><div class="eyebrow">What it has become</div><div class="stage">Settled in</div>
-              <div class="days new">38 days, since September.</div>
+              <div class="days new">38 days and 63 hours together, since September.</div>
               <div class="track"><div class="fill"></div><span class="on" style="left:0%">Day one</span><span class="on" style="left:24%">7</span><span class="on" style="left:47%">30</span><span style="left:71%">100</span><span style="left:92%">365</span></div></div>
             <div><div class="eyebrow">Its radio</div><div class="card pad radio"><span class="dot"></span>Connected. It hears your phone go in and come out.</div></div>
             <div><div class="eyebrow">Its name</div><div class="field">The Schelhaas Box</div><div class="hint">Everyone at this box sees this name.</div></div>
@@ -198,7 +198,7 @@
 const notes = {
   a: 'One figure, with since-when as its label. Days move to the box’s page, next to its stage.',
   b: 'The same fact as a sentence in the display face. Calmer, but the number no longer stands out.',
-  c: 'Just the box and its radio. All its numbers live on its page. The cleanest option, though Settings loses the one figure people like seeing.'
+  c: 'Chosen. Just the box and its radio. All its numbers live on its page, in one sentence beside its stage.'
 };
 const pick = o => {
   document.querySelectorAll('.bar button').forEach(b => b.setAttribute('aria-pressed', b.dataset.opt === o));
@@ -206,5 +206,5 @@ const pick = o => {
   document.getElementById('optNote').textContent = notes[o];
 };
 document.querySelectorAll('.bar button').forEach(b => b.addEventListener('click', () => pick(b.dataset.opt)));
-pick('a');
+pick('c');
 </script>

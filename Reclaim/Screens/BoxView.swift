@@ -103,10 +103,10 @@ struct BoxView: View {
         }
     }
 
-    /// What it has become: the stage in the display face, its days and since
-    /// when beneath, and the track through every stage — the days are what
-    /// the track is drawn in, so they belong here. The hours are Settings'.
-    /// Before its first day, only "Nothing here yet."
+    /// What it has become: the stage in the display face, what it has kept
+    /// beneath in one sentence — days, hours, since when — and the track
+    /// through every stage, which is drawn in days. The only place a box's
+    /// numbers are said. Before its first day, only "Nothing here yet."
     private func become(_ summary: PlaceSummary) -> some View {
         let days = summary.evenings
         return VStack(alignment: .leading, spacing: 8) {
@@ -114,8 +114,10 @@ struct BoxView: View {
             Text(days == 0 ? t("box.become.none") : t(BoxStage.key(summary.stage)))
                 .font(Type.display(26)).foregroundStyle(Palette.ink)
             if days > 0, let month = Say.month(from: summary.since) {
-                Text(days == 1 ? t("box.become.days.one", "month", month)
-                               : t("box.become.days", "count", "\(days)", "month", month))
+                let minutes = summary.wallClockMinutes
+                let hours = Say.spokenDuration(minutes: minutes >= 60 ? minutes / 60 * 60 : minutes)
+                Text(days == 1 ? t("box.become.days.one", "hours", hours, "month", month)
+                               : t("box.become.days", "count", "\(days)", "hours", hours, "month", month))
                     .font(Type.note).foregroundStyle(Palette.muted)
             }
             StageTrack(marks: [t("box.become.start")] + BoxStage.days.map { "\($0)" },
