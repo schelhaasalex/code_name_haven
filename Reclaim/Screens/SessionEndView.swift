@@ -32,6 +32,12 @@ struct SessionEndView: View {
         }
         .ground()
         .task { await land() }
+        // The one moment of reward in the app, felt as well as seen: a light
+        // tap as today's star fills. Only for a star that's new, and only
+        // where the mark is drawn.
+        .sensoryFeedback(.impact(weight: .light), trigger: landed) { _, now in
+            now && landing.known && landing.lands
+        }
     }
 
     private var receipt: some View {

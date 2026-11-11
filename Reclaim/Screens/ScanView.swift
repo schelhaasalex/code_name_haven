@@ -12,13 +12,15 @@ import ReclaimKit
 /// while the phone listens, and closes when the box is heard.
 ///
 /// The card is the box's code (`Dock.Link`), as is the code a phone already in
-/// the box shows. Any other QR code is ignored. It pairs, and starts nothing:
-/// a phone in a hand isn't in the box.
+/// the box shows. Any other QR code pairs nothing; held up for a moment, the
+/// line under the frame says it's a different code (`StrayCode`). It pairs,
+/// and starts nothing: a phone in a hand isn't in the box.
 struct ScanView: View {
     @Environment(AppState.self) private var state
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var stage: Stage = .asking
+    @State private var stray = StrayCode()
 
     enum Stage { case asking, looking, found, failed, denied }
 
@@ -96,7 +98,12 @@ struct ScanView: View {
     private var words: some View {
         VStack(spacing: 10) {
             if onCamera {
-                Text(t("scan.prompt")).font(Type.lede).foregroundStyle(Palette.cream)
+                TimelineView(.periodic(from: .now, by: 0.5)) { context in
+                    Text(t(stray.showing(at: context.date) ? "scan.other" : "scan.prompt"))
+                        .font(Type.lede).foregroundStyle(Palette.cream)
+                        .contentTransition(.opacity)
+                        .animation(.easeInOut(duration: 0.3), value: stray.showing(at: context.date))
+                }
             } else {
                 Text(t(keys.headline)).font(Type.display(32)).foregroundStyle(Palette.ink)
                     .id(keys.headline)
@@ -159,7 +166,11 @@ struct ScanView: View {
     // MARK: The camera
 
     private func read(_ text: String) {
-        guard stage == .looking, let url = URL(string: text), let link = Dock.link(from: url) else { return }
+        guard stage == .looking else { return }
+        guard let url = URL(string: text), let link = Dock.link(from: url) else {
+            stray.seen(at: .now)
+            return
+        }
         state.pairing = nil
         stage = .found
         Task {

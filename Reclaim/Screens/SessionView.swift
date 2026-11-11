@@ -82,6 +82,13 @@ struct SessionView: View {
                 .opacity(state.leavingUntil == nil ? 1 : 0)
         }
         .ground(night: true)
+        // Out of the box with the app open in a hand: one tap as the
+        // countdown starts, so it's felt before it's read. Nothing when it's
+        // put back. iOS plays haptics only for the app on screen, so a phone
+        // taken out locked has the lock screen's countdown and no tap.
+        .sensoryFeedback(.impact(weight: .medium), trigger: state.leavingUntil) { old, new in
+            old == nil && new != nil
+        }
     }
 
     /// Your evenings, above the words. Looked at once a minute, so tonight's

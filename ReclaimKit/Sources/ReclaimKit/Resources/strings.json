@@ -50,6 +50,7 @@
   "pair.scan": "Scan the card",
   "scan.close": "Not now",
   "scan.prompt": "The card that came with your box.",
+  "scan.other": "That's a different code. It's the one on the card that came with your box.",
   "scan.found.headline": "Listening for your box.",
   "scan.found.body": "Hold your phone near it.",
   "scan.paired.headline": "There it is.",
@@ -249,6 +250,7 @@
   "error.retry": "That didn't take. Try it again?",
   "unreachable.headline": "Not connected yet.",
   "unreachable.body": "The first time, this needs the internet for a moment. There's nothing else to set up.",
-  "unreachable.retry": "Try again"
+  "unreachable.retry": "Try again",
+  "unreachable.trying": "Trying…"
 
 }
