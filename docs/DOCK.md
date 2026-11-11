@@ -90,8 +90,9 @@ again.
    of `firmware/box/box.ino` must match the production wiring. The script
    can't tell.
 
-The card's fonts, Fraunces and Work Sans, are in `scripts/card/fonts/` (both
-OFL), so it prints the same with no network; the script refuses a PDF that
+The card's fonts, Fraunces and Work Sans, are the app's own
+(`ReclaimKit/Sources/ReclaimKit/Resources/Fonts`, both OFL), so the card and
+the app match and it prints the same with no network; the script refuses a PDF that
 came out in a fallback font. Its "No app yet?" line appears only once
 `STORE_URL` in `links/index.html` is set: until then the page a scan opens has
 no way to the app. Change the card's words in the template, not the script.

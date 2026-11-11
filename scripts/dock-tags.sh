@@ -146,15 +146,15 @@ card() { # code link, box id or empty, pdf
   [ -x "$chrome" ] || die "No Chrome at $chrome (set CHROME). The card is printed by it."
   png=$here/box-${id:-code}.png
   draw "$code" "$png"
-  python3 - "$repo/scripts/card" "$png" "${id:+Box $id}" "$(store_line)" "$html" <<'PY'
+  python3 - "$repo/scripts/card" "$repo/ReclaimKit/Sources/ReclaimKit/Resources/Fonts" "$png" "${id:+Box $id}" "$(store_line)" "$html" <<'PY'
 import base64, sys
-card, png, box, store, out = sys.argv[1:]
+card, fonts, png, box, store, out = sys.argv[1:]
 def uri(path, kind):
     return "data:%s;base64,%s" % (kind, base64.b64encode(open(path, "rb").read()).decode())
 html = open(card + "/postcard.html").read()
 for key, value in {
-    "{{FRAUNCES}}": uri(card + "/fonts/Fraunces.ttf", "font/ttf"),
-    "{{WORKSANS}}": uri(card + "/fonts/WorkSans.ttf", "font/ttf"),
+    "{{FRAUNCES}}": uri(fonts + "/Fraunces.ttf", "font/ttf"),
+    "{{WORKSANS}}": uri(fonts + "/WorkSans.ttf", "font/ttf"),
     "{{QR}}": uri(png, "image/png"),
     "{{BOX}}": box,
     "{{STORE}}": store,
@@ -168,7 +168,7 @@ PY
     || die "Chrome couldn't print the card."
   # A card in a fallback font is one nobody notices until a thousand are made.
   for font in Fraunces WorkSans; do
-    LC_ALL=C grep -aq "$font" "$pdf" || die "$pdf isn't in $font — check scripts/card/fonts."
+    LC_ALL=C grep -aq "$font" "$pdf" || die "$pdf isn't in $font — check ReclaimKit/Sources/ReclaimKit/Resources/Fonts."
   done
   echo "card    $pdf"
   if [ -n "$printer" ]; then
