@@ -472,7 +472,7 @@ function render() {
   const dur = '1h 20m';
   if (none) { el('rLine').textContent = together > 1 ? dur + ', the three of you.' : dur + ', all yours.'; el('rLine').classList.remove('new'); el('rWhy').hidden = true; }
   else if (together > 1) { el('rLine').textContent = dur + ', the three of you.'; el('rLine').classList.remove('new'); el('rWhy').hidden = false; el('rWhyText').textContent = r.label + ', you said.'; }
-  else { el('rLine').textContent = dur + ', ' + r.for + '.'; el('rLine').classList.add('new'); el('rWhy').hidden = true; }
+  else { el('rLine').textContent = dur + ' back, ' + r.for + '.'; el('rLine').classList.add('new'); el('rWhy').hidden = true; }
 
   // 4 · note
   const showNote = !none && !counted;
@@ -483,7 +483,7 @@ function render() {
 
   // 5 · what it's for
   el('gTitle').textContent = none ? 'Nothing yet' : r.label;
-  el('gSince').textContent = none ? 'Pick one whenever you like. Until then, every line reads as it does today.' : 'You chose this on 2 October. Your phone has been in the box on 23 days since.';
+  el('gSince').textContent = none ? 'Pick one whenever you like. Until then, every line reads as it does today.' : '23 days ' + r.for + ', since 2 October. 41 hours back in all.';
   el('gNote').hidden = none;
   el('gChips').innerHTML = REASONS.filter(x => !x.none).map(x => '<button data-r="' + x.id + '" class="' + (x.id === reason ? 'on' : '') + '" aria-pressed="' + (x.id === reason) + '">' + esc(x.own ? (reason === 'own' ? resolve(x).label : 'Own words') : x.label) + '</button>').join('');
   el('sForValue').textContent = none ? 'Not chosen yet' : r.label;
@@ -493,7 +493,7 @@ function render() {
   // table
   el('copyTable').innerHTML = REASONS.filter(x => !x.none).map(x => {
     const y = resolve(x);
-    return '<tr class="' + (x.id === reason ? 'current' : '') + '"><td>' + esc(y.label) + '</td><td>' + esc(headOf(x.id, y)) + '</td><td>Today counts, ' + esc(y.for) + '.</td><td>1h 20m, ' + esc(y.for) + '.</td><td>' + y.notes.map(n => esc(fill(n))).join('<br>') + '</td></tr>';
+    return '<tr class="' + (x.id === reason ? 'current' : '') + '"><td>' + esc(y.label) + '</td><td>' + esc(headOf(x.id, y)) + '</td><td>Today counts, ' + esc(y.for) + '.</td><td>1h 20m back, ' + esc(y.for) + '.</td><td>' + y.notes.map(n => esc(fill(n))).join('<br>') + '</td></tr>';
   }).join('');
 }
 const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
