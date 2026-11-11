@@ -4,15 +4,10 @@ import SwiftUI
 ///
 /// Both are OFL and free to bundle. Until the .ttf files are added to
 /// Reclaim/Resources/Fonts, these fall back to the system serif and sans, which
-/// keeps the app building and running from the first commit — check `isCustom`
-/// if you want to know which you're looking at.
+/// keeps the app building and running from the first commit.
 public enum Type {
     public static let displayName = "Fraunces"
     public static let bodyName    = "WorkSans-Regular"
-
-    public static var isCustom: Bool {
-        UIFont(name: displayName, size: 12) != nil
-    }
 
     /// Fraunces. Used large and sparingly.
     public static func display(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {

@@ -35,7 +35,7 @@ struct AutoClosedView: View {
         VStack(alignment: .leading, spacing: 22) {
             Text(t("autoclosed.headline"))
                 .font(Type.display(44)).foregroundStyle(Palette.ink)
-            Text(t("autoclosed.body", "time", session.startedAt.shortTime))
+            Text(t("autoclosed.body", "time", Say.time(session.startedAt)))
                 .font(Type.lede).foregroundStyle(Palette.ink2).lineSpacing(4)
             PaperCard {
                 StatRow(title: place ?? t("box.yours"),

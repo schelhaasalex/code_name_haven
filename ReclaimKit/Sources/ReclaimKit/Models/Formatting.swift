@@ -112,11 +112,6 @@ public enum Say {
         return f.string(from: date)
     }
 
-    public static func clock(_ elapsed: TimeInterval) -> String {
-        let s = max(0, Int(elapsed))
-        return "\(s / 60):" + String(format: "%02d", s % 60)
-    }
-
     /// The month a place became itself. "March".
     ///
     /// Formats in UTC because `PlainDate` parses in UTC. Without that, the
