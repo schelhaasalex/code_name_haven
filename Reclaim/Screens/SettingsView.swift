@@ -35,6 +35,12 @@ struct SettingsView: View {
                                action: openSettings)
                 }
                 if !state.boxPlaces.isEmpty { boxes }
+                LabelledSection(label: t("settings.reason.label")) {
+                    NavigationLink(value: ReasonView.Route()) {
+                        NavRow(icon: "leaf", title: state.reason?.label ?? t("settings.reason.none"))
+                    }
+                    .buttonStyle(.plain)
+                }
                 if state.kept != nil { keep }
                 LabelledSection(label: t("settings.how.label")) {
                     StepLine(steps: steps)
@@ -83,8 +89,7 @@ struct SettingsView: View {
             ForEach(state.boxPlaces, id: \.self) { id in
                 let radio = status(id)
                 NavigationLink(value: BoxRoute(id: id)) {
-                    BoxCard(name: state.name(of: id), status: radio?.0, statusText: radio?.1,
-                            figures: figures(id))
+                    BoxCard(name: state.name(of: id), status: radio?.0, statusText: radio?.1)
                 }
                 .buttonStyle(.plain)
             }
@@ -102,22 +107,6 @@ struct SettingsView: View {
             guard !state.hasRadio(id) else { return nil }
             return (StatusDot.Style.quiet, t("settings.row.unpaired"))
         }
-    }
-
-    /// What it has kept, added up — only once it has kept something. Whole
-    /// hours: three figures share the card's width.
-    private func figures(_ id: UUID) -> [Figures.Item] {
-        guard let summary = state.boxSummaries[id], summary.evenings > 0 else { return [] }
-        let minutes = summary.wallClockMinutes
-        var items = [
-            Figures.Item(value: Say.duration(minutes: minutes >= 60 ? minutes / 60 * 60 : minutes),
-                         label: t("box.kept.hours")),
-            Figures.Item(value: "\(summary.evenings)", label: t("box.kept.evenings")),
-        ]
-        if let month = Say.month(from: summary.since) {
-            items.append(Figures.Item(value: month, label: t("box.kept.since")))
-        }
-        return items
     }
 
     // MARK: Your days, and how it works

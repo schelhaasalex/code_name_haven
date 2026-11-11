@@ -239,6 +239,8 @@ scripts/shape.sh      # about a second, no toolchain, no network
 | An evening is closed at the same cap everywhere | The lock screen goes quiet at the cap by itself, in case the push that ends it never comes; a cap in the push that differs from the server's says "closed" over an evening still going |
 | Only the box starts an evening | Rule 4. A button, face-down, a motion guess, a nearby phone, Siri and the slots' tags were each one call to `setItDown` from somewhere new. Only the radio's file may make it, and the simulator's stand-in for a slot only under `#if DEBUG` |
 | The box and the phone use the same Bluetooth ids | They live in `Box.swift` and `box.ino`; a box on one set is never heard by an app on the other, and nothing says why |
+| Only the daily nudge sends a notification, and silently | One file schedules them, asking iOS for alerts alone. A buzz that makes someone pick up their phone is the app becoming the problem |
+| Nobody's reason reaches the lock screen | What someone's time is for is theirs. The Live Activity is face up in a box the whole room can see, and the daily nudge lands on a phone lying wherever it was left, so its lines name the box and nothing else |
 | Every link the app makes opens it | The site claims every path but the home page. Phones cache `apple-app-site-association` for days, apart from the app, and a path added later (`/d/`, the slot links' first home) opened Safari until that cache refreshed |
 
 It runs in CI on every pull request, and from a `Stop` hook in

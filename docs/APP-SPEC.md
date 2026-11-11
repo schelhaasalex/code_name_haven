@@ -136,11 +136,13 @@ days, deleting the account, a card that couldn't be read from a link — sets
 | 2b | Scan the card — the camera, then pairing | `ScanView` | full screen, from 2a |
 | 6 | In the box — with others, or alone | `SessionView` | root while live |
 | 8 | The receipt | `SessionEndView` | root, once, after an evening |
+| 8a | What would you like the time for? — then the note, offered | `ReasonSheet` | sheet over Home, once, after a receipt that counted |
 | 13 | We closed this one for you | `AutoClosedView` | sheet over Home |
 | 16 | Settings — anything to fix first, your boxes, keeping your evenings, how it works, privacy, deleting the account | `SettingsView` | push |
 | 16a | One box — what it has become, its radio, its name, another phone, Forget | `BoxView` | push from 16 |
 | 16b | The box's code, for another phone to scan | `BoxCodeSheet` | sheet from 16a, "Show its code" |
 | 16b | Privacy — what we can see | `PrivacyView` | push from 16 |
+| 16c | What it's for — the reason, what it has had, the note, change or clear | `ReasonView` | push from 16, or from Home's headline |
 | — | No network on the first launch | `UnreachableView` | root |
 | 7 | Lock screen, Dynamic Island, Watch | Live Activity | `ReclaimWidgets` |
 
@@ -199,6 +201,43 @@ its *At …* line and the lock screen says only since when, rather than a name
 for a box that doesn't exist.
 
 ---
+
+## What it's for
+
+One question, asked once (screen 8a): *What would you like the time for?*
+The kids, each other, a book, being outside, better sleep, making something,
+some quiet, or their own words. It comes after the receipt of a day that
+counted — the first ever, or for someone who had days already, their next —
+never at pairing, which stays the only setup. "Not now" is an answer: nothing
+changes and it isn't asked again; Settings keeps a "What it's for" row
+(screen 16c) where it can be chosen, changed or cleared at any time.
+
+`Reason` (ReclaimKit) is what they **said**, never what happened, so every
+line says *for*, never *with*: Home's headline *Some time for the kids.*
+(without a reason, *Some time back.*), with *It starts when your phone goes
+in.* under it; *Today counts, for the kids.*; the receipt's *An hour and
+twenty minutes back, for the kids.*, or together, the count as before and
+*The kids, you said.* under it; and on its page, *23 days for the kids, since
+October, and 41 hours back in all* — from your own sessions since it was
+chosen. Their own words are kept as typed, but for where a capital stands:
+*The garden* reads *for the garden* mid-sentence, and *the garden* opens a
+line as *The garden*; a name keeps its capital. It lives in this phone's
+defaults and nowhere else: never sent, never shown to anyone at the box, and
+never on a lock screen — not the Live Activity's, which the room can see, nor
+the note's, which anyone near the phone can (`scripts/shape.sh`). A new phone
+doesn't carry it.
+
+**The note.** Offered once a reason is kept, with a sample of what it would
+say, and asked of iOS only on *Yes, once a day* (alerts: no sound, no badge).
+`NudgeSchedule` sets its time from the box — fifteen minutes before the
+median time your phone went in over the last fourteen days that counted,
+kept between seven and a quarter to ten — and plans a week ahead each time
+the evenings are read. Never on a day that already counts; today's is taken
+back the moment a phone goes in (`adopt`). Someone who stops opening the app
+gets a week of them and then nothing. It names the box and nothing else —
+*A while, if you like. Your phone can wait in The Harbor.* — the same two
+lines, day about, for everyone (`nudge.lines`). Only `Reclaim/Entry/Nudges.swift`
+touches notifications. In code it's a *nudge*: `Note` is the diagnostics log.
 
 ## The box
 

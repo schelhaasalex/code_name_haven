@@ -1,0 +1,516 @@
+<title>What It's For</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=Work+Sans:wght@400;500;600&display=swap">
+<style>
+  /* A proposal: "What it's for", one personal reason per person that colours
+     the copy and earns at most one note a day. Phones are drawn at about
+     0.8 of SwiftUI points and stay in the app's own paper world in both
+     themes, as the app does. The page around them follows the viewer's theme.
+     Copy marked .new is not in copy/strings.json yet. */
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+
+  :root {
+    /* page */
+    --ground: #EFE9DC; --surface: #FFFDF8; --text: #1F1B16; --text-2: #4A4239;
+    --quiet: #6B6155; --rule: #C9C0B0; --accent: #B4512C; --chip-on-text: #F7F4EE;
+    /* the app's paper world: fixed, as Palette is */
+    --bone: #F7F4EE; --paper: #FFFDF8; --linen: #EFE9DC; --ink: #1F1B16; --ink-2: #4A4239;
+    --muted: #6B6155; --line: #E3DDD1; --hair: #C9C0B0; --clay: #B4512C;
+    --night: #17140F; --night-card: #221D16; --cream: #F3EDE1; --dust: #A39685; --edge: #453C30;
+    --gold: #C9A961; --blue: #8C9AB4;
+    --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+    --sans: 'Work Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --ground: #17140F; --surface: #221D16; --text: #F3EDE1; --text-2: #D6CCBC;
+    --quiet: #A39685; --rule: #453C30; --accent: #E08A4E; --chip-on-text: #17140F; color-scheme: dark } }
+  :root[data-theme="dark"] {
+    --ground: #17140F; --surface: #221D16; --text: #F3EDE1; --text-2: #D6CCBC;
+    --quiet: #A39685; --rule: #453C30; --accent: #E08A4E; --chip-on-text: #17140F; color-scheme: dark }
+
+  body { background: var(--ground); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding-block: 36px 80px;
+          padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+  .kicker { font: 600 12px var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--quiet); }
+  h1 { font: 400 clamp(30px, 5vw, 44px)/1.08 var(--serif); margin: 12px 0 0; max-width: 22ch; text-wrap: balance; }
+  h2 { font: 400 26px/1.2 var(--serif); margin: 0; text-wrap: balance; }
+  .lede { font-size: 16px; line-height: 1.6; color: var(--text-2); margin: 14px 0 0; max-width: 66ch; }
+
+  .controls { display: grid; gap: 14px; margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--rule); }
+  .controls .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .controls .label { font: 600 11px var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--quiet); min-width: 92px; }
+  .controls button { font: 500 13px var(--sans); min-height: 36px; padding: 0 14px; border-radius: 18px; cursor: pointer;
+    border: 1px solid var(--rule); background: var(--surface); color: var(--text-2); }
+  .controls button[aria-pressed="true"] { background: var(--text); border-color: var(--text); color: var(--chip-on-text); }
+  .controls button:focus-visible, .q-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .controls input { font: 500 13px var(--sans); min-height: 36px; padding: 0 12px; border-radius: 18px; width: 200px; max-width: 100%;
+    border: 1px solid var(--rule); background: var(--surface); color: var(--text); }
+
+  .phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 36px 24px; margin-top: 32px; }
+  .phone-col { display: grid; gap: 12px; align-content: start; min-width: 0; }
+  .cap { font: 600 11px var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--quiet); text-align: center; }
+  .cap b { color: var(--accent); font-weight: 600; }
+  .phone-note { font-size: 13px; line-height: 1.5; color: var(--quiet); text-align: center; max-width: 34ch; margin: 0 auto; }
+
+  .device { width: 314px; max-width: 100%; height: 640px; margin: 0 auto; background: var(--bone); color: var(--ink); border-radius: 40px;
+    border: 1px solid var(--hair); overflow: hidden; position: relative; display: flex; flex-direction: column;
+    box-shadow: 0 22px 44px rgba(31,27,22,.12), 0 2px 6px rgba(31,27,22,.06); }
+  .status { height: 44px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; font: 600 14px var(--sans); }
+  .screen { flex: 1; padding: 0 24px 28px; display: flex; flex-direction: column; min-height: 0; }
+
+  /* home */
+  .top { display: flex; align-items: center; gap: 10px; margin-top: 18px; }
+  .top .mark { width: 22px; height: 22px; border-radius: 50%; border: 1.6px solid var(--clay); display: grid; place-items: center; }
+  .top .mark::after { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--clay); }
+  .top .name { font: 600 11px var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--ink-2); }
+  .top .gear { margin-left: auto; color: var(--ink-2); }
+  .sky { flex: 1; display: grid; place-items: center; min-height: 0; }
+  .sky svg { width: 100%; max-width: 250px; height: auto; }
+  .home-foot { text-align: center; display: grid; gap: 8px; padding-bottom: 18px; }
+  .eyebrow { font: 600 11px var(--sans); letter-spacing: .18em; text-transform: uppercase; color: var(--clay); }
+  .headline { font: 400 26px/1.15 var(--serif); margin: 0; text-wrap: balance; }
+  .subline { font-size: 14px; line-height: 1.45; color: var(--muted); margin: 0; }
+  .subline .why { color: var(--ink-2); }
+
+  /* question */
+  .sheet-top { margin-top: 26px; display: grid; gap: 10px; }
+  .q-title { font: 400 27px/1.12 var(--serif); margin: 0; text-wrap: balance; }
+  .q-body { font-size: 14px; line-height: 1.5; color: var(--ink-2); margin: 0; }
+  .q-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; margin-bottom: 16px; }
+  .q-chip { font: 500 13px var(--sans); padding: 7px 11px; border-radius: 20px; border: 1px solid var(--line); background: var(--paper); color: var(--ink-2); cursor: pointer; }
+  .q-chip.on { background: var(--ink); color: var(--bone); border-color: var(--ink); }
+  .q-chip.own { border-style: dashed; border-color: var(--hair); color: var(--muted); }
+  .q-actions { margin-top: auto; display: grid; gap: 6px; }
+  .btn { height: 48px; border-radius: 24px; background: var(--ink); color: var(--bone); display: grid; place-items: center; font: 500 15px var(--sans); }
+  .btn.ghost { background: transparent; color: var(--muted); }
+  .q-step { display: none; flex: 1; flex-direction: column; }
+  .q-step.on { display: flex; }
+  .offer { margin-top: 22px; background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 8px; }
+  .offer b { font: 400 20px/1.2 var(--serif); }
+  .offer p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+
+  /* receipt */
+  .receipt { display: flex; flex-direction: column; gap: 6px; margin-top: 30px; }
+  .r-span { font: 600 11px var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  .r-line { font: 400 30px/1.1 var(--serif); margin: 4px 0 0; text-wrap: balance; }
+  .r-where { font-size: 14px; color: var(--muted); margin: 0; }
+  .r-why { margin-top: 16px; display: flex; gap: 10px; align-items: baseline; font-size: 14px; color: var(--ink-2); border-top: 1px solid var(--line); padding-top: 14px; }
+  .r-why small { font: 600 10px var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); flex: none; }
+  .r-sky { flex: 1; display: grid; place-items: center; min-height: 0; }
+  .r-sky svg { width: 70%; height: auto; }
+
+  /* lock screen */
+  .device.lock { background: var(--night); color: var(--cream); border-color: var(--edge); }
+  .lock .screen { align-items: stretch; }
+  .lock .date { text-align: center; font: 500 15px var(--sans); color: var(--dust); margin-top: 26px; }
+  .lock .clock { text-align: center; font: 300 76px/1 var(--serif); margin-top: 2px; letter-spacing: -.02em; }
+  .banner { margin-top: auto; margin-bottom: 64px; background: rgba(243,237,225,.12); border-radius: 20px; padding: 12px 14px; display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; }
+  .banner .icon { width: 34px; height: 34px; border-radius: 9px; background: var(--bone); display: grid; place-items: center; }
+  .banner .icon i { width: 14px; height: 14px; border-radius: 50%; border: 1.6px solid var(--clay); display: grid; place-items: center; }
+  .banner .icon i::after { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--clay); }
+  .banner .head { display: flex; justify-content: space-between; font: 600 13px var(--sans); }
+  .banner .head span { font-weight: 400; color: var(--dust); }
+  .banner p { margin: 2px 0 0; font-size: 13.5px; line-height: 1.4; color: var(--cream); }
+  .lock .silent { text-align: center; color: var(--dust); font-size: 13px; line-height: 1.5; margin: auto 10px 70px; }
+  .lock .bar { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 110px; height: 4px; border-radius: 2px; background: var(--cream); opacity: .7; }
+
+  /* what it's for: the page */
+  .back { width: 38px; height: 38px; border-radius: 19px; border: 1px solid var(--line); background: var(--paper); display: grid; place-items: center; margin-top: 8px; color: var(--ink-2); }
+  .g-head { margin-top: 18px; display: grid; gap: 6px; }
+  .g-title { font: 400 34px/1.05 var(--serif); margin: 0; text-wrap: balance; }
+  .g-since { font-size: 13.5px; line-height: 1.5; color: var(--ink-2); margin: 0; }
+  .g-card { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: grid; gap: 8px; margin-top: 14px; }
+  .g-card .k { font: 600 10px var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .g-card .row2 { display: flex; align-items: center; gap: 10px; font: 500 14px var(--sans); }
+  .g-card .row2 small { display: block; font: 400 12.5px var(--sans); color: var(--muted); margin-top: 2px; }
+  .toggle { margin-left: auto; width: 44px; height: 26px; border-radius: 13px; background: var(--ink); position: relative; flex: none; }
+  .toggle::after { content: ""; position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--bone); }
+  .g-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .g-chips button { font: 500 12px var(--sans); padding: 5px 9px; border-radius: 14px; border: 1px solid var(--line); color: var(--ink-2); background: var(--paper); cursor: pointer; }
+  .g-chips button.on { background: var(--ink); color: var(--bone); border-color: var(--ink); }
+  .tap { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: inherit; }
+  .device button:focus-visible { outline: 2px solid var(--clay); outline-offset: 3px; }
+  .top .gear-btn { margin-left: auto; color: var(--ink-2); display: grid; place-items: center; width: 36px; height: 36px; margin-right: -7px; }
+  button.back { cursor: pointer; padding: 0; }
+  button.g-card { width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+  .g-row .row2 b { font-weight: 500; }
+  .g-row .chev { margin-left: auto; color: var(--hair); }
+  .tap-hint { color: var(--accent); }
+  .g-clear { margin-top: auto; text-align: center; font: 500 13px var(--sans); color: var(--muted); padding: 10px; }
+
+  .new { text-decoration: underline wavy rgba(180,81,44,.5); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+  /* prose sections */
+  .section { margin-top: 64px; display: grid; gap: 18px; }
+  .section > p { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-2); max-width: 70ch; }
+  .rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px 32px; }
+  .rules div { border-top: 1px solid var(--rule); padding-top: 12px; min-width: 0; }
+  .rules b { display: block; font: 400 18px var(--serif); margin-bottom: 6px; }
+  .rules b small { font: 600 10px var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-right: 6px; }
+  .rules p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--text-2); }
+
+  .when { display: grid; gap: 0; max-width: 760px; }
+  .when div { display: grid; grid-template-columns: 120px 1fr; gap: 16px; padding: 12px 0; border-top: 1px solid var(--rule); font-size: 14px; line-height: 1.55; color: var(--text-2); }
+  .when div b { font: 400 17px var(--serif); color: var(--text); }
+
+  .table-wrap { overflow-x: auto; border-top: 1px solid var(--rule); }
+  table { border-collapse: collapse; width: 100%; min-width: 820px; font-size: 13.5px; line-height: 1.45; }
+  th { text-align: left; font: 600 10.5px var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--quiet); padding: 12px 12px 10px 0; }
+  td { padding: 12px 12px 12px 0; border-top: 1px solid var(--rule); vertical-align: top; color: var(--text-2); }
+  td:first-child { font: 400 16px var(--serif); color: var(--text); white-space: nowrap; }
+  tr.current td { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+
+  .never { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .never div { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 14px; min-width: 0; }
+  .never s { font: 400 17px/1.3 var(--serif); color: var(--text); text-decoration-color: var(--accent); text-decoration-thickness: 1.5px; }
+  .never p { margin: 8px 0 0; font-size: 13px; line-height: 1.5; color: var(--quiet); }
+
+  pre { margin: 0; overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 16px;
+        font: 12.5px/1.6 ui-monospace, 'SF Mono', Menlo, monospace; color: var(--text-2); }
+
+  @media (max-width: 400px) { .when div { grid-template-columns: 1fr; gap: 4px; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="wrap">
+  <div class="kicker">A proposal · onboarding and the daily note</div>
+  <h1>What it's for</h1>
+  <p class="lede">After your first day counts, the app asks one thing, once: what you'd like the time for. The answer stays on your phone. It changes a few lines in the app, and if you want it, earns one quiet note a day. Pick a reason below and every screen follows. Copy underlined in clay is new.</p>
+
+  <div class="controls" role="group" aria-label="Prototype controls">
+    <div class="row" id="reasonRow"><span class="label">Their reason</span></div>
+    <div class="row"><span class="label">Own words</span><input id="own" value="Piano practice" aria-label="Their own words"></div>
+    <div class="row" id="stateRow"><span class="label">Today</span>
+      <button data-state="waiting" aria-pressed="true">Hasn't counted yet</button>
+      <button data-state="counted" aria-pressed="false">Already counts</button>
+    </div>
+    <div class="row" id="withRow"><span class="label">Evening</span>
+      <button data-with="1" aria-pressed="true">On your own</button>
+      <button data-with="3" aria-pressed="false">Three of you</button>
+    </div>
+  </div>
+
+  <div class="phones">
+    <div class="phone-col">
+      <div class="cap">1 · The first receipt, <b>once</b></div>
+      <div class="device"><div class="status"><span>8:02</span><span>●●● ▮</span></div>
+        <div class="screen">
+          <div class="q-step on" id="qStep1">
+            <div class="sheet-top">
+              <div class="eyebrow new">Your first day</div>
+              <h3 class="q-title new">What would you like the time for?</h3>
+              <p class="q-body new">Just for you. Nobody at the box sees it, and it stays on this phone.</p>
+            </div>
+            <div class="q-chips" id="qChips"></div>
+            <div class="q-actions">
+              <div class="btn new">Keep this</div>
+              <div class="btn ghost new">Not now</div>
+            </div>
+          </div>
+          <div class="q-step" id="qStep2">
+            <div class="sheet-top">
+              <div class="eyebrow" id="q2eyebrow">For the kids</div>
+              <h3 class="q-title new">A note around 6:40, once a day?</h3>
+              <p class="q-body new">Around when your phone went in today. Never on a day that already counts, and never while it's in the box.</p>
+            </div>
+            <div class="offer">
+              <b class="new">It would read</b>
+              <p id="q2sample"></p>
+            </div>
+            <div class="q-actions">
+              <div class="btn new">Yes, once a day</div>
+              <div class="btn ghost new">No notes</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row" style="display:flex;justify-content:center;gap:8px" role="group" aria-label="Question step">
+        <button class="q-chip on" id="s1" aria-pressed="true">The question</button>
+        <button class="q-chip" id="s2" aria-pressed="false">The note offer</button>
+      </div>
+      <p class="phone-note">Asked under the receipt of the first day that counts, never during pairing. "Scan the card" stays the only setup there is.</p>
+    </div>
+
+    <div class="phone-col">
+      <div class="cap">2 · Home, <b>tap through it</b></div>
+      <div class="device"><div class="status"><span>7:14</span><span>●●● ▮</span></div>
+        <div class="screen" id="vHome">
+          <div class="top"><span class="mark"></span><span class="name">The Schelhaas Box</span>
+            <button class="tap gear-btn" id="toSettings" aria-label="Settings"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="15" cy="6" r="2" fill="#FFFDF8"/><circle cx="9" cy="12" r="2" fill="#FFFDF8"/><circle cx="14" cy="18" r="2" fill="#FFFDF8"/></svg></button></div>
+          <div class="sky" id="homeSky"></div>
+          <div class="home-foot">
+            <div class="eyebrow">Wednesday evening</div>
+            <h3 class="headline"><button class="tap" id="homeHead">Put your phone in The Schelhaas Box.</button></h3>
+            <p class="subline" id="homeSub"></p>
+          </div>
+        </div>
+        <div class="screen" id="vSettings" hidden>
+          <button class="back" id="settingsBack" aria-label="Back to Home"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <div class="g-head">
+            <h3 class="g-title">Settings</h3>
+            <p class="g-since">Your box, your days, and the rules it keeps.</p>
+          </div>
+          <div class="g-card"><div class="k">Your box</div>
+            <div class="row2"><div><b>The Schelhaas Box</b><small>Connected</small></div></div></div>
+          <button class="g-card g-row" id="toFor"><div class="k new">What it's for</div>
+            <div class="row2"><div><b id="sForValue">The kids</b><small class="new" id="sForNote">A note around 6:40</small></div><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></div></button>
+          <div class="g-card"><div class="k">Your days</div>
+            <div class="row2"><div><b>Keep them with your Apple ID</b></div></div></div>
+        </div>
+        <div class="screen" id="vFor" hidden>
+          <button class="back" id="forBack" aria-label="Back"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <div class="g-head">
+            <div class="eyebrow new">What it's for</div>
+            <h3 class="g-title new" id="gTitle">The kids</h3>
+            <p class="g-since new" id="gSince">You chose this on 2 October. Your phone has been in the box on 23 days since.</p>
+          </div>
+          <div class="g-card">
+            <div class="k new">Change it</div>
+            <div class="g-chips" id="gChips"></div>
+          </div>
+          <div class="g-card" id="gNote">
+            <div class="row2"><div><span class="new">A note around 6:40</span><small class="new">Once a day, never on a day that counts.</small></div><span class="toggle" aria-hidden="true"></span></div>
+          </div>
+          <div class="g-clear new">Just for you. Nobody at the box sees it.</div>
+        </div>
+        </div>
+      </div>
+      <p class="phone-note"><span class="tap-hint">Two ways in:</span> the settings icon, then "What it's for", or tap the headline. The headline is what the time is for, not an instruction. The box is named once, at the top, and the line under it says how it starts.</p>
+    </div>
+
+    <div class="phone-col">
+      <div class="cap">3 · The receipt</div>
+      <div class="device"><div class="status"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="screen">
+          <div class="receipt">
+            <div class="r-span">Wednesday · 7:27 to 8:47</div>
+            <h3 class="r-line" id="rLine">1h 20m, for the kids.</h3>
+            <p class="r-where">At The Schelhaas Box.</p>
+            <div class="r-why" id="rWhy" hidden><small class="new">For</small><span id="rWhyText"></span></div>
+          </div>
+          <div class="r-sky" id="receiptSky"></div>
+          <div class="btn">Done</div>
+        </div>
+      </div>
+      <p class="phone-note">"For" is what they said, never what the app saw. The app knows the phone was in the box, not who was at the table.</p>
+    </div>
+
+    <div class="phone-col">
+      <div class="cap">4 · The one note</div>
+      <div class="device lock"><div class="status"><span></span><span>●●● ▮</span></div>
+        <div class="screen">
+          <div class="date">Wednesday 11 November</div>
+          <div class="clock">6:40</div>
+          <div class="banner" id="banner">
+            <div class="icon"><i></i></div>
+            <div><div class="head"><span style="color:inherit;font-weight:600" id="bTitle">The Schelhaas Box</span><span>now</span></div>
+              <p class="new" id="bBody"></p></div>
+          </div>
+          <p class="silent" id="silent" hidden>No note today. It already counts, so there is nothing to ask for.</p>
+        </div>
+        <div class="bar"></div>
+      </div>
+      <p class="phone-note">Delivered without a sound. If the phone goes in first, or today already counts, it is taken back before it arrives.</p>
+    </div>
+  </div>
+
+  <section class="section">
+    <h2>How it keeps the rules</h2>
+    <div class="rules">
+      <div><b><small>Rule 5</small>Nothing to set up</b><p>The question has "Not now" and no follow-up. Without a reason, every line stays exactly as it reads today. The reason is a change in Settings, under "What it's for", never a step.</p></div>
+      <div><b><small>Rule 1</small>Nobody else sees it</b><p>The reason lives in this phone's storage and the note is scheduled on this phone, so the server never holds it. A teenager's "Sleep" is not a parent's business, and a parent's "The kids" is not a teenager's. It never reaches the lock screen's Live Activity, which the room can see.</p></div>
+      <div><b><small>Rule 6</small>The knowledge test</b><p>The app knows two things: what they said it was for, and when their phone was in the box. So it says "for the kids", never "with the kids", and never claims a chapter was read or a walk taken.</p></div>
+      <div><b><small>Rule 7</small>No gate</b><p>Notification permission is asked only when someone taps "Yes, once a day", after an evening has already counted. Turning it down changes nothing else.</p></div>
+      <div><b><small>Voice</small>No guilt</b><p>The reason is the one place guilt could get in. "The kids" is the answer this feature most invites, and the answer most easily turned into a weapon. Every note is an invitation in the present tense. None counts days, mentions a gap, or says who is waiting.</p></div>
+      <div><b><small>Vision</small>Used less, not more</b><p>The note stops by itself. Notes are scheduled a week ahead each time the app runs, so someone who stops opening the app gets a week of them and then silence. Nothing tries to win them back.</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>When the note comes</h2>
+    <p>Each day gets at most one note. Its time is learned from the box and never asked for.</p>
+    <div class="when">
+      <div><b>Its hour</b><span>Fifteen minutes before the median time their phone went in over the last fourteen days that counted, rounded to five minutes. On the first day, it is the time of that first evening, which is why the offer can say "around when your phone went in today" and be true.</span></div>
+      <div><b>Never</b><span>Never on a day that already counts. Never while the phone is in a box. Never between 10pm and 7am. Never more than one a day, and never one about ending an evening.</span></div>
+      <div><b>Taken back</b><span>The box wakes the app when a slot fills, through the same <code>bluetooth-central</code> connection it already uses, so today's pending note is removed the moment the phone goes in.</span></div>
+      <div><b>Stopping</b><span>Seven days are scheduled ahead and refilled only when the app runs. No server push, no win-back. "No notes" in Settings clears them all.</span></div>
+      <div><b>Sound</b><span>None. A banner and a place in Notification Centre. A buzz that makes someone pick up their phone is the app becoming the problem.</span></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Every line, by reason</h2>
+    <p>Each reason is a few keys in <code>copy/strings.json</code>, so the words can change without a release. The note rotates through its lines, one per day, so it never reads like a machine repeating itself. The highlighted row is the reason picked above.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Reason</th><th>Home, waiting</th><th>Home, counted</th><th>Receipt, alone</th><th>The note</th></tr></thead>
+      <tbody id="copyTable"></tbody>
+    </table></div>
+  </section>
+
+  <section class="section">
+    <h2>Lines it never writes</h2>
+    <div class="never">
+      <div><s>Your kids are waiting.</s><p>Guilt, and a claim the app can't know. This is the one most likely to get written by accident.</p></div>
+      <div><s>You haven't used the box today.</s><p>It shows absence. The note only invites.</p></div>
+      <div><s>3 days without reading 📚</s><p>A streak by another name. It counts what was missed.</p></div>
+      <div><s>You read for 1h 20m!</s><p>Fails the knowledge test. The phone was in the box. Nothing says a book was open.</p></div>
+      <div><s>Ellie is reading tonight. Join her?</s><p>It names another person and shows her reason. Rule 1, twice.</p></div>
+      <div><s>You reclaimed 2× more than last week!</s><p>A comparison, with cheer. Neither belongs in the voice.</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>What it takes to build</h2>
+    <p>No migration, no server change and no new dependency. One new pure type in ReclaimKit carries everything worth testing, and one shape check enforces the rule most likely to slip.</p>
+<pre>ReclaimKit/Support/Reason.swift       enum Reason: kids, eachOther, book, outside, sleep, making, quiet, own(String)
+                                      stored in UserDefaults, never in Repository
+ReclaimKit/Support/NoteSchedule.swift pure: (evening start times, today counts?, now) -> [Date]
+                                      median − 15 min, rounded; skips counted days, 22:00–07:00
+ReclaimKit/Tests/NoteScheduleTests    first day, median, counted day, quiet hours, seven-day horizon
+Reclaim/Screens/ReasonSheet.swift     the question and the note offer, from the first receipt (screen 8)
+Reclaim/Entry/DailyNote.swift         UNUserNotificationCenter: schedule 7, remove today's on "in"
+copy/strings.json                     reason.*.label / .for / .home / .note[], reason.ask.*, note.offer.*
+scripts/shape.sh                      the note is only scheduled by DailyNote, and only with
+                                      interruptionLevel .passive or no sound; no reason key on the
+                                      Live Activity</pre>
+    <p>One thing to measure without reading anyone's reason: a write-only note per phone, "daily note on" or "off", and whether a box event followed a delivered note within two hours. That shows whether notes help without anyone learning what the time was for.</p>
+  </section>
+</div>
+
+<script>
+const PLACE = 'The Schelhaas Box';
+const REASONS = [
+  { id: 'kids',   label: 'The kids',         for: 'for the kids',          home: 'For the kids',          notes: ['Some of the evening for the kids. Your phone can wait in {place}.', 'For the kids, for a while. There’s a slot in {place}.'] },
+  { id: 'each',   label: 'Each other',       for: 'for each other',        home: 'For each other',        notes: ['An evening for each other. Phones in {place}.', 'For each other, for a while. {place} has room.'] },
+  { id: 'book',   label: 'A book',           for: 'for the book',          home: 'For the book',          notes: ['A chapter or two. Your phone can wait in {place}.', 'The book, for a while. Your phone in {place}.'] },
+  { id: 'out',    label: 'Being outside',    for: 'for outside',           home: 'For outside',           notes: ['Outside for a while? Your phone can wait in {place}.', 'Some air. Your phone can stay in {place}.'] },
+  { id: 'sleep',  label: 'Better sleep',     for: 'for winding down',      home: 'For winding down',      notes: ['Winding down. Your phone can sleep in {place} too.', 'The day’s nearly done. {place} is ready for your phone.'] },
+  { id: 'make',   label: 'Making something', for: 'for making something',  home: 'For making something',  notes: ['Time to make something. Your phone can wait in {place}.', 'Hands free for a while. Your phone in {place}.'] },
+  { id: 'quiet',  label: 'Some quiet',       for: 'for some quiet',        home: 'For some quiet',        notes: ['A bit of quiet. Your phone can wait in {place}.', 'Quiet, for a while. {place} has a slot.'] },
+  { id: 'own',    label: 'Your own words',   own: true },
+  { id: 'none',   label: 'Not now', none: true },
+];
+// Home leads with what the time is for. The box is named once, at the top.
+const HEAD = { kids: 'Some time for the kids.', each: 'Some time for each other.', book: 'Some time with a book.', out: 'Some time outside.', sleep: 'Some time to wind down.', make: 'Some time to make something.', quiet: 'Some quiet.', none: 'Some time back.' };
+const headOf = (id, r) => HEAD[id] || ('Some time for ' + lower(r.label) + '.');
+let reason = 'kids', state = 'waiting', together = 1, step = 1, view = 'home', cameFrom = 'home';
+
+const lower = s => s ? s.charAt(0).toLowerCase() + s.slice(1) : s;
+function resolve(r) {
+  if (r.own) {
+    const w = (document.getElementById('own').value || '').trim() || 'Piano practice';
+    return { label: w, for: 'for ' + lower(w), home: 'For ' + lower(w), notes: [w + ', for a while. Your phone can wait in {place}.'] };
+  }
+  return r;
+}
+const fill = s => s.replace('{place}', PLACE);
+const el = id => document.getElementById(id);
+
+// the sky, after EveningMarkLayout: a sunflower spiral, first star at the centre
+function sky(n, ringToday, counted) {
+  const NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '-110 -110 220 220'); svg.setAttribute('aria-hidden', 'true');
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const golden = Math.PI * (3 - Math.sqrt(5)), reach = 92 / Math.sqrt(n);
+  for (let i = 0; i < n; i++) {
+    const r = reach * Math.sqrt(i + .5) + (rnd() - .5) * 6, a = i * golden + (rnd() - .5) * .4;
+    const x = r * Math.cos(a), y = r * Math.sin(a), today = i === n - 1;
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', x.toFixed(1)); c.setAttribute('cy', y.toFixed(1));
+    const t = rnd();
+    let fillc = t < .08 ? '#8C9AB4' : t < .11 ? '#C9A961' : '#C9C0B0', rad = 2.6 + rnd() * 2.4, op = .55 + rnd() * .4;
+    if (i >= n - 3 && !today) { fillc = '#1F1B16'; op = .85; }
+    if (today) {
+      rad = 5.5; op = 1;
+      if (counted) fillc = '#B4512C';
+      else { fillc = '#F7F4EE'; c.setAttribute('stroke', '#B4512C'); c.setAttribute('stroke-width', '1.6'); }
+      if (ringToday && !counted) { const ring = document.createElementNS(NS, 'circle');
+        ring.setAttribute('cx', x.toFixed(1)); ring.setAttribute('cy', y.toFixed(1)); ring.setAttribute('r', '15');
+        ring.setAttribute('fill', 'none'); ring.setAttribute('stroke', '#B4512C'); ring.setAttribute('stroke-opacity', '.3'); ring.setAttribute('stroke-width', '1.6');
+        svg.appendChild(ring); }
+    }
+    c.setAttribute('r', rad.toFixed(1)); c.setAttribute('fill', fillc); c.setAttribute('fill-opacity', op.toFixed(2));
+    svg.appendChild(c);
+  }
+  return svg;
+}
+
+function render() {
+  const base = REASONS.find(r => r.id === reason), none = !!base.none, r = none ? null : resolve(base);
+  const counted = state === 'counted';
+
+  // controls
+  document.querySelectorAll('#reasonRow button').forEach(b => b.setAttribute('aria-pressed', b.dataset.r === reason));
+  document.querySelectorAll('#stateRow button').forEach(b => b.setAttribute('aria-pressed', b.dataset.state === state));
+  document.querySelectorAll('#withRow button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.with === together));
+
+  // 1 · question
+  el('qChips').innerHTML = '';
+  REASONS.filter(x => !x.none).forEach(x => {
+    const s = document.createElement('span');
+    s.className = 'q-chip new' + (x.own ? ' own' : '') + (x.id === reason ? ' on' : '');
+    s.textContent = x.own ? (reason === 'own' ? resolve(x).label : 'In your own words') : x.label;
+    el('qChips').appendChild(s);
+  });
+  el('qStep1').classList.toggle('on', step === 1); el('qStep2').classList.toggle('on', step === 2);
+  el('s1').classList.toggle('on', step === 1); el('s2').classList.toggle('on', step === 2);
+  el('s1').setAttribute('aria-pressed', step === 1); el('s2').setAttribute('aria-pressed', step === 2);
+  el('q2eyebrow').textContent = none ? 'No reason' : r.home;
+  el('q2sample').textContent = fill(none ? 'Your phone can wait in {place}.' : r.notes[0]);
+
+  // 2 · home
+  el('homeSky').replaceChildren(sky(41, true, counted));
+  el('homeHead').textContent = counted ? (none ? 'Today counts.' : 'Today counts, ' + r.for + '.') : headOf(reason, r);
+  el('homeHead').classList.toggle('new', !(counted && none));
+  el('homeSub').innerHTML = counted ? (none ? '' : 'Two this week, 39 since September.')
+    : '<span class="why new">It starts when your phone goes in.</span><br>Two this week, 39 since September.';
+
+  // 3 · receipt
+  el('receiptSky').replaceChildren(sky(41, false, true));
+  const dur = '1h 20m';
+  if (none) { el('rLine').textContent = together > 1 ? dur + ', the three of you.' : dur + ', all yours.'; el('rLine').classList.remove('new'); el('rWhy').hidden = true; }
+  else if (together > 1) { el('rLine').textContent = dur + ', the three of you.'; el('rLine').classList.remove('new'); el('rWhy').hidden = false; el('rWhyText').textContent = r.label + ', you said.'; }
+  else { el('rLine').textContent = dur + ' back, ' + r.for + '.'; el('rLine').classList.add('new'); el('rWhy').hidden = true; }
+
+  // 4 · note
+  const showNote = !none && !counted;
+  el('banner').hidden = !showNote;
+  el('silent').hidden = showNote;
+  el('silent').textContent = none ? 'No reason, no note. Nothing was offered, so nothing comes.' : 'No note today. It already counts, so there is nothing to ask for.';
+  if (showNote) el('bBody').textContent = fill(r.notes[new Date().getDate() % r.notes.length]);
+
+  // 5 · what it's for
+  el('gTitle').textContent = none ? 'Nothing yet' : r.label;
+  el('gSince').textContent = none ? 'Pick one whenever you like. Until then, every line reads as it does today.' : '23 days ' + r.for + ', since 2 October. 41 hours back in all.';
+  el('gNote').hidden = none;
+  el('gChips').innerHTML = REASONS.filter(x => !x.none).map(x => '<button data-r="' + x.id + '" class="' + (x.id === reason ? 'on' : '') + '" aria-pressed="' + (x.id === reason) + '">' + esc(x.own ? (reason === 'own' ? resolve(x).label : 'Own words') : x.label) + '</button>').join('');
+  el('sForValue').textContent = none ? 'Not chosen yet' : r.label;
+  el('sForNote').textContent = none ? 'Pick one whenever you like' : 'A note around 6:40';
+  ['home', 'settings', 'for'].forEach(v => { el('v' + v.charAt(0).toUpperCase() + v.slice(1)).hidden = view !== v; });
+
+  // table
+  el('copyTable').innerHTML = REASONS.filter(x => !x.none).map(x => {
+    const y = resolve(x);
+    return '<tr class="' + (x.id === reason ? 'current' : '') + '"><td>' + esc(y.label) + '</td><td>' + esc(headOf(x.id, y)) + '</td><td>Today counts, ' + esc(y.for) + '.</td><td>1h 20m back, ' + esc(y.for) + '.</td><td>' + y.notes.map(n => esc(fill(n))).join('<br>') + '</td></tr>';
+  }).join('');
+}
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+REASONS.forEach(r => { const b = document.createElement('button'); b.dataset.r = r.id; b.textContent = r.label;
+  b.addEventListener('click', () => { reason = r.id; render(); }); el('reasonRow').appendChild(b); });
+document.querySelectorAll('#stateRow button').forEach(b => b.addEventListener('click', () => { state = b.dataset.state; render(); }));
+document.querySelectorAll('#withRow button').forEach(b => b.addEventListener('click', () => { together = +b.dataset.with; render(); }));
+el('s1').addEventListener('click', () => { step = 1; render(); });
+const go = v => { view = v; render(); };
+el('toSettings').addEventListener('click', () => go('settings'));
+el('homeHead').addEventListener('click', () => { cameFrom = 'home'; go('for'); });
+el('toFor').addEventListener('click', () => { cameFrom = 'settings'; go('for'); });
+el('settingsBack').addEventListener('click', () => go('home'));
+el('forBack').addEventListener('click', () => go(cameFrom));
+el('gChips').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { reason = b.dataset.r; render(); } });
+el('s2').addEventListener('click', () => { step = 2; render(); });
+el('own').addEventListener('input', () => { reason = 'own'; render(); });
+render();
+</script>

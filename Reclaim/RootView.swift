@@ -58,6 +58,12 @@ struct RootView: View {
                              set: { _ in state.dismissClosedForYou() })) {
             AutoClosedView(session: $0)
         }
+        // Screen 8a: under a receipt, once, what the time is for. Over Home,
+        // once the receipt has gone.
+        .sheet(isPresented: Binding(get: { state.asking != nil && state.justEnded == nil && !state.isLive },
+                                    set: { if !$0 { state.asking = nil } })) {
+            ReasonSheet(first: state.asking == .first)
+        }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active, state.phase != .loading else { return }
             Task { await state.load() }

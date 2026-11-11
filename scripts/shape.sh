@@ -295,6 +295,46 @@ ino_ids=$(grep -E '^#define [A-Z_]+_UUID' firmware/box/box.ino | grep -oE '"[0-9
 [ "$swift_ids" = "$ino_ids" ] \
   || bad "Box.swift's Bluetooth ids [$swift_ids] differ from box.ino's [$ino_ids]"
 
+# 23. One nudge a day, and only from one place. A notification is the app
+#     reaching for someone's attention, which is the thing this product
+#     replaces; a second file that schedules one is a second voice nobody
+#     reviewed. So only Reclaim/Entry/Nudges.swift may, and it asks iOS for
+#     alerts alone: no sound, no badge — a buzz that makes someone pick up
+#     their phone is the app becoming the problem.
+note "Only the daily nudge sends a notification, and it makes no sound"
+for f in $(grep -lE 'UserNotifications|UNUserNotificationCenter|UNNotificationRequest' $ALL_SWIFT 2>/dev/null); do
+  [ "$f" = "Reclaim/Entry/Nudges.swift" ] || bad "$f reaches for notifications — only Reclaim/Entry/Nudges.swift does"
+done
+if [ -f Reclaim/Entry/Nudges.swift ]; then
+  grep -nE 'requestAuthorization\(options:.*\.(sound|badge|criticalAlert)|\.sound *=|\.badge *=|interruptionLevel *= *\.(timeSensitive|critical)' \
+      Reclaim/Entry/Nudges.swift | while read -r line; do
+    bad "Reclaim/Entry/Nudges.swift:$line — the nudge is an alert, silent, with nothing to badge"
+  done
+  grep -nE 'requestAuthorization\(options:.*\.(sound|badge|criticalAlert)|\.sound *=|\.badge *=|interruptionLevel *= *\.(timeSensitive|critical)' \
+      Reclaim/Entry/Nudges.swift >/dev/null && FAIL=1
+fi
+
+# 24. Someone's reason is theirs. The lock screen is the one screen the whole
+#     room can see — the phone is face up in the box — so nothing the Live
+#     Activity draws or is sent may carry it: not the widget, not the
+#     attributes, not the controller that fills them. Nor the daily nudge: it
+#     lands on the lock screen of a phone lying wherever it was left, so its
+#     lines are the same for everyone, and nothing handed to it is a reason.
+note "Nobody's reason reaches the lock screen"
+for f in $(find ReclaimWidgets ReclaimKit/Sources/ReclaimKit/Activity -name '*.swift' 2>/dev/null) Reclaim/Entry/LiveActivityController.swift; do
+  [ -f "$f" ] || continue
+  grep -qiwE 'reason|nudge' "$f" && bad "$f mentions a reason — what someone's time is for never reaches the lock screen"
+done
+if [ -f Reclaim/Entry/Nudges.swift ]; then
+  grep -qiw 'reason' Reclaim/Entry/Nudges.swift \
+    && bad "Reclaim/Entry/Nudges.swift mentions a reason — the nudge is on the lock screen, so it never says what the time is for"
+fi
+for hit in $(grep -rnE 'Nudges\.plan\(.*[Rr]eason' Reclaim 2>/dev/null | cut -d: -f1,2); do
+  bad "$hit hands a reason to the nudge — the nudge is on the lock screen, so it never says what the time is for"
+done
+grep -nE '"reason\.[a-z]+\.nudge": *\[' copy/strings.json >/dev/null \
+  && bad "copy/strings.json has a nudge line per reason — the nudge's lines are nudge.lines, the same for everyone"
+
 echo
 if [ "$FAIL" -eq 0 ]; then
   echo "Shape is fine."

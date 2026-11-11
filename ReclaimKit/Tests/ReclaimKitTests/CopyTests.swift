@@ -14,7 +14,8 @@ final class CopyTests: XCTestCase {
     /// renders as an empty string.
     private let knownTokens: Set<String> = [
         "count", "day", "duration", "first", "from", "h", "handle", "last", "link", "list", "m", "month", "name", "names",
-        "place", "second", "stage", "time", "to", "radio", "evenings", "version", "build", "total"
+        "place", "second", "stage", "time", "to", "radio", "evenings", "version", "build", "total",
+        "for", "why", "words", "hours"
     ]
 
     private var repoRoot: URL {
@@ -63,7 +64,8 @@ final class CopyTests: XCTestCase {
     }
 
     func testKeysAreScreenDotElement() throws {
-        for key in try json(at: source).keys where key != "_" {
+        // "_", "_reason": notes to whoever writes the copy, never shown.
+        for key in try json(at: source).keys where !key.hasPrefix("_") {
             XCTAssertTrue(key.contains("."), "\(key) is not keyed screen.element")
             XCTAssertEqual(key, key.lowercased(), "\(key) is not lowercase")
         }

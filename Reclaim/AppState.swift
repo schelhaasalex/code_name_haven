@@ -73,6 +73,19 @@ public final class AppState {
     /// Ticks whenever a box's radio connects, goes or Bluetooth changes, so
     /// what Settings says about it is read again.
     public var radioTick = 0
+    /// What this person said the time is for, and whether they asked for a
+    /// nudge (`AppState+Reason`). This phone's own: never sent anywhere.
+    public var reason: Reason? = UserDefaults.standard.string(forKey: AppState.reasonKey).flatMap(Reason.init(stored:)) {
+        didSet { UserDefaults.standard.set(reason?.stored, forKey: AppState.reasonKey) }
+    }
+    public var nudging = UserDefaults.standard.bool(forKey: AppState.nudgingKey) {
+        didSet { UserDefaults.standard.set(nudging, forKey: AppState.nudgingKey) }
+    }
+    /// When the nudge goes, in minutes past midnight, once the box has
+    /// taught it (`NudgeSchedule`).
+    public var nudgeMinute: Int?
+    /// The question, open over Home after a receipt (`ReasonSheet`).
+    public var asking: Asking?
     /// Screen 8, held here rather than in the session view: ending clears
     /// `session`, which takes the session view off screen with it.
     public var justEnded: Ended?
@@ -176,6 +189,7 @@ public final class AppState {
         for id in boxPlaces {
             boxSummaries[id] = (try? await repo.summary(of: id)) ?? boxSummaries[id]
         }
+        await planNudges(recent)
 
         let lately = recent.filter { $0.startedAt > .now.addingTimeInterval(-AutoClosed.window) }
         if closedForYou == nil, let closed = AutoClosed.latest(in: lately),

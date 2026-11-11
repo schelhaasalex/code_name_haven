@@ -15,3 +15,14 @@ lock-screen ring off, a box out of range). Copy it would add is underlined.
 `box.html` is the same for screen 16a, the page tapping a box in Settings
 opens, leading with the box's stage. Both are built now (`SettingsView`,
 `BoxView`); the prototypes stay for the reasoning beside them.
+
+`reasons.html` is a proposal, not built: "What it's for", one reason per
+person, asked once under the first receipt, that changes a few lines and can
+earn one quiet note a day. Pick a reason and every screen follows. It keeps the
+reason on the phone, so nobody else at the box ever sees it.
+Home in it taps through: the settings icon opens Settings, whose "What it's
+for" row opens the page, and so does tapping the headline.
+
+`box-figures.html` puts Settings' box card and the box's page side by side,
+now and proposed: the hours in Settings, the days beside the stage on the box's
+page, and "Add another phone" as one line. It has three options for the card.

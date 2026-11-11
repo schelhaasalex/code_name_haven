@@ -1,14 +1,14 @@
 import SwiftUI
 import ReclaimKit
 
-/// One box in Settings: its name, its radio as a dot and a word, and what it
-/// has kept, added up — everyone's days at it, never whose. The whole card
-/// opens the box's page, which the chevron says.
+/// One box in Settings: its name, and its radio as a dot and a word. What it
+/// has kept is on its page, said once, beside its stage — three figures here
+/// repeated it, and "38 days" never said since when. The whole card opens the
+/// box's page, which the chevron says.
 struct BoxCard: View {
     let name: String
     var status: StatusDot.Style?
     var statusText: String?
-    var figures: [Figures.Item] = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -28,7 +28,6 @@ struct BoxCard: View {
             }
             .padding(18)
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            if !figures.isEmpty { Figures(items: figures) }
         }
         .contentShape(Rectangle())
         .paperCard(padding: 0)
@@ -38,10 +37,7 @@ struct BoxCard: View {
 
 #Preview {
     VStack(spacing: 10) {
-        BoxCard(name: t("box.default.1"), status: .on, statusText: t("settings.row.connected"),
-                figures: [Figures.Item(value: "112h", label: t("box.kept.hours")),
-                          Figures.Item(value: "34", label: t("box.kept.evenings")),
-                          Figures.Item(value: "September", label: t("box.kept.since"))])
+        BoxCard(name: t("box.default.1"), status: .on, statusText: t("settings.row.connected"))
         BoxCard(name: t("box.default.2"), status: .quiet, statusText: t("settings.row.unpaired"))
     }
     .padding()
