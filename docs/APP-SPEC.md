@@ -234,9 +234,10 @@ median time your phone went in over the last fourteen days that counted,
 kept between seven and a quarter to ten — and plans a week ahead each time
 the evenings are read. Never on a day that already counts; today's is taken
 back the moment a phone goes in (`adopt`). Someone who stops opening the app
-gets a week of them and then nothing. It names the box and nothing else —
-*A while, if you like. Your phone can wait in The Harbor.* — the same two
-lines, day about, for everyone (`nudge.lines`). Only `Reclaim/Entry/Nudges.swift`
+gets a week of them and then nothing. It has no title, so iOS shows the
+app's name, and it says "the box" and nothing more — *Take some time back,
+whenever you like. There's room in the box.* — the same two lines, day about,
+for everyone (`nudge.lines`). Only `Reclaim/Entry/Nudges.swift`
 touches notifications. In code it's a *nudge*: `Note` is the diagnostics log.
 
 ## The box

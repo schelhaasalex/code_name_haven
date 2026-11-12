@@ -7,7 +7,6 @@ import ReclaimKit
 ///
 /// In ConfirmSheet's paper and shape, sized to what it says.
 struct StarSheet: View {
-    let place: String
     let counted: Bool
 
     @Environment(\.dismiss) private var dismiss
@@ -16,7 +15,7 @@ struct StarSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(t(counted ? "star.counted.eyebrow" : "star.eyebrow")).eyebrow(Palette.clay)
-            Text(counted ? t("star.counted.title") : t("star.title", "place", place))
+            Text(counted ? t("star.counted.title") : t("star.title"))
                 .font(Type.subhead).foregroundStyle(Palette.ink)
                 .padding(.top, 12)
             Text(t(counted ? "star.counted.body" : "star.body"))
@@ -39,12 +38,12 @@ struct StarSheet: View {
 
 #Preview("Waiting") {
     Color.clear.sheet(isPresented: .constant(true)) {
-        StarSheet(place: "The Harbor", counted: false)
+        StarSheet(counted: false)
     }
 }
 
 #Preview("Counted") {
     Color.clear.sheet(isPresented: .constant(true)) {
-        StarSheet(place: "The Harbor", counted: true)
+        StarSheet(counted: true)
     }
 }

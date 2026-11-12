@@ -64,12 +64,11 @@ public enum NudgeSchedule {
         calendar.date(bySettingHour: minute / 60 % 24, minute: minute % 60, second: 0, of: day)
     }
 
-    /// The nudge's lines, the box named. The same for everyone: a nudge lands
-    /// on a lock screen anyone near the phone can read, so it never says what
-    /// the time is for (`scripts/shape.sh`).
-    public static func lines(place: String) -> [String] {
-        Copy.list("nudge.lines").map { $0.replacingOccurrences(of: "{place}", with: place) }
-    }
+    /// The nudge's lines. The same for everyone: a nudge lands on a lock
+    /// screen anyone near the phone can read, so it never says what the time
+    /// is for (`scripts/shape.sh`). They say "the box", not its name — a name
+    /// inside a sentence reads wrong for half the names people give it.
+    public static var lines: [String] { Copy.list("nudge.lines") }
 
     /// The line for `date`'s nudge, taking each in turn day by day, so two
     /// days running never read alike when there are two to choose from.

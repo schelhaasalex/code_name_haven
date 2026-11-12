@@ -9,7 +9,7 @@ final class RemoteActivityTests: XCTestCase {
 
     private func body() throws -> [String: Any] {
         let data = try RemoteActivity.startBody(gatheringId: gathering, state: state,
-                                                title: "Docked at Low Vole", body: "See you in a bit.")
+                                                title: "Low Vole", body: "Docked. See you in a bit.")
         return try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
     }
 
@@ -37,7 +37,7 @@ final class RemoteActivityTests: XCTestCase {
 
     func testTheAlertCarriesTheWordsItWasGiven() throws {
         let alert = try XCTUnwrap(body()["alert"] as? [String: String])
-        XCTAssertEqual(alert, ["title": "Docked at Low Vole", "body": "See you in a bit."])
+        XCTAssertEqual(alert, ["title": "Low Vole", "body": "Docked. See you in a bit."])
     }
 
     func testATokenIsLowercaseHex() {

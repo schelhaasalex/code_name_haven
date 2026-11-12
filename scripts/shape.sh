@@ -334,6 +334,15 @@ done
 grep -nE '"reason\.[a-z]+\.nudge": *\[' copy/strings.json >/dev/null \
   && bad "copy/strings.json has a nudge line per reason — the nudge's lines are nudge.lines, the same for everyone"
 
+# 25. A box's name is whatever its owner typed: "The Schelhaas Box",
+#     "Schelhaas box", "Grandma's". No word in front of it reads right for all
+#     three — "in The Schelhaas Box", "in Schelhaas box", "in the Grandma's" —
+#     so it opens a line or stands alone, and sentences say "the box".
+note "A box's name never sits inside a sentence"
+for hit in $(grep -nE '"[^"]+\{place\}' copy/strings.json | cut -d: -f1); do
+  bad "copy/strings.json:$hit puts {place} after other words — a box's name reads wrong mid-sentence for half the names people give it; open the line with it, or say \"the box\""
+done
+
 echo
 if [ "$FAIL" -eq 0 ]; then
   echo "Shape is fine."

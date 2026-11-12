@@ -48,9 +48,10 @@ struct SessionEndView: View {
                 .font(Type.display(44)).foregroundStyle(Palette.ink)
                 .fixedSize(horizontal: false, vertical: true)
             // Which box, when the app knows; nothing rather than a name for
-            // a box that doesn't exist.
+            // a box that doesn't exist. Its name alone, as its owner wrote it:
+            // "At" reads wrong in front of "The Harbor" and "Schelhaas box" alike.
             if let place = ended.place {
-                Text(t("end.where", "place", place))
+                Text(place)
                     .font(Type.body(17)).foregroundStyle(Palette.ink2)
             }
             // Together, the line above is everyone's; what it was for is

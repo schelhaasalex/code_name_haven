@@ -88,6 +88,10 @@ exception worth removing when those grow.
   cut; they are in git history.
 - Components: the noun. `PhoneSlab`, not `PhoneSlabView`.
 - Copy keys: `screen.element`, lowercase, dot-separated.
+- A box's name (`{place}`) opens a line or stands alone, never after other
+  words. It's whatever its owner typed — "The Schelhaas Box", "Schelhaas box",
+  "Grandma's" — and no "in", "at" or "the" reads right in front of all three.
+  Sentences say "the box".
 - Booleans read as assertions: `isLive`, `hasBeenOffered`, `restDayAvailable`.
 - No `Manager`, `Helper`, `Util`, or `Service` in a type name. If that's the
   only word that fits, the type is doing too much.
