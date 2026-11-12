@@ -40,7 +40,7 @@ struct HomeView: View {
             // From the headline here, and from Settings, which this stack holds.
             .navigationDestination(for: ReasonView.Route.self) { _ in ReasonView() }
             .fullScreenCover(isPresented: $scanning) { ScanView() }
-            .sheet(isPresented: $aboutStar) { StarSheet(place: placeName, counted: countedToday) }
+            .sheet(isPresented: $aboutStar) { StarSheet(counted: countedToday) }
             .navigationDestination(isPresented: $reasonPage) { ReasonView() }
         }
     }

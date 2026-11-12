@@ -134,10 +134,9 @@ final class FormattingTests: XCTestCase {
         XCTAssertEqual(t("evening.together", "count", Say.count(3), "time", "7:27"), "Three of you · since 7:27")
     }
 
-    /// Mid-sentence it stays lowercase, and a name stays how its owner wrote it.
+    /// Mid-sentence it stays lowercase.
     func testOnlyAnOpeningCountIsCapitalised() {
         XCTAssertTrue(t("end.receipt", "duration", "an hour", "count", Say.number(3)).contains("the three of you"))
-        XCTAssertEqual(t("end.where", "place", "the porch"), "At the porch.")
     }
 
     /// "Since 7:27 PM" or "Since 19:27" — when you started, never a count.

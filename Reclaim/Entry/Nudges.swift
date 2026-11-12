@@ -6,8 +6,9 @@ import ReclaimKit
 /// file that asks for or schedules a notification (`scripts/shape.sh`): one a
 /// day at most, alerts only — no sound, no badge — and never one about ending
 /// an evening. A buzz that makes someone pick up their phone is the app
-/// becoming the problem. It names the box and nothing else: it lands on a
-/// lock screen anyone near the phone can read.
+/// becoming the problem. It says "the box" and nothing more: it lands on a
+/// lock screen anyone near the phone can read. No title, so iOS shows the
+/// app's name above the line.
 enum Nudges {
     private static let prefix = "reclaim.nudge."
     private static var center: UNUserNotificationCenter { .current() }
@@ -20,14 +21,13 @@ enum Nudges {
 
     /// The week's nudges, replacing whatever was planned. Nothing at all if
     /// iOS has said no since.
-    static func plan(_ dates: [Date], place: String, calendar: Calendar = .current) async {
-        let lines = NudgeSchedule.lines(place: place)
+    static func plan(_ dates: [Date], calendar: Calendar = .current) async {
+        let lines = NudgeSchedule.lines
         await clear()
         guard await center.notificationSettings().authorizationStatus == .authorized else { return }
         for date in dates {
             guard let line = NudgeSchedule.line(lines, on: date, calendar: calendar) else { continue }
             let content = UNMutableNotificationContent()
-            content.title = place
             content.body = line
             let when = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
             let trigger = UNCalendarNotificationTrigger(dateMatching: when, repeats: false)

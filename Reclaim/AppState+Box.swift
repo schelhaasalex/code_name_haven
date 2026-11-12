@@ -122,10 +122,13 @@ extension AppState {
         let state = ReclaimActivityAttributes.ContentState(
             startedAt: startedAt ?? s.startedAt, memberCount: max(1, memberCount), placeName: placeName,
             stage: EveningCharge.stage(since: startedAt ?? s.startedAt))
-        let title = placeName.map { t("starttap.banner.title", "place", $0) } ?? t("starttap.banner.unknown")
+        // The box's name stands alone as the title, never inside a sentence:
+        // people name it "The Schelhaas Box", "Schelhaas box" or "Grandma's",
+        // and no "at" or "the" reads right in front of all three.
+        let title = placeName ?? t("starttap.banner.unknown")
+        let line = t(placeName == nil ? "starttap.banner.body" : "starttap.banner.body.named")
         guard let body = try? RemoteActivity.startBody(
-            gatheringId: s.gatheringId, state: state,
-            title: title, body: t("starttap.banner.body"))
+            gatheringId: s.gatheringId, state: state, title: title, body: line)
         else { return }
         try? await repo.startActivityRemotely(body: body)
     }
